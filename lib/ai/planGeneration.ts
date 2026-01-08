@@ -1,6 +1,6 @@
 import { generateJSON, Message } from './provider';
 import { getSystemPrompt, getPlanGenerationPrompt } from './prompts';
-import { UserProfile, WeeklyPlan, PlanItem, Domain } from '@/lib/types';
+import { UserProfile, WeeklyPlan, PlanItem, Domain, DayOfWeek } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface GeneratedPlanItem {
@@ -47,9 +47,9 @@ export async function generateWeeklyPlan(
     // Transform items to match our schema
     const items = result.items.map((item, index) => ({
       domain: item.domain,
-      dayOfWeek: item.dayOfWeek,
+      dayOfWeek: item.dayOfWeek as DayOfWeek,
       title: item.title,
-      durationMinutes: item.durationMinutes || null,
+      durationMinutes: item.durationMinutes || undefined,
       personalizationContext: item.personalizationContext,
       reasoning: item.reasoning,
       status: 'pending' as const,
@@ -79,7 +79,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Monday
     {
       domain: 'heart',
-      dayOfWeek: 1,
+      dayOfWeek: 1 as DayOfWeek,
       title: 'Zone 2 cardio - 30 minutes',
       durationMinutes: 30,
       personalizationContext: 'Starting your week with aerobic base building',
@@ -89,9 +89,9 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'sleep',
-      dayOfWeek: 1,
+      dayOfWeek: 1 as DayOfWeek,
       title: 'Wind down routine by 10pm',
-      durationMinutes: null,
+      durationMinutes: undefined,
       personalizationContext: 'Setting a consistent sleep schedule',
       reasoning: 'Consistent sleep timing helps regulate circadian rhythm.',
       status: 'pending',
@@ -100,7 +100,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Tuesday
     {
       domain: 'muscle',
-      dayOfWeek: 2,
+      dayOfWeek: 2 as DayOfWeek,
       title: 'Strength training - Upper body',
       durationMinutes: 45,
       personalizationContext: 'Building strength foundation',
@@ -110,7 +110,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'metabolism',
-      dayOfWeek: 2,
+      dayOfWeek: 2 as DayOfWeek,
       title: 'Post-lunch walk - 10 minutes',
       durationMinutes: 10,
       personalizationContext: 'Supporting glucose management',
@@ -121,7 +121,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Wednesday
     {
       domain: 'heart',
-      dayOfWeek: 3,
+      dayOfWeek: 3 as DayOfWeek,
       title: 'Zone 2 cardio - 35 minutes',
       durationMinutes: 35,
       personalizationContext: 'Building aerobic base',
@@ -131,7 +131,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'mind',
-      dayOfWeek: 3,
+      dayOfWeek: 3 as DayOfWeek,
       title: 'Breathing practice - 5 minutes',
       durationMinutes: 5,
       personalizationContext: 'Midweek stress management',
@@ -142,7 +142,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Thursday
     {
       domain: 'muscle',
-      dayOfWeek: 4,
+      dayOfWeek: 4 as DayOfWeek,
       title: 'Strength training - Lower body',
       durationMinutes: 45,
       personalizationContext: 'Balanced strength development',
@@ -152,9 +152,9 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'sleep',
-      dayOfWeek: 4,
+      dayOfWeek: 4 as DayOfWeek,
       title: 'No screens 30 min before bed',
-      durationMinutes: null,
+      durationMinutes: undefined,
       personalizationContext: 'Improving sleep quality',
       reasoning: 'Blue light from screens suppresses melatonin production.',
       status: 'pending',
@@ -163,7 +163,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Friday
     {
       domain: 'heart',
-      dayOfWeek: 5,
+      dayOfWeek: 5 as DayOfWeek,
       title: 'Zone 2 cardio - 30 minutes',
       durationMinutes: 30,
       personalizationContext: 'Maintaining aerobic consistency',
@@ -173,9 +173,9 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'metabolism',
-      dayOfWeek: 5,
+      dayOfWeek: 5 as DayOfWeek,
       title: 'Protein focus today',
-      durationMinutes: null,
+      durationMinutes: undefined,
       personalizationContext: 'Supporting muscle recovery',
       reasoning: 'Adequate protein supports muscle protein synthesis.',
       status: 'pending',
@@ -184,7 +184,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Saturday
     {
       domain: 'heart',
-      dayOfWeek: 6,
+      dayOfWeek: 6 as DayOfWeek,
       title: 'Longer Zone 2 session - 45 minutes',
       durationMinutes: 45,
       personalizationContext: 'Weekend extended aerobic work',
@@ -194,7 +194,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'mind',
-      dayOfWeek: 6,
+      dayOfWeek: 6 as DayOfWeek,
       title: 'Mindfulness or meditation - 10 minutes',
       durationMinutes: 10,
       personalizationContext: 'Weekend recovery focus',
@@ -205,9 +205,9 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     // Sunday
     {
       domain: 'sleep',
-      dayOfWeek: 0,
+      dayOfWeek: 0 as DayOfWeek,
       title: 'Recovery day - Extra sleep if needed',
-      durationMinutes: null,
+      durationMinutes: undefined,
       personalizationContext: 'Weekly recovery',
       reasoning: 'Recovery days allow for adaptation and restoration.',
       status: 'pending',
@@ -215,7 +215,7 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
     },
     {
       domain: 'mind',
-      dayOfWeek: 0,
+      dayOfWeek: 0 as DayOfWeek,
       title: 'Week reflection and next week planning',
       durationMinutes: 15,
       personalizationContext: 'Intentional week transition',
