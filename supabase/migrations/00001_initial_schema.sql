@@ -1,8 +1,7 @@
 -- Eden v2 Initial Schema
 -- ============================================================
 
--- Enable UUID extension
-create extension if not exists "uuid-ossp";
+-- Use gen_random_uuid() which is available by default in PostgreSQL 14+
 
 -- ============================================================
 -- User Profiles (extends Supabase auth.users)
@@ -54,7 +53,7 @@ create trigger on_auth_user_created
 -- ============================================================
 
 create table weekly_plans (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references user_profiles(id) on delete cascade not null,
   week_start_date date not null,
   eden_intro text,
@@ -90,7 +89,7 @@ create policy "Users can delete own plans"
 -- ============================================================
 
 create table plan_items (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   weekly_plan_id uuid references weekly_plans(id) on delete cascade not null,
   domain text not null check (domain in ('heart', 'muscle', 'sleep', 'metabolism', 'mind')),
   day_of_week int not null check (day_of_week between 0 and 6),
@@ -156,7 +155,7 @@ create policy "Users can delete own plan items"
 -- ============================================================
 
 create table conversations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references user_profiles(id) on delete cascade not null,
   messages jsonb not null default '[]'::jsonb,
   context jsonb,
@@ -187,7 +186,7 @@ create policy "Users can update own conversations"
 -- ============================================================
 
 create table adaptations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid references user_profiles(id) on delete cascade not null,
   weekly_plan_id uuid references weekly_plans(id) on delete cascade,
   trigger_type text not null check (trigger_type in ('missed_items', 'user_request', 'pattern_detected', 'constraint_change', 'weekly_generation')),
