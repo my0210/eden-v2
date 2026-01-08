@@ -56,19 +56,13 @@ export default async function LandingPage() {
           <DomainPill domain="mind" label="Mind" />
         </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 w-full max-w-sm">
-          <Link 
-            href="/signup" 
-            className="btn btn-primary flex-1 py-4 text-lg font-semibold"
-          >
-            Get Started
-          </Link>
+        {/* CTA Button */}
+        <div className="w-full max-w-sm">
           <Link 
             href="/login" 
-            className="btn btn-secondary flex-1 py-4 text-lg"
+            className="btn btn-primary w-full py-4 text-lg font-semibold"
           >
-            Sign In
+            Get Started
           </Link>
         </div>
       </div>
