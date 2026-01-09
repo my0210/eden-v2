@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { generateCompletion, Message } from '@/lib/ai/provider';
+import { generateJSON, Message } from '@/lib/ai/provider';
 import { getSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
 import { UserProfile, WeeklyPlan, ChatMessage } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+
+interface ChatResponse {
+  response: string;
+  suggestedPrompts: string[];
+}
 
 export async function POST(request: Request) {
   try {
@@ -90,11 +95,23 @@ export async function POST(request: Request) {
       { role: 'user', content: chatPrompt },
     ];
 
-    // Generate response
-    const response = await generateCompletion(messages, {
-      model: 'instant', // Use fast model for chat
-      temperature: 0.7,
-    });
+    // Generate response with suggested prompts
+    let chatResponse: ChatResponse;
+    try {
+      chatResponse = await generateJSON<ChatResponse>(messages, {
+        model: 'instant', // Use fast model for chat
+        temperature: 0.7,
+      });
+    } catch {
+      // Fallback to text response if JSON parsing fails
+      chatResponse = {
+        response: "I'm having trouble responding right now. Please try again.",
+        suggestedPrompts: [
+          "Can you help me with my plan?",
+          "What should I focus on today?",
+        ],
+      };
+    }
 
     // Save conversation
     const newMessages: ChatMessage[] = [
@@ -108,7 +125,7 @@ export async function POST(request: Request) {
       {
         id: uuidv4(),
         role: 'assistant',
-        content: response,
+        content: chatResponse.response,
         timestamp: new Date().toISOString(),
       },
     ];
@@ -131,7 +148,8 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({ 
-      message: response,
+      message: chatResponse.response,
+      suggestedPrompts: chatResponse.suggestedPrompts || [],
       success: true,
     });
   } catch (error) {

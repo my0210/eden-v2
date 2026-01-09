@@ -138,7 +138,18 @@ Respond helpfully as Eden. If the user wants to:
 - Skip something: Accept gracefully, offer alternatives if appropriate
 - Ask a health question: Answer based on evidence
 
-Always maintain your coaching style and reference their specific context when relevant.`;
+Always maintain your coaching style and reference their specific context when relevant.
+
+## Response Format (JSON)
+{
+  "response": "Your natural response to the user",
+  "suggestedPrompts": ["Follow-up question 1?", "Follow-up question 2?", "Follow-up question 3?"]
+}
+
+The suggestedPrompts should be 2-3 natural follow-up questions the user might want to ask based on the conversation context. They should be:
+- Specific to the current topic
+- Actionable (lead somewhere useful)
+- Varied (don't all be the same type of question)`;
 }
 
 // Helper functions
