@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
 import { UserProfile } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
+import { getAdaptationContext, logAdaptation } from '@/lib/adaptation';
 
 export async function POST(request: Request) {
   try {
@@ -81,8 +82,20 @@ export async function POST(request: Request) {
       previousWeekContext = `Last week: ${completed}/${total} items completed (${Math.round((completed/total) * 100)}% adherence)`;
     }
 
-    // Generate the plan
-    const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext);
+    // Get adaptation insights from past skip patterns
+    const adaptationContext = await getAdaptationContext(user.id);
+    if (adaptationContext) {
+      previousWeekContext = previousWeekContext 
+        ? `${previousWeekContext}\n\n${adaptationContext}`
+        : adaptationContext;
+    }
+
+    // Get current day of week to only generate items from today onwards
+    const today = new Date();
+    const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
+
+    // Generate the plan (starting from today, not the whole week)
+    const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext, currentDayOfWeek);
 
     // Delete existing plan if force regenerating
     if (forceRegenerate) {
@@ -140,6 +153,19 @@ export async function POST(request: Request) {
       await supabase.from('weekly_plans').delete().eq('id', newPlan.id);
       return NextResponse.json({ error: 'Failed to create plan items' }, { status: 500 });
     }
+
+    // Log adaptation for plan generation
+    await logAdaptation({
+      userId: user.id,
+      weeklyPlanId: newPlan.id,
+      triggerType: 'weekly_generation',
+      description: `Generated plan for week of ${weekStartStr} with ${generated.items.length} items`,
+      changesMade: {
+        itemCount: generated.items.length,
+        domains: [...new Set(generated.items.map(i => i.domain))],
+        startedFromDay: currentDayOfWeek,
+      },
+    });
 
     return NextResponse.json({
       success: true,

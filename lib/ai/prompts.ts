@@ -63,10 +63,17 @@ Remember: You're not just giving advice - you're building a relationship as thei
 export function getPlanGenerationPrompt(
   profile: UserProfile,
   weekStartDate: string,
-  previousWeekContext?: string
+  previousWeekContext?: string,
+  startFromDay?: number // 0=Sunday, 1=Monday, etc.
 ): string {
   const constraintsDesc = formatConstraints(profile.constraints);
   const goalsDesc = formatGoals(profile.goals);
+  
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const startDayName = startFromDay !== undefined ? dayNames[startFromDay] : 'Monday';
+  const startDayInstruction = startFromDay !== undefined 
+    ? `\n\nIMPORTANT: Today is ${startDayName}. Only create items for ${startDayName} and the remaining days of this week. Do NOT create items for days that have already passed.`
+    : '';
 
   return `Generate a personalized weekly health plan for this user.
 
@@ -75,7 +82,7 @@ Goals: ${goalsDesc}
 Fitness Level: ${profile.currentFitnessLevel}
 ${constraintsDesc}
 
-## Week Starting: ${weekStartDate}
+## Week Starting: ${weekStartDate}${startDayInstruction}
 
 ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : ''}
 

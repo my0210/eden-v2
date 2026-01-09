@@ -20,17 +20,19 @@ interface GeneratedPlan {
 
 /**
  * Generate a weekly plan for a user
+ * @param startFromDay - Current day of week (0=Sunday, 1=Monday, etc.) to only generate items from today onwards
  */
 export async function generateWeeklyPlan(
   profile: UserProfile,
   weekStartDate: string,
-  previousWeekContext?: string
+  previousWeekContext?: string,
+  startFromDay?: number
 ): Promise<{
   edenIntro: string;
   items: Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[];
 }> {
   const systemPrompt = getSystemPrompt(profile);
-  const planPrompt = getPlanGenerationPrompt(profile, weekStartDate, previousWeekContext);
+  const planPrompt = getPlanGenerationPrompt(profile, weekStartDate, previousWeekContext, startFromDay);
 
   const messages: Message[] = [
     { role: 'system', content: systemPrompt },
@@ -44,8 +46,8 @@ export async function generateWeeklyPlan(
       maxTokens: 8192,
     });
 
-    // Transform items to match our schema
-    const items = result.items.map((item, index) => ({
+    // Transform and filter items to only include today and future days
+    let items = result.items.map((item, index) => ({
       domain: item.domain,
       dayOfWeek: item.dayOfWeek as DayOfWeek,
       title: item.title,
@@ -55,6 +57,17 @@ export async function generateWeeklyPlan(
       status: 'pending' as const,
       sortOrder: item.sortOrder ?? index,
     }));
+
+    // Filter out past days if startFromDay is specified
+    if (startFromDay !== undefined) {
+      items = items.filter(item => {
+        // Handle week wrapping (e.g., if today is Friday (5), include Sat (6), Sun (0))
+        if (startFromDay === 0) {
+          return item.dayOfWeek === 0; // Only Sunday
+        }
+        return item.dayOfWeek >= startFromDay || item.dayOfWeek === 0;
+      });
+    }
 
     return {
       edenIntro: result.edenIntro,
@@ -67,16 +80,17 @@ export async function generateWeeklyPlan(
     // Return a fallback plan structure with error info
     return {
       edenIntro: `I'm having trouble generating your personalized plan right now (${err.message}). Here's a basic structure to get you started. We'll refine it as I learn more about you.`,
-      items: getDefaultPlanItems(),
+      items: getDefaultPlanItems(startFromDay),
     };
   }
 }
 
 /**
  * Get default plan items as fallback
+ * @param startFromDay - Filter to only include this day and future days
  */
-function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[] {
-  return [
+function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[] {
+  const allItems: Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[] = [
     // Monday
     {
       domain: 'heart',
@@ -225,5 +239,17 @@ function getDefaultPlanItems(): Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdA
       sortOrder: 1,
     },
   ];
+
+  // Filter to only include today and future days
+  if (startFromDay !== undefined) {
+    return allItems.filter(item => {
+      if (startFromDay === 0) {
+        return item.dayOfWeek === 0; // Only Sunday
+      }
+      return item.dayOfWeek >= startFromDay || item.dayOfWeek === 0;
+    });
+  }
+
+  return allItems;
 }
 

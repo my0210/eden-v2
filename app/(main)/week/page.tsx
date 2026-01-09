@@ -106,7 +106,7 @@ export default async function WeekPage({
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-        <ProfileButton />
+        <ProfileButton coachingStyle={userProfile?.coachingStyle} />
         <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
         <div className="w-9" /> {/* Spacer for balance */}
       </header>

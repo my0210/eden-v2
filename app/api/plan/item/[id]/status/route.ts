@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
+import { logAdaptation } from '@/lib/adaptation';
 
 export async function POST(
   request: Request,
@@ -15,11 +16,18 @@ export async function POST(
 
     const { id } = await params;
     const body = await request.json();
-    const { status } = body;
+    const { status, skipReason } = body;
 
     if (!['pending', 'done', 'skipped'].includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
+
+    // Get the item first to log adaptation
+    const { data: existingItem } = await supabase
+      .from('plan_items')
+      .select('*, weekly_plans!inner(id, user_id)')
+      .eq('id', id)
+      .single();
 
     // Update the item status
     const { data, error } = await supabase
@@ -35,6 +43,22 @@ export async function POST(
     if (error) {
       console.error('Error updating item status:', error);
       return NextResponse.json({ error: 'Failed to update status' }, { status: 500 });
+    }
+
+    // Log adaptation if item was skipped
+    if (status === 'skipped' && existingItem) {
+      await logAdaptation({
+        userId: user.id,
+        weeklyPlanId: existingItem.weekly_plan_id,
+        triggerType: 'missed_items',
+        description: `Skipped: ${existingItem.title}${skipReason ? ` - Reason: ${skipReason}` : ''}`,
+        changesMade: {
+          itemId: id,
+          domain: existingItem.domain,
+          dayOfWeek: existingItem.day_of_week,
+          reason: skipReason,
+        },
+      });
     }
 
     return NextResponse.json({ success: true, item: data });
