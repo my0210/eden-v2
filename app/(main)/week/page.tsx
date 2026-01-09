@@ -5,7 +5,6 @@ import { DayView } from '@/components/DayView';
 import { ChatInput } from '@/components/ChatInput';
 import { ProfileButton } from '@/components/ProfileButton';
 import { DomainIndicator } from '@/components/DomainIndicator';
-import { DevTools } from '@/components/DevTools';
 import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek } from '@/lib/types';
 
 export default async function WeekPage({
@@ -143,9 +142,6 @@ export default async function WeekPage({
       <div className="sticky bottom-0 border-t border-default bg-background px-4 py-3 safe-area-bottom">
         <ChatInput userId={user.id} />
       </div>
-
-      {/* Dev Tools */}
-      <DevTools userId={user.id} />
     </div>
   );
 }

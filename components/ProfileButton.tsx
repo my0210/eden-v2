@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 
 export function ProfileButton() {
   const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -13,6 +14,38 @@ export function ProfileButton() {
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
+  };
+
+  const handleReset = async () => {
+    if (!confirm('Reset all data? You will go through onboarding again.')) return;
+    
+    setLoading('reset');
+    try {
+      const res = await fetch('/api/dev/reset', { method: 'POST' });
+      if (res.ok) {
+        setIsOpen(false);
+        router.push('/onboarding');
+        router.refresh();
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Delete your account? This cannot be undone.')) return;
+    
+    setLoading('delete');
+    try {
+      const res = await fetch('/api/dev/delete', { method: 'POST' });
+      if (res.ok) {
+        await supabase.auth.signOut();
+        router.push('/');
+        router.refresh();
+      }
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -87,12 +120,43 @@ export function ProfileButton() {
               </button>
             </div>
 
+            {/* Dev Tools */}
+            <div className="py-1 border-t border-muted">
+              <p className="px-4 py-1 text-xs text-foreground-subtle">Dev</p>
+              <button
+                onClick={handleReset}
+                disabled={loading !== null}
+                className="
+                  w-full px-4 py-2 text-left text-sm
+                  text-yellow-400 hover:text-yellow-300
+                  hover:bg-background-tertiary
+                  transition-colors duration-150
+                  disabled:opacity-50
+                "
+              >
+                {loading === 'reset' ? 'Resetting...' : '↺ Reset Data'}
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={loading !== null}
+                className="
+                  w-full px-4 py-2 text-left text-sm
+                  text-red-400 hover:text-red-300
+                  hover:bg-background-tertiary
+                  transition-colors duration-150
+                  disabled:opacity-50
+                "
+              >
+                {loading === 'delete' ? 'Deleting...' : '✕ Delete Account'}
+              </button>
+            </div>
+
             <div className="pt-1 border-t border-muted">
               <button
                 onClick={handleSignOut}
                 className="
                   w-full px-4 py-2 text-left text-sm
-                  text-red-400 hover:text-red-300
+                  text-foreground-muted hover:text-foreground
                   hover:bg-background-tertiary
                   transition-colors duration-150
                 "
@@ -106,4 +170,3 @@ export function ProfileButton() {
     </div>
   );
 }
-
