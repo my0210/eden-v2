@@ -6,14 +6,6 @@ interface DomainIndicatorProps {
   items: PlanItem[];
 }
 
-const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
-  heart: 'Heart',
-  muscle: 'Frame',
-  sleep: 'Sleep',
-  metabolism: 'Metab',
-  mind: 'Mind',
-};
-
 // Domain icons matching PlanItemCard
 function DomainIcon({ domain, color, size = 12 }: { domain: Domain; color: string; size?: number }) {
   const iconProps = {
@@ -87,56 +79,45 @@ export function DomainIndicator({ items }: DomainIndicatorProps) {
           const percentage = stats.percentage;
           
           return (
-            <div
-              key={domain}
-              className="flex-1 flex flex-col items-center gap-2"
-            >
-              {/* Icon + Label */}
-              <div className="flex items-center gap-1">
-                <DomainIcon 
-                  domain={domain} 
-                  color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
-                  size={14}
-                />
-                <span 
-                  className="text-[10px] uppercase tracking-wider transition-opacity duration-300 hidden sm:inline"
-                  style={{ 
-                    color: hasItems ? color : 'rgba(255,255,255,0.2)',
-                    opacity: hasItems ? 0.7 : 0.3,
-                  }}
-                >
-                  {DOMAIN_SHORT_LABELS[domain]}
-                </span>
-              </div>
-              
-              {/* Progress bar */}
-              <div 
-                className="w-full h-1.5 rounded-full overflow-hidden transition-all duration-300"
-                style={{ 
-                  backgroundColor: 'rgba(255,255,255,0.08)',
-                }}
-              >
-                <div
-                  className="h-full rounded-full transition-all duration-500 ease-out"
-                  style={{
-                    width: hasItems ? `${Math.max(percentage, 8)}%` : '0%',
-                    backgroundColor: color,
-                    opacity: hasItems ? (percentage > 0 ? 0.4 + (percentage / 100) * 0.6 : 0.2) : 0,
-                    boxShadow: isComplete ? `0 0 8px ${color}` : 'none',
-                  }}
-                />
-              </div>
-
-              {/* Completion count */}
+          <div
+            key={domain}
+            className="flex-1 flex flex-col items-center gap-1.5"
+          >
+            {/* Icon + Count */}
+            <div className="flex items-center gap-1">
+              <DomainIcon 
+                domain={domain} 
+                color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
+                size={14}
+              />
               <span 
-                className="text-[10px] tabular-nums transition-opacity duration-300"
+                className="text-[10px] tabular-nums"
                 style={{ 
-                  color: hasItems ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.15)',
+                  color: hasItems ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
                 }}
               >
                 {stats.completed}/{stats.total}
               </span>
             </div>
+            
+            {/* Progress bar */}
+            <div 
+              className="w-full h-1.5 rounded-full overflow-hidden transition-all duration-300"
+              style={{ 
+                backgroundColor: 'rgba(255,255,255,0.08)',
+              }}
+            >
+              <div
+                className="h-full rounded-full transition-all duration-500 ease-out"
+                style={{
+                  width: hasItems ? `${Math.max(percentage, 8)}%` : '0%',
+                  backgroundColor: color,
+                  opacity: hasItems ? (percentage > 0 ? 0.4 + (percentage / 100) * 0.6 : 0.2) : 0,
+                  boxShadow: isComplete ? `0 0 8px ${color}` : 'none',
+                }}
+              />
+            </div>
+          </div>
           );
         })}
     </div>
