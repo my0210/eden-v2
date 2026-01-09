@@ -90,17 +90,12 @@ export function ProfileButton() {
 
           {/* Menu - fixed position, always on top */}
           <div 
-            className="
-              fixed z-[9999]
-              w-48 py-2
-              bg-[#0a0a0a] 
-              border border-white/10 rounded-xl
-              shadow-2xl
-              animate-fade-in
-            "
+            className="fixed w-48 py-2 border border-white/10 rounded-xl shadow-2xl animate-fade-in"
             style={{
               top: menuPosition.top,
               left: menuPosition.left,
+              zIndex: 9999,
+              backgroundColor: '#0a0a0a',
             }}
           >
             <div className="px-4 py-3 border-b border-white/10">
