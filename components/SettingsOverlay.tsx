@@ -29,14 +29,15 @@ const DENSITY_OPTIONS = [
 ] as const;
 
 const FORMALITY_OPTIONS = [
-  { value: 'casual', label: 'Casual' },
-  { value: 'professional', label: 'Pro' },
-  { value: 'clinical', label: 'Clinical' },
+  { value: 'casual', label: 'Friendly' },
+  { value: 'professional', label: 'Coach' },
+  { value: 'clinical', label: 'Medical' },
 ] as const;
 
 export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   const [coachingStyle, setCoachingStyle] = useState<CoachingStyle>(
     initialCoachingStyle || { tone: 'supportive', density: 'balanced', formality: 'professional' }
   );
@@ -62,6 +63,9 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
         .from('user_profiles')
         .update({ coaching_style: style })
         .eq('id', user.id);
+      // Show saved indicator
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
     } catch (e) {
       console.error('Failed to save style:', e);
     }
@@ -199,9 +203,16 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
             <div className="space-y-5">
               {/* Coaching Style */}
               <div className="space-y-3">
-                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                  Coaching Style
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                    Coaching Style
+                  </h3>
+                  {saved && (
+                    <span className="text-xs text-green-400/80 animate-pulse">
+                      Saved
+                    </span>
+                  )}
+                </div>
                 
                 <div className="space-y-2">
                   <div>
@@ -223,7 +234,7 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
                   </div>
                   
                   <div>
-                    <label className="text-xs text-white/50 mb-1.5 block">Style</label>
+                    <label className="text-xs text-white/50 mb-1.5 block">Voice</label>
                     <SegmentedControl 
                       options={FORMALITY_OPTIONS} 
                       value={coachingStyle.formality}
