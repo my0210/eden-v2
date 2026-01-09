@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { PlanItem, Domain, DOMAINS, DOMAIN_COLORS, DOMAIN_LABELS } from '@/lib/types';
 
 interface WeekHeaderProps {
@@ -59,6 +59,22 @@ function DomainIcon({ domain, color, size = 14 }: { domain: Domain; color: strin
 
 export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) {
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [needsExpand, setNeedsExpand] = useState(false);
+  const textRef = useRef<HTMLParagraphElement>(null);
+
+  // Check if text is truncated and needs expand button
+  useEffect(() => {
+    if (textRef.current) {
+      const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
+      setNeedsExpand(isOverflowing);
+    }
+  }, [selectedDomain, edenIntro, domainIntros]);
+
+  // Reset expanded state when domain changes
+  useEffect(() => {
+    setIsExpanded(false);
+  }, [selectedDomain]);
 
   // Calculate stats for each domain
   const domainStats = DOMAINS.reduce((acc, domain) => {
@@ -166,13 +182,12 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
       {/* Intro Section - BELOW domains (content changes based on selection) */}
       <div className="px-6">
         <div 
-          className="rounded-xl p-4 transition-all duration-300 overflow-hidden"
+          className="rounded-xl p-4 transition-all duration-300"
           style={{ 
             backgroundColor: 'rgba(255,255,255,0.03)',
             borderColor: selectedDomain ? DOMAIN_COLORS[selectedDomain] : 'rgba(255,255,255,0.06)',
             borderWidth: '1px',
             borderStyle: 'solid',
-            height: '120px', // Fixed height prevents jumping
           }}
         >
           {/* Header row */}
@@ -207,10 +222,25 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
             )}
           </div>
           
-          {/* Intro text - scrollable if overflow */}
-          <p className="text-sm text-foreground/50 leading-relaxed overflow-y-auto" style={{ maxHeight: '70px' }}>
+          {/* Intro text with expand/collapse */}
+          <p 
+            ref={textRef}
+            className={`text-sm text-foreground/50 leading-relaxed transition-all duration-300 ${
+              isExpanded ? '' : 'line-clamp-3'
+            }`}
+          >
             {currentIntro}
           </p>
+          
+          {/* Read more/less button */}
+          {(needsExpand || isExpanded) && (
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="text-xs text-foreground/30 hover:text-foreground/50 mt-2 transition-colors"
+            >
+              {isExpanded ? '← Less' : 'More →'}
+            </button>
+          )}
         </div>
       </div>
     </div>
