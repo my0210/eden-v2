@@ -77,23 +77,8 @@ export function DomainIndicator({ items }: DomainIndicatorProps) {
     return acc;
   }, {} as Record<Domain, { total: number; completed: number; percentage: number }>);
 
-  const totalItems = items.length;
-  const totalCompleted = items.filter(item => item.status === 'done').length;
-
   return (
-    <div className="space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-foreground/40 uppercase tracking-wider">
-          Weekly balance
-        </span>
-        <span className="text-xs text-foreground/30">
-          {totalCompleted}/{totalItems} done
-        </span>
-      </div>
-
-      {/* Domain progress bars */}
-      <div className="flex items-stretch gap-2 w-full">
+    <div className="flex items-stretch gap-2 w-full">
         {DOMAINS.map(domain => {
           const stats = domainStats[domain];
           const color = DOMAIN_COLORS[domain];
@@ -154,7 +139,6 @@ export function DomainIndicator({ items }: DomainIndicatorProps) {
             </div>
           );
         })}
-      </div>
     </div>
   );
 }
