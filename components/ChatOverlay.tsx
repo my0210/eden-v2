@@ -43,6 +43,22 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     }
   }, [isOpen]);
 
+  // Listen for "Ask Eden about item" events
+  useEffect(() => {
+    const handleAskAboutItem = (e: CustomEvent<{ question: string }>) => {
+      setIsOpen(true);
+      // Send the question after a short delay for the drawer to open
+      setTimeout(() => {
+        handleSend(e.detail.question);
+      }, 400);
+    };
+
+    window.addEventListener('eden:askAboutItem', handleAskAboutItem as EventListener);
+    return () => {
+      window.removeEventListener('eden:askAboutItem', handleAskAboutItem as EventListener);
+    };
+  }, []);
+
   const handleSend = async (messageText?: string) => {
     const text = messageText || input.trim();
     if (!text || isLoading) return;

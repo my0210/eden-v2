@@ -111,6 +111,15 @@ export default async function WeekPage({
         <div className="w-9" /> {/* Spacer for balance */}
       </header>
 
+      {/* Eden's Week Intro - ABOVE week strip */}
+      {weeklyPlan?.edenIntro && (
+        <div className="relative z-10 px-6 py-3">
+          <p className="text-sm text-foreground/50 leading-relaxed">
+            {weeklyPlan.edenIntro}
+          </p>
+        </div>
+      )}
+
       {/* Domain Indicator */}
       <div className="relative z-10 px-6 py-2">
         <DomainIndicator items={weeklyPlan?.items || []} />
@@ -130,7 +139,6 @@ export default async function WeekPage({
         <DayView
           date={selectedDate}
           items={dayItems as PlanItem[]}
-          edenIntro={isToday(selectedDate) ? weeklyPlan?.edenIntro : undefined}
           isToday={isToday(selectedDate)}
           isPast={isBefore(selectedDate, today) && !isToday(selectedDate)}
         />

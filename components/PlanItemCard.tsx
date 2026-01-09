@@ -14,6 +14,18 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
 
   const domainColor = DOMAIN_COLORS[item.domain as Domain];
 
+  const handleAskEden = () => {
+    // Dispatch custom event to open chat with item context
+    const event = new CustomEvent('eden:askAboutItem', {
+      detail: {
+        itemTitle: item.title,
+        itemContext: item.personalizationContext,
+        question: `Tell me more about "${item.title}" - why is this in my plan and how should I approach it?`
+      }
+    });
+    window.dispatchEvent(event);
+  };
+
   const handleStatusUpdate = async (newStatus: 'done' | 'skipped') => {
     if (isUpdating) return;
     setIsUpdating(true);
@@ -110,17 +122,30 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
             >
               Skip
             </button>
-            <button
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="
-                ml-auto px-3 py-2 text-sm
-                text-foreground/30
-                hover:text-foreground/50
-                transition-colors
-              "
-            >
-              {showReasoning ? 'Hide' : 'Why?'}
-            </button>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={handleAskEden}
+                className="
+                  px-3 py-2 text-sm
+                  text-foreground/30
+                  hover:text-foreground/50
+                  transition-colors
+                "
+              >
+                Ask Eden
+              </button>
+              <button
+                onClick={() => setShowReasoning(!showReasoning)}
+                className="
+                  px-3 py-2 text-sm
+                  text-foreground/30
+                  hover:text-foreground/50
+                  transition-colors
+                "
+              >
+                {showReasoning ? 'Hide' : 'Why?'}
+              </button>
+            </div>
           </>
         ) : (
           <span className="text-sm text-foreground/30">

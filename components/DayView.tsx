@@ -7,12 +7,11 @@ import { PlanItemCard } from './PlanItemCard';
 interface DayViewProps {
   date: Date;
   items: PlanItem[];
-  edenIntro?: string;
   isToday: boolean;
   isPast: boolean;
 }
 
-export function DayView({ date, items, edenIntro, isToday, isPast }: DayViewProps) {
+export function DayView({ date, items, isToday, isPast }: DayViewProps) {
   const dayOfWeek = date.getDay() as DayOfWeek;
   const dayName = DAY_FULL_LABELS[dayOfWeek];
   
@@ -39,15 +38,6 @@ export function DayView({ date, items, edenIntro, isToday, isPast }: DayViewProp
   return (
     <div className="space-y-6">
       <DayHeader dayName={dayName} date={date} isToday={isToday} />
-
-      {/* Eden's Intro */}
-      {edenIntro && isToday && (
-        <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-          <p className="text-foreground/50 text-sm leading-relaxed">
-            {edenIntro}
-          </p>
-        </div>
-      )}
 
       {/* Items */}
       <div className="space-y-3">
