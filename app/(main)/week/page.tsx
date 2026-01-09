@@ -132,8 +132,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Day View - scrollable content with extra bottom padding for chat */}
-      <div className="relative z-10 flex-1 px-6 py-4 pb-32">
+      {/* Day View - scrollable content */}
+      <div className="relative z-10 flex-1 px-6 py-4 pb-24">
         <DayView
           date={selectedDate}
           items={dayItems as PlanItem[]}
@@ -142,22 +142,23 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Chat Trigger - Fixed at bottom with taller gradient */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pt-8 pb-4 safe-area-bottom bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/95 to-transparent">
+      {/* Chat FAB - Fixed bottom right */}
+      <div className="fixed bottom-6 right-6 z-50 safe-area-bottom">
         <ChatOverlay 
           trigger={
             <button className="
-              w-full px-4 py-3 
-              bg-white/5 border border-white/10 rounded-xl
-              text-foreground/30 text-left
-              hover:bg-white/10 hover:border-white/15
+              w-14 h-14 rounded-full
+              bg-green-500/20 border border-green-500/30
+              text-green-400
+              hover:bg-green-500/30 hover:border-green-500/40 hover:scale-105
+              active:scale-95
               transition-all duration-300
-              flex items-center justify-between
+              flex items-center justify-center
+              shadow-lg shadow-green-500/10
               backdrop-blur-sm
             ">
-              <span>Ask Eden...</span>
               <svg 
-                className="w-5 h-5 text-foreground/20" 
+                className="w-6 h-6" 
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
