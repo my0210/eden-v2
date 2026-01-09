@@ -284,8 +284,9 @@ function CurrentStateStep({ answers, updateAnswers }: StepProps) {
       <div>
         <input
           type="text"
-          value={(answers.healthConditions || []).join(', ')}
+          value={answers.healthConditionsRaw ?? (answers.healthConditions || []).join(', ')}
           onChange={(e) => updateAnswers({ 
+            healthConditionsRaw: e.target.value,
             healthConditions: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
           })}
           placeholder="Any health conditions? (optional)"
@@ -293,7 +294,7 @@ function CurrentStateStep({ answers, updateAnswers }: StepProps) {
             w-full px-4 py-4
             bg-white/5 border border-white/10 rounded-xl
             text-foreground placeholder:text-foreground/30
-            focus:outline-none focus:border-white/20
+            focus:outline-none focus:border-green-500/50
             transition-colors
           "
         />

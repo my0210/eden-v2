@@ -236,6 +236,7 @@ export interface OnboardingAnswers {
   sleepQuality?: 'poor' | 'fair' | 'good' | 'excellent';
   sleepDuration?: number;
   healthConditions?: string[];
+  healthConditionsRaw?: string;
   
   // Step 3: Constraints
   workSchedule?: string;
