@@ -101,16 +101,42 @@ export async function POST(request: Request) {
       chatResponse = await generateJSON<ChatResponse>(messages, {
         model: 'instant', // Use fast model for chat
         temperature: 0.7,
+        maxTokens: 2048,
       });
-    } catch {
-      // Fallback to text response if JSON parsing fails
-      chatResponse = {
-        response: "I'm having trouble responding right now. Please try again.",
-        suggestedPrompts: [
-          "Can you help me with my plan?",
-          "What should I focus on today?",
-        ],
-      };
+      
+      // Validate response structure
+      if (!chatResponse.response || typeof chatResponse.response !== 'string') {
+        throw new Error('Invalid response structure');
+      }
+    } catch (err) {
+      console.error('[Chat] JSON generation failed:', err);
+      
+      // Fallback: try plain text completion
+      try {
+        const { generateCompletion } = await import('@/lib/ai/provider');
+        const plainResponse = await generateCompletion(messages, {
+          model: 'instant',
+          temperature: 0.7,
+          maxTokens: 1024,
+        });
+        
+        chatResponse = {
+          response: plainResponse,
+          suggestedPrompts: [
+            "Can you help me with my plan?",
+            "What should I focus on today?",
+          ],
+        };
+      } catch (fallbackErr) {
+        console.error('[Chat] Fallback also failed:', fallbackErr);
+        chatResponse = {
+          response: "I'm having trouble responding right now. Please try again.",
+          suggestedPrompts: [
+            "Can you help me with my plan?",
+            "What should I focus on today?",
+          ],
+        };
+      }
     }
 
     // Save conversation
