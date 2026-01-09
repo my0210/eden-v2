@@ -144,12 +144,23 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                   }
                 `}
               >
-                {/* Icon only */}
-                <DomainIcon 
-                  domain={domain} 
-                  color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
-                  size={14}
-                />
+                {/* Icon + Name */}
+                <div className="flex items-center gap-1">
+                  <DomainIcon 
+                    domain={domain} 
+                    color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
+                    size={12}
+                  />
+                  <span 
+                    className="text-[9px] uppercase tracking-wide font-medium"
+                    style={{ 
+                      color: hasItems ? color : 'rgba(255,255,255,0.25)',
+                      opacity: hasItems ? 0.8 : 0.4,
+                    }}
+                  >
+                    {DOMAIN_LABELS[domain] === 'Metabolism' ? 'Metab' : DOMAIN_LABELS[domain]}
+                  </span>
+                </div>
                 
                 {/* Progress bar with count overlay */}
                 <div 
