@@ -144,39 +144,37 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                   }
                 `}
               >
-                {/* Icon + Count */}
-                <div className="flex items-center gap-1">
-                  <DomainIcon 
-                    domain={domain} 
-                    color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
-                    size={14}
-                  />
-                  <span 
-                    className="text-[10px] tabular-nums"
-                    style={{ 
-                      color: hasItems ? 'rgba(255,255,255,0.4)' : 'rgba(255,255,255,0.2)',
-                    }}
-                  >
-                    {stats.completed}/{stats.total}
-                  </span>
-                </div>
+                {/* Icon only */}
+                <DomainIcon 
+                  domain={domain} 
+                  color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
+                  size={14}
+                />
                 
-                {/* Progress bar */}
+                {/* Progress bar with count overlay */}
                 <div 
-                  className="w-full h-1.5 rounded-full overflow-hidden transition-all duration-300"
+                  className="relative w-full h-4 rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center"
                   style={{ 
                     backgroundColor: 'rgba(255,255,255,0.08)',
                   }}
                 >
                   <div
-                    className="h-full rounded-full transition-all duration-500 ease-out"
+                    className="absolute inset-0 rounded-full transition-all duration-500 ease-out"
                     style={{
                       width: hasItems ? `${Math.max(percentage, 8)}%` : '0%',
                       backgroundColor: color,
-                      opacity: hasItems ? (percentage > 0 ? 0.4 + (percentage / 100) * 0.6 : 0.2) : 0,
+                      opacity: hasItems ? (percentage > 0 ? 0.3 + (percentage / 100) * 0.5 : 0.15) : 0,
                       boxShadow: isComplete ? `0 0 8px ${color}` : 'none',
                     }}
                   />
+                  <span 
+                    className="relative z-10 text-[9px] tabular-nums font-medium"
+                    style={{ 
+                      color: hasItems ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)',
+                    }}
+                  >
+                    {stats.completed}/{stats.total}
+                  </span>
                 </div>
               </button>
             );
