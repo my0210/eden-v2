@@ -103,14 +103,14 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
       </Drawer.Trigger>
 
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+        <Drawer.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-xl z-[100]" />
         
-        <Drawer.Content className="fixed inset-0 z-[101] flex flex-col bg-[#0a0a0a]">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+        <Drawer.Content className="fixed inset-0 z-[101] flex flex-col pointer-events-none">
+          {/* Header - floating */}
+          <div className="flex items-center justify-between px-4 py-4 pointer-events-auto">
             <Drawer.Close asChild>
               <button
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-foreground/60 hover:bg-white/10 transition-colors"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/70 hover:bg-black/60 transition-colors"
                 aria-label="Close settings"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -119,115 +119,117 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
               </button>
             </Drawer.Close>
             
-            <Drawer.Title className="text-lg font-light text-foreground/60">
+            <Drawer.Title className="text-lg font-light text-foreground/70">
               Settings
             </Drawer.Title>
             
             <div className="w-10" />
           </div>
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-8">
-            
-            {/* Coaching Style Section */}
-            <section>
-              <h3 className="text-sm font-medium text-foreground/40 uppercase tracking-wider mb-4">
-                Coaching Style
-              </h3>
+          {/* Content - scrollable glass container */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 pointer-events-auto">
+            <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl p-4 space-y-6">
               
-              {/* Tone */}
-              <div className="mb-6">
-                <label className="text-sm text-foreground/60 mb-3 block">Tone</label>
-                <div className="space-y-2">
-                  {TONE_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleStyleChange('tone', option.value)}
-                      className={`
-                        w-full px-4 py-3 rounded-xl text-left transition-all
-                        ${coachingStyle.tone === option.value 
-                          ? 'bg-green-500/20 border border-green-500/30' 
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                        }
-                      `}
-                    >
-                      <span className="text-sm text-foreground/80">{option.label}</span>
-                      <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
-                    </button>
-                  ))}
+              {/* Coaching Style Section */}
+              <section>
+                <h3 className="text-sm font-medium text-foreground/50 uppercase tracking-wider mb-4">
+                  Coaching Style
+                </h3>
+                
+                {/* Tone */}
+                <div className="mb-5">
+                  <label className="text-sm text-foreground/60 mb-3 block">Tone</label>
+                  <div className="space-y-2">
+                    {TONE_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleStyleChange('tone', option.value)}
+                        className={`
+                          w-full px-4 py-3 rounded-xl text-left transition-all
+                          ${coachingStyle.tone === option.value 
+                            ? 'bg-green-500/20 border border-green-500/40' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                          }
+                        `}
+                      >
+                        <span className="text-sm text-foreground/80">{option.label}</span>
+                        <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Density */}
-              <div className="mb-6">
-                <label className="text-sm text-foreground/60 mb-3 block">Detail Level</label>
-                <div className="space-y-2">
-                  {DENSITY_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleStyleChange('density', option.value)}
-                      className={`
-                        w-full px-4 py-3 rounded-xl text-left transition-all
-                        ${coachingStyle.density === option.value 
-                          ? 'bg-green-500/20 border border-green-500/30' 
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                        }
-                      `}
-                    >
-                      <span className="text-sm text-foreground/80">{option.label}</span>
-                      <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
-                    </button>
-                  ))}
+                {/* Density */}
+                <div className="mb-5">
+                  <label className="text-sm text-foreground/60 mb-3 block">Detail Level</label>
+                  <div className="space-y-2">
+                    {DENSITY_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleStyleChange('density', option.value)}
+                        className={`
+                          w-full px-4 py-3 rounded-xl text-left transition-all
+                          ${coachingStyle.density === option.value 
+                            ? 'bg-green-500/20 border border-green-500/40' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                          }
+                        `}
+                      >
+                        <span className="text-sm text-foreground/80">{option.label}</span>
+                        <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
 
-              {/* Formality */}
-              <div className="mb-6">
-                <label className="text-sm text-foreground/60 mb-3 block">Communication Style</label>
-                <div className="space-y-2">
-                  {FORMALITY_OPTIONS.map(option => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleStyleChange('formality', option.value)}
-                      className={`
-                        w-full px-4 py-3 rounded-xl text-left transition-all
-                        ${coachingStyle.formality === option.value 
-                          ? 'bg-green-500/20 border border-green-500/30' 
-                          : 'bg-white/5 border border-white/10 hover:bg-white/10'
-                        }
-                      `}
-                    >
-                      <span className="text-sm text-foreground/80">{option.label}</span>
-                      <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
-                    </button>
-                  ))}
+                {/* Formality */}
+                <div>
+                  <label className="text-sm text-foreground/60 mb-3 block">Communication Style</label>
+                  <div className="space-y-2">
+                    {FORMALITY_OPTIONS.map(option => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleStyleChange('formality', option.value)}
+                        className={`
+                          w-full px-4 py-3 rounded-xl text-left transition-all
+                          ${coachingStyle.formality === option.value 
+                            ? 'bg-green-500/20 border border-green-500/40' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10'
+                          }
+                        `}
+                      >
+                        <span className="text-sm text-foreground/80">{option.label}</span>
+                        <span className="text-xs text-foreground/40 ml-2">· {option.desc}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* Account Section */}
-            <section>
-              <h3 className="text-sm font-medium text-foreground/40 uppercase tracking-wider mb-4">
-                Account
-              </h3>
-              
-              <div className="space-y-2">
+              <div className="border-t border-white/10" />
+
+              {/* Account Section */}
+              <section>
+                <h3 className="text-sm font-medium text-foreground/50 uppercase tracking-wider mb-4">
+                  Account
+                </h3>
+                
                 <button
                   onClick={handleSignOut}
                   className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 text-left text-sm text-foreground/60 hover:bg-white/10 transition-all"
                 >
                   Sign Out
                 </button>
-              </div>
-            </section>
+              </section>
 
-            {/* Dev Section */}
-            <section>
-              <h3 className="text-sm font-medium text-foreground/40 uppercase tracking-wider mb-4">
-                Developer
-              </h3>
-              
-              <div className="space-y-2">
+              <div className="border-t border-white/10" />
+
+              {/* Dev Section */}
+              <section>
+                <h3 className="text-sm font-medium text-foreground/50 uppercase tracking-wider mb-4">
+                  Developer
+                </h3>
+                
                 <button
                   onClick={handleReset}
                   disabled={loading !== null}
@@ -235,17 +237,17 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
                 >
                   {loading === 'reset' ? 'Resetting...' : '↺ Reset All Data'}
                 </button>
-              </div>
-            </section>
+              </section>
+            </div>
           </div>
 
-          {/* Save Button */}
+          {/* Save Button - floating */}
           {hasChanges && (
-            <div className="px-4 py-4 border-t border-white/10 safe-area-bottom bg-[#0a0a0a]">
+            <div className="px-4 pb-4 safe-area-bottom pointer-events-auto">
               <button
                 onClick={handleSave}
                 disabled={loading !== null}
-                className="w-full py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 font-medium hover:bg-green-500/30 transition-all disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-green-500/30 backdrop-blur-md border border-green-500/40 text-green-400 font-medium hover:bg-green-500/40 transition-all disabled:opacity-50"
               >
                 {loading === 'save' ? 'Saving...' : 'Save Changes'}
               </button>

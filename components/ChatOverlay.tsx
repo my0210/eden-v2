@@ -111,14 +111,15 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
       </Drawer.Trigger>
 
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100]" />
+        {/* Blurred backdrop - you can see through it */}
+        <Drawer.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-xl z-[100]" />
         
-        <Drawer.Content className="fixed inset-0 z-[101] flex flex-col bg-[#0a0a0a]">
-          {/* Header */}
-          <div className="flex items-center justify-between px-4 py-4 border-b border-white/10">
+        <Drawer.Content className="fixed inset-0 z-[101] flex flex-col pointer-events-none">
+          {/* Header - floating */}
+          <div className="flex items-center justify-between px-4 py-4 pointer-events-auto">
             <Drawer.Close asChild>
               <button
-                className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-foreground/60 hover:bg-white/10 transition-colors"
+                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/70 hover:bg-black/60 transition-colors"
                 aria-label="Close chat"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -127,25 +128,26 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
               </button>
             </Drawer.Close>
             
-            <Drawer.Title className="text-lg font-light text-foreground/60">
-              eden
-            </Drawer.Title>
+            <Drawer.Title className="sr-only">Chat with Eden</Drawer.Title>
             
-            <div className="w-10" /> {/* Spacer */}
+            {/* History button placeholder */}
+            <button
+              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/70 hover:bg-black/60 transition-colors"
+              aria-label="Chat history"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+              </svg>
+            </button>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6">
+          {/* Messages Area - scrollable, floating cards */}
+          <div className="flex-1 overflow-y-auto px-4 py-4 pointer-events-auto">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                <div className="w-16 h-16 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mb-6">
-                  <span className="text-2xl text-foreground/40">✦</span>
-                </div>
-                <h3 className="text-lg font-light text-foreground/60 mb-2">
-                  Ask Eden anything
-                </h3>
-                <p className="text-sm text-foreground/30 max-w-xs">
-                  Questions about your plan, adjustments, or health guidance
+                {/* Empty state - subtle */}
+                <p className="text-foreground/30 text-sm">
+                  Ask Eden anything about your plan
                 </p>
               </div>
             ) : (
@@ -155,11 +157,8 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
                 ))}
                 
                 {isLoading && (
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xs text-green-400">E</span>
-                    </div>
-                    <div className="bg-white/5 border border-white/10 rounded-2xl rounded-tl-sm px-4 py-3">
+                  <div className="flex justify-start">
+                    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3">
                       <div className="flex gap-1">
                         <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                         <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -174,18 +173,30 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
             )}
           </div>
 
-          {/* Suggested Prompts */}
+          {/* Suggested Prompts - floating above input */}
           {suggestedPrompts.length > 0 && !isLoading && (
-            <SuggestedPrompts 
-              prompts={suggestedPrompts} 
-              onSelect={handlePromptClick} 
-            />
+            <div className="px-4 pb-2 pointer-events-auto">
+              <SuggestedPrompts 
+                prompts={suggestedPrompts} 
+                onSelect={handlePromptClick} 
+              />
+            </div>
           )}
 
-          {/* Input Area */}
-          <div className="px-4 py-4 border-t border-white/10 safe-area-bottom bg-[#0a0a0a]">
+          {/* Input Area - floating at bottom */}
+          <div className="px-4 pt-2 pb-4 safe-area-bottom pointer-events-auto">
             <div className="flex items-end gap-3">
-              <div className="flex-1">
+              {/* Plus button like Bevel */}
+              <button
+                className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/50 hover:bg-black/60 transition-colors flex-shrink-0"
+                aria-label="Add attachment"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+              </button>
+              
+              <div className="flex-1 relative">
                 <textarea
                   ref={inputRef}
                   value={input}
@@ -195,8 +206,8 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
                   disabled={isLoading}
                   rows={1}
                   className="
-                    w-full px-4 py-3 
-                    bg-white/5 border border-white/10 rounded-xl
+                    w-full px-4 py-3 pr-12
+                    bg-black/40 backdrop-blur-md border border-white/10 rounded-full
                     text-foreground placeholder:text-foreground/30
                     resize-none overflow-hidden
                     focus:outline-none focus:border-white/20
@@ -205,32 +216,28 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
                   "
                   style={{ minHeight: '48px', maxHeight: '120px' }}
                 />
-              </div>
-              
-              <button
-                onClick={() => handleSend()}
-                disabled={!input.trim() || isLoading}
-                className="
-                  w-12 h-12 rounded-xl
-                  bg-white/10 border border-white/10
-                  hover:bg-white/15 hover:border-white/20
-                  disabled:opacity-30
-                  text-foreground/60
-                  transition-all duration-300
-                  flex items-center justify-center
-                  flex-shrink-0
-                "
-                aria-label="Send message"
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  viewBox="0 0 24 24" 
-                  fill="currentColor" 
-                  className="w-5 h-5"
+                
+                {/* Send button inside input */}
+                <button
+                  onClick={() => handleSend()}
+                  disabled={!input.trim() || isLoading}
+                  className="
+                    absolute right-2 top-1/2 -translate-y-1/2
+                    w-8 h-8 rounded-full
+                    bg-white/10
+                    hover:bg-white/20
+                    disabled:opacity-0
+                    text-foreground/60
+                    transition-all duration-200
+                    flex items-center justify-center
+                  "
+                  aria-label="Send message"
                 >
-                  <path d="M3.478 2.405a.75.75 0 00-.926.94l2.432 7.905H13.5a.75.75 0 010 1.5H4.984l-2.432 7.905a.75.75 0 00.926.94 60.519 60.519 0 0018.445-8.986.75.75 0 000-1.218A60.517 60.517 0 003.478 2.405z" />
-                </svg>
-              </button>
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </Drawer.Content>
