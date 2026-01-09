@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
 const PERSONALIZATION_MESSAGES = [
   'Analyzing your goals...',
@@ -14,15 +15,30 @@ const PERSONALIZATION_MESSAGES = [
   'Finalizing your plan...',
 ];
 
-export default function GeneratingPage() {
+const REGENERATION_MESSAGES = [
+  'Re-analyzing your progress...',
+  'Reviewing what worked...',
+  'Adjusting for your feedback...',
+  'Rebalancing the five domains...',
+  'Optimizing your new protocol...',
+  'Crafting fresh recommendations...',
+  'Personalizing your week...',
+  'Finalizing your plan...',
+];
+
+function GeneratingContent() {
   const [messageIndex, setMessageIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isRegenerate = searchParams.get('regenerate') === 'true';
+  
+  const messages = isRegenerate ? REGENERATION_MESSAGES : PERSONALIZATION_MESSAGES;
 
   useEffect(() => {
     // Cycle through messages
     const messageInterval = setInterval(() => {
-      setMessageIndex(prev => (prev + 1) % PERSONALIZATION_MESSAGES.length);
+      setMessageIndex(prev => (prev + 1) % messages.length);
     }, 2000);
 
     // Generate the plan
@@ -36,7 +52,7 @@ export default function GeneratingPage() {
       const response = await fetch('/api/plan/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({ forceRegenerate: isRegenerate }),
       });
 
       if (!response.ok) {
@@ -123,12 +139,12 @@ export default function GeneratingPage() {
               key={messageIndex}
               className="text-foreground/50 text-lg animate-fade-in"
             >
-              {PERSONALIZATION_MESSAGES[messageIndex]}
+              {messages[messageIndex]}
             </p>
 
             {/* Subtle helper text */}
             <p className="text-foreground/20 text-sm">
-              Creating your personalized protocol
+              {isRegenerate ? 'Regenerating your protocol' : 'Creating your personalized protocol'}
             </p>
           </div>
         )}
@@ -137,3 +153,14 @@ export default function GeneratingPage() {
   );
 }
 
+export default function GeneratingPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-foreground/30">Loading...</div>
+      </div>
+    }>
+      <GeneratingContent />
+    </Suspense>
+  );
+}

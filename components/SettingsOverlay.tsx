@@ -113,20 +113,9 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
   const handleRegeneratePlan = async () => {
     if (!confirm('Regenerate your weekly plan? This will replace your current plan for this week.')) return;
     
-    setLoading('regenerate');
-    try {
-      const res = await fetch('/api/plan/generate', { 
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ forceRegenerate: true }),
-      });
-      if (res.ok) {
-        setIsOpen(false);
-        router.refresh();
-      }
-    } finally {
-      setLoading(null);
-    }
+    setIsOpen(false);
+    // Navigate to generating page with regenerate flag
+    router.push('/generating?regenerate=true');
   };
 
   const SegmentedControl = ({ 
