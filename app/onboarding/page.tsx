@@ -78,7 +78,8 @@ export default function OnboardingPage() {
 
       if (error) throw error;
 
-      router.push('/week');
+      // Redirect to generation page for personalized loading experience
+      router.push('/generating');
       router.refresh();
     } catch (error) {
       console.error('Error saving profile:', error);
