@@ -75,10 +75,10 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
     ? domainIntros[selectedDomain] || `No specific focus for ${DOMAIN_LABELS[selectedDomain]} this week.`
     : edenIntro;
 
-  // Get current label
-  const currentLabel = selectedDomain 
+  // Get current header
+  const currentHeader = selectedDomain 
     ? DOMAIN_LABELS[selectedDomain]
-    : null;
+    : "This week's protocol";
 
   const handleDomainClick = (domain: Domain) => {
     if (selectedDomain === domain) {
@@ -90,39 +90,9 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
 
   return (
     <div className="space-y-3">
-      {/* Intro Text */}
-      <div className="px-6 py-3">
-        {selectedDomain && (
-          <div className="flex items-center gap-2 mb-2">
-            <DomainIcon 
-              domain={selectedDomain} 
-              color={DOMAIN_COLORS[selectedDomain]} 
-              size={16} 
-            />
-            <span 
-              className="text-xs font-medium uppercase tracking-wider"
-              style={{ color: DOMAIN_COLORS[selectedDomain] }}
-            >
-              {currentLabel}
-            </span>
-            <button
-              onClick={() => setSelectedDomain(null)}
-              className="ml-auto text-foreground/30 hover:text-foreground/50 transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-        <p className="text-sm text-foreground/50 leading-relaxed transition-all duration-300">
-          {currentIntro}
-        </p>
-      </div>
-
-      {/* Domain Indicator */}
-      <div className="px-6 py-2">
-        <div className="flex items-stretch gap-2 w-full">
+      {/* Domain Progress Row - FIRST (clickable) */}
+      <div className="px-6">
+        <div className="flex items-stretch gap-1.5 w-full">
           {DOMAINS.map(domain => {
             const stats = domainStats[domain];
             const color = DOMAIN_COLORS[domain];
@@ -136,8 +106,8 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                 key={domain}
                 onClick={() => handleDomainClick(domain)}
                 className={`
-                  flex-1 flex flex-col items-center gap-1.5
-                  py-2 rounded-lg transition-all duration-300
+                  flex-1 flex flex-col items-center gap-1
+                  py-1.5 px-1 rounded-lg transition-all duration-300
                   ${isSelected 
                     ? 'bg-white/10 ring-1 ring-white/20' 
                     : 'hover:bg-white/5'
@@ -145,14 +115,14 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                 `}
               >
                 {/* Icon + Name */}
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <DomainIcon 
                     domain={domain} 
                     color={hasItems ? color : 'rgba(255,255,255,0.25)'} 
-                    size={12}
+                    size={11}
                   />
                   <span 
-                    className="text-[9px] uppercase tracking-wide font-medium"
+                    className="text-[8px] uppercase tracking-wide font-medium"
                     style={{ 
                       color: hasItems ? color : 'rgba(255,255,255,0.25)',
                       opacity: hasItems ? 0.8 : 0.4,
@@ -164,7 +134,7 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                 
                 {/* Progress bar with count overlay */}
                 <div 
-                  className="relative w-full h-4 rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center"
+                  className="relative w-full h-3.5 rounded-full overflow-hidden transition-all duration-300 flex items-center justify-center"
                   style={{ 
                     backgroundColor: 'rgba(255,255,255,0.08)',
                   }}
@@ -179,7 +149,7 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                     }}
                   />
                   <span 
-                    className="relative z-10 text-[9px] tabular-nums font-medium"
+                    className="relative z-10 text-[8px] tabular-nums font-medium"
                     style={{ 
                       color: hasItems ? 'rgba(255,255,255,0.6)' : 'rgba(255,255,255,0.25)',
                     }}
@@ -192,7 +162,57 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
           })}
         </div>
       </div>
+
+      {/* Intro Section - BELOW domains (content changes based on selection) */}
+      <div className="px-6">
+        <div 
+          className="rounded-xl p-4 transition-all duration-300"
+          style={{ 
+            backgroundColor: 'rgba(255,255,255,0.03)',
+            borderColor: selectedDomain ? DOMAIN_COLORS[selectedDomain] : 'rgba(255,255,255,0.06)',
+            borderWidth: '1px',
+            borderStyle: 'solid',
+            minHeight: '100px', // Prevents height jumping
+          }}
+        >
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              {selectedDomain && (
+                <DomainIcon 
+                  domain={selectedDomain} 
+                  color={DOMAIN_COLORS[selectedDomain]} 
+                  size={14} 
+                />
+              )}
+              <span 
+                className="text-[10px] font-medium uppercase tracking-wider"
+                style={{ 
+                  color: selectedDomain ? DOMAIN_COLORS[selectedDomain] : 'rgba(255,255,255,0.4)',
+                }}
+              >
+                {currentHeader}
+              </span>
+            </div>
+            {selectedDomain && (
+              <button
+                onClick={() => setSelectedDomain(null)}
+                className="text-foreground/30 hover:text-foreground/50 transition-colors p-1"
+                aria-label="Back to overview"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          
+          {/* Intro text */}
+          <p className="text-sm text-foreground/50 leading-relaxed">
+            {currentIntro}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
-
