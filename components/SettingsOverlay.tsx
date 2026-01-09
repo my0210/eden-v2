@@ -240,7 +240,7 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
             <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
             {/* Developer */}
-            <div className="space-y-3 pb-4">
+            <div className="space-y-3 pb-8">
               <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
                 Developer
               </h3>
@@ -248,16 +248,16 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
               <button
                 onClick={handleReset}
                 disabled={loading !== null}
-                className="w-full py-3 rounded-xl text-sm text-orange-400/70 hover:text-orange-400 transition-colors text-left disabled:opacity-50"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
+                className="w-full py-3 rounded-xl text-sm text-red-400/80 hover:text-red-400 transition-colors text-center disabled:opacity-50"
+                style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.2)' }}
               >
-                <span className="px-4">{loading === 'reset' ? 'Resetting...' : 'Reset All Data'}</span>
+                {loading === 'reset' ? 'Resetting...' : 'Reset All Data & Onboarding'}
               </button>
             </div>
           </div>
 
           {/* Safe area padding */}
-          <div className="safe-area-bottom" />
+          <div className="h-6 safe-area-bottom" />
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
