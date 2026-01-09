@@ -51,7 +51,7 @@ export async function generateCompletion(
       model: MODELS[model],
       messages,
       temperature,
-      max_tokens: maxTokens,
+      max_completion_tokens: maxTokens, // GPT-5.2 uses max_completion_tokens
       response_format: responseFormat === 'json' 
         ? { type: 'json_object' } 
         : { type: 'text' },
@@ -109,7 +109,7 @@ export async function* streamCompletion(
     model: MODELS[model],
     messages,
     temperature,
-    max_tokens: maxTokens,
+    max_completion_tokens: maxTokens, // GPT-5.2 uses max_completion_tokens
     stream: true,
   });
 
