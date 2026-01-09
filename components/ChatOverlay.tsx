@@ -100,11 +100,18 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     }
   };
 
+  const snapPoints = [0.5, 1];
+  const [snap, setSnap] = useState<number | string | null>(1);
+
   return (
     <Drawer.Root 
       open={isOpen} 
       onOpenChange={setIsOpen}
       shouldScaleBackground={false}
+      snapPoints={snapPoints}
+      activeSnapPoint={snap}
+      setActiveSnapPoint={setSnap}
+      fadeFromIndex={0}
     >
       <Drawer.Trigger asChild>
         {trigger}
@@ -123,10 +130,9 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
         
         {/* Sheet content */}
         <Drawer.Content 
-          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none"
+          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none max-h-[97vh]"
           style={{ 
-            height: '92vh',
-            backgroundColor: 'rgba(28, 28, 30, 0.85)',
+            backgroundColor: 'rgba(28, 28, 30, 0.92)',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
             borderTopLeftRadius: '12px',
