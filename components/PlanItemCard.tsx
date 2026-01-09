@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { PlanItem, Domain, DOMAIN_COLORS } from '@/lib/types';
 
 interface PlanItemCardProps {
@@ -58,11 +59,12 @@ function DomainIcon({ domain, color }: { domain: Domain; color: string }) {
 export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
   const [showReasoning, setShowReasoning] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [localStatus, setLocalStatus] = useState(item.status);
+  const router = useRouter();
 
   const domainColor = DOMAIN_COLORS[item.domain as Domain];
 
   const handleAskEden = () => {
-    // Dispatch custom event to open chat with item context
     const event = new CustomEvent('eden:askAboutItem', {
       detail: {
         itemTitle: item.title,
@@ -73,8 +75,12 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
     window.dispatchEvent(event);
   };
 
-  const handleStatusUpdate = async (newStatus: 'done' | 'skipped') => {
+  const handleStatusUpdate = async (newStatus: 'done' | 'skipped' | 'pending') => {
     if (isUpdating) return;
+    
+    // Optimistic update
+    const previousStatus = localStatus;
+    setLocalStatus(newStatus);
     setIsUpdating(true);
 
     try {
@@ -84,26 +90,40 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) throw new Error('Failed to update status');
-      window.location.reload();
+      if (!response.ok) {
+        // Revert on error
+        setLocalStatus(previousStatus);
+        throw new Error('Failed to update status');
+      }
+      
+      // Soft refresh to update progress indicators
+      router.refresh();
     } catch (error) {
       console.error('Error updating item status:', error);
+      setLocalStatus(previousStatus);
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const isComplete = item.status === 'done';
-  const isSkipped = item.status === 'skipped';
+  const isComplete = localStatus === 'done';
+  const isSkipped = localStatus === 'skipped';
+  const isPending = localStatus === 'pending';
+
+  // Different styles based on status
+  const cardClasses = `
+    p-4 rounded-xl 
+    transition-all duration-300
+    ${isComplete 
+      ? 'bg-green-500/5 border border-green-500/20 hover:bg-green-500/10' 
+      : isSkipped 
+        ? 'bg-white/[0.02] border border-white/5 opacity-50' 
+        : 'bg-white/5 border border-white/10 hover:bg-white/[0.07] hover:border-white/15'
+    }
+  `;
 
   return (
-    <div className={`
-      p-4 rounded-xl 
-      bg-white/5 border border-white/10
-      transition-all duration-300
-      hover:bg-white/[0.07] hover:border-white/15
-      ${isComplete || isSkipped ? 'opacity-50' : ''}
-    `}>
+    <div className={cardClasses}>
       {/* Header */}
       <div className="flex items-start gap-3">
         {/* Domain icon */}
@@ -112,14 +132,24 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
         </div>
         
         <div className="flex-1 min-w-0">
-          <h3 className={`
-            font-medium text-foreground/90
-            ${isComplete || isSkipped ? 'line-through text-foreground/40' : ''}
-          `}>
-            {item.title}
-          </h3>
+          <div className="flex items-center gap-2">
+            {isComplete && (
+              <span className="text-green-400/80 text-sm">✓</span>
+            )}
+            <h3 className={`
+              font-medium
+              ${isComplete 
+                ? 'text-foreground/70' 
+                : isSkipped 
+                  ? 'line-through text-foreground/30' 
+                  : 'text-foreground/90'
+              }
+            `}>
+              {item.title}
+            </h3>
+          </div>
 
-          <p className="text-foreground/40 text-sm mt-1">
+          <p className={`text-sm mt-1 ${isSkipped ? 'text-foreground/20' : 'text-foreground/40'}`}>
             {item.durationMinutes && (
               <span className="text-foreground/30">{item.durationMinutes}m · </span>
             )}
@@ -139,7 +169,7 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
 
       {/* Actions */}
       <div className="flex items-center gap-2 mt-4">
-        {item.status === 'pending' ? (
+        {isPending ? (
           <>
             <button
               onClick={() => handleStatusUpdate('done')}
@@ -193,10 +223,61 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
               </button>
             </div>
           </>
+        ) : isComplete ? (
+          <>
+            <button
+              onClick={() => handleStatusUpdate('pending')}
+              disabled={isUpdating}
+              className="
+                px-3 py-1.5 rounded-lg text-xs
+                text-foreground/40
+                hover:text-foreground/60 hover:bg-white/5
+                disabled:opacity-50
+                transition-all duration-300
+              "
+            >
+              Undo
+            </button>
+            <div className="ml-auto flex items-center gap-1">
+              <button
+                onClick={handleAskEden}
+                className="
+                  px-3 py-2 text-sm
+                  text-foreground/30
+                  hover:text-foreground/50
+                  transition-colors
+                "
+              >
+                Ask Eden
+              </button>
+              <button
+                onClick={() => setShowReasoning(!showReasoning)}
+                className="
+                  px-3 py-2 text-sm
+                  text-foreground/30
+                  hover:text-foreground/50
+                  transition-colors
+                "
+              >
+                {showReasoning ? 'Hide' : 'Why?'}
+              </button>
+            </div>
+          </>
         ) : (
-          <span className="text-sm text-foreground/30">
-            {isComplete ? '✓ Done' : 'Skipped'}
-          </span>
+          // Skipped state - minimal, just undo
+          <button
+            onClick={() => handleStatusUpdate('pending')}
+            disabled={isUpdating}
+            className="
+              px-3 py-1.5 rounded-lg text-xs
+              text-foreground/30
+              hover:text-foreground/50 hover:bg-white/5
+              disabled:opacity-50
+              transition-all duration-300
+            "
+          >
+            Undo skip
+          </button>
         )}
       </div>
     </div>
