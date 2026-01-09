@@ -129,7 +129,7 @@ export default function OnboardingPage() {
       </main>
 
       {/* Navigation */}
-      <footer className="relative z-10 px-6 py-6 safe-area-bottom">
+      <footer className="relative z-10 px-6 pt-4 pb-6 safe-area-bottom bg-[#0a0a0a]">
         <div className="max-w-md mx-auto flex gap-3">
           {currentStep > 1 && (
             <button

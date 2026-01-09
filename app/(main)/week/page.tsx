@@ -136,7 +136,7 @@ export default async function WeekPage({
       </div>
 
       {/* Chat Input */}
-      <div className="relative z-10 px-6 py-4 safe-area-bottom">
+      <div className="relative z-10 px-6 pt-4 pb-6 safe-area-bottom bg-[#0a0a0a]">
         <ChatInput userId={user.id} />
       </div>
     </div>
