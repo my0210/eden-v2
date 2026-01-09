@@ -5,6 +5,7 @@ import { DayView } from '@/components/DayView';
 import { ChatInput } from '@/components/ChatInput';
 import { ProfileButton } from '@/components/ProfileButton';
 import { DomainIndicator } from '@/components/DomainIndicator';
+import { PlanGenerator } from '@/components/PlanGenerator';
 import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek } from '@/lib/types';
 
 export default async function WeekPage({
@@ -139,6 +140,9 @@ export default async function WeekPage({
       <div className="relative z-10 px-6 pt-4 pb-6 safe-area-bottom bg-[#0a0a0a]">
         <ChatInput userId={user.id} />
       </div>
+
+      {/* Auto-generate plan if none exists */}
+      <PlanGenerator hasPlan={!!weeklyPlan} weekStartDate={weekStartStr} />
     </div>
   );
 }

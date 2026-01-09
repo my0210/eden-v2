@@ -49,7 +49,7 @@ export function ProfileButton() {
   };
 
   return (
-    <div className="relative">
+    <div className="relative z-50">
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="
