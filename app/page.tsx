@@ -6,9 +6,7 @@ export default async function LandingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // If user is logged in, redirect to main app
   if (user) {
-    // Check if onboarding is completed
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('onboarding_completed')
@@ -23,113 +21,60 @@ export default async function LandingPage() {
   }
 
   return (
-    <main className="min-h-screen flex flex-col">
-      {/* Hero Section */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-        {/* Logo */}
-        <div className="mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-            <span className="text-3xl font-bold text-white">E</span>
-          </div>
+    <main className="min-h-screen flex flex-col items-center justify-center relative overflow-hidden">
+      {/* Ambient gradient orb */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-[600px] h-[600px]">
+          {/* Primary orb */}
+          <div 
+            className="absolute inset-0 rounded-full opacity-30 blur-[100px] animate-breathe"
+            style={{
+              background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+            }}
+          />
+          {/* Secondary pulse */}
+          <div 
+            className="absolute inset-12 rounded-full opacity-20 blur-[80px] animate-breathe-delayed"
+            style={{
+              background: 'radial-gradient(circle, rgba(52,211,153,0.5) 0%, transparent 60%)',
+            }}
+          />
         </div>
+      </div>
 
-        {/* Headline */}
-        <h1 className="text-4xl md:text-5xl font-bold text-center mb-4 font-[family-name:var(--font-space-grotesk)]">
-          Your AI
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-emerald-500"> Longevity </span>
-          Coach
+      {/* Content */}
+      <div className="relative z-10 flex flex-col items-center px-6 max-w-lg text-center">
+        {/* Wordmark */}
+        <h1 className="text-5xl md:text-6xl font-light tracking-tight mb-6 animate-fade-in-up">
+          eden
         </h1>
 
-        {/* Subheadline */}
-        <p className="text-foreground-muted text-lg md:text-xl text-center max-w-md mb-8">
-          Evidence-based protocols. Personalized for you. 
-          <br />
-          One clear priority at a time.
+        {/* Single line */}
+        <p className="text-foreground-muted text-lg md:text-xl mb-12 animate-fade-in-up-delayed">
+          Your longevity, personalized
         </p>
 
-        {/* Domain Pills */}
-        <div className="flex flex-wrap gap-2 justify-center mb-12 max-w-md">
-          <DomainPill domain="heart" label="Heart" />
-          <DomainPill domain="muscle" label="Muscle" />
-          <DomainPill domain="sleep" label="Sleep" />
-          <DomainPill domain="metabolism" label="Metabolism" />
-          <DomainPill domain="mind" label="Mind" />
-        </div>
-
-        {/* CTA Button */}
-        <div className="w-full max-w-sm">
-          <Link 
-            href="/login" 
-            className="btn btn-primary w-full py-4 text-lg font-semibold"
-          >
-            Get Started
-          </Link>
-        </div>
+        {/* CTA */}
+        <Link 
+          href="/login" 
+          className="
+            px-8 py-4 rounded-full
+            bg-white/10 backdrop-blur-sm
+            border border-white/10
+            text-white text-base font-medium
+            hover:bg-white/15 hover:border-white/20
+            transition-all duration-300
+            animate-fade-in-up-delayed-2
+          "
+        >
+          Begin
+        </Link>
       </div>
 
-      {/* Value Props */}
-      <div className="bg-background-secondary border-t border-default px-6 py-12">
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-xl font-semibold text-center mb-8">
-            Why Eden?
-          </h2>
-          
-          <div className="grid gap-6">
-            <ValueProp 
-              icon="🎯"
-              title="Know what matters most"
-              description="Stop wondering what to focus on. Eden tells you exactly what to do today, this week."
-            />
-            <ValueProp 
-              icon="🧠"
-              title="Personalized to your reality"
-              description="Your schedule, your constraints, your goals. Every recommendation shows why it's for you."
-            />
-            <ValueProp 
-              icon="🔄"
-              title="Adapts when life happens"
-              description="Miss a workout? Eden adjusts. No guilt, no broken streaks. Just smart adaptation."
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Footer */}
-      <footer className="px-6 py-8 text-center text-foreground-subtle text-sm">
-        <p>Eden v2 • Evidence-based longevity coaching</p>
+      {/* Minimal footer */}
+      <footer className="absolute bottom-8 text-foreground-subtle text-xs tracking-wider animate-fade-in">
+        AI-powered health coaching
       </footer>
     </main>
-  );
-}
-
-function DomainPill({ domain, label }: { domain: string; label: string }) {
-  const colors: Record<string, string> = {
-    heart: 'bg-red-500/10 text-red-400 border-red-500/20',
-    muscle: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
-    sleep: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
-    metabolism: 'bg-green-500/10 text-green-400 border-green-500/20',
-    mind: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-  };
-
-  return (
-    <span className={`px-3 py-1 rounded-full text-sm border ${colors[domain]}`}>
-      {label}
-    </span>
-  );
-}
-
-function ValueProp({ icon, title, description }: { 
-  icon: string; 
-  title: string; 
-  description: string;
-}) {
-  return (
-    <div className="flex gap-4">
-      <div className="text-2xl">{icon}</div>
-      <div>
-        <h3 className="font-medium mb-1">{title}</h3>
-        <p className="text-foreground-muted text-sm">{description}</p>
-      </div>
-    </div>
   );
 }
