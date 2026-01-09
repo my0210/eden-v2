@@ -91,7 +91,7 @@ export default async function WeekPage({
   const selectedDate = addDays(weekStart, selectedDay === 0 ? 6 : selectedDay - 1);
 
   return (
-    <div className="min-h-screen flex flex-col relative">
+    <div className="min-h-screen flex flex-col relative pb-24">
       {/* Ambient gradient orb */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-[800px] h-[800px]">
@@ -125,8 +125,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Day View */}
-      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-4">
+      {/* Day View - scrollable content */}
+      <div className="relative z-10 flex-1 px-6 py-4">
         <DayView
           date={selectedDate}
           items={dayItems as PlanItem[]}
@@ -136,8 +136,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Chat Trigger */}
-      <div className="relative z-10 px-6 pt-4 pb-6 safe-area-bottom bg-[#0a0a0a]">
+      {/* Chat Trigger - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pt-3 pb-4 safe-area-bottom bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent">
         <ChatOverlay 
           trigger={
             <button className="
@@ -147,6 +147,7 @@ export default async function WeekPage({
               hover:bg-white/10 hover:border-white/15
               transition-all duration-300
               flex items-center justify-between
+              backdrop-blur-sm
             ">
               <span>Ask Eden...</span>
               <svg 
