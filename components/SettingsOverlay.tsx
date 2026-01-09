@@ -30,7 +30,7 @@ const DENSITY_OPTIONS = [
 
 const FORMALITY_OPTIONS = [
   { value: 'casual', label: 'Casual' },
-  { value: 'professional', label: 'Professional' },
+  { value: 'professional', label: 'Pro' },
   { value: 'clinical', label: 'Clinical' },
 ] as const;
 
@@ -40,7 +40,6 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
   const [coachingStyle, setCoachingStyle] = useState<CoachingStyle>(
     initialCoachingStyle || { tone: 'supportive', density: 'balanced', formality: 'professional' }
   );
-  const [hasChanges, setHasChanges] = useState(false);
   const router = useRouter();
   const supabase = createClient();
 
@@ -52,8 +51,6 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
 
   const handleStyleChange = <K extends keyof CoachingStyle>(key: K, value: CoachingStyle[K]) => {
     setCoachingStyle(prev => ({ ...prev, [key]: value }));
-    setHasChanges(true);
-    // Auto-save
     saveStyle({ ...coachingStyle, [key]: value });
   };
 
@@ -70,8 +67,8 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
     }
   };
 
-  const handleReset = async () => {
-    if (!confirm('Reset all your data? You will go through onboarding again.')) return;
+  const handleResetCoaching = async () => {
+    if (!confirm('Reset coaching data? You will go through onboarding again but keep your account.')) return;
     
     setLoading('reset');
     try {
@@ -79,6 +76,23 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
       if (res.ok) {
         setIsOpen(false);
         router.push('/onboarding');
+        router.refresh();
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!confirm('Delete your entire account? This cannot be undone.')) return;
+    if (!confirm('Are you really sure? All your data will be permanently deleted.')) return;
+    
+    setLoading('delete');
+    try {
+      const res = await fetch('/api/dev/delete', { method: 'POST' });
+      if (res.ok) {
+        setIsOpen(false);
+        router.push('/');
         router.refresh();
       }
     } finally {
@@ -102,7 +116,7 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
     onChange: (value: string) => void;
   }) => (
     <div 
-      className="flex rounded-lg p-1 gap-1"
+      className="flex rounded-lg p-1 gap-0.5"
       style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
     >
       {options.map(option => (
@@ -110,13 +124,13 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
           key={option.value}
           onClick={() => onChange(option.value)}
           className={`
-            flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all
+            flex-1 py-2 px-2 rounded-md text-xs font-medium transition-all
             ${value === option.value 
               ? 'text-white' 
-              : 'text-white/50 hover:text-white/70'
+              : 'text-white/40 hover:text-white/60'
             }
           `}
-          style={value === option.value ? { backgroundColor: 'rgba(255, 255, 255, 0.12)' } : {}}
+          style={value === option.value ? { backgroundColor: 'rgba(255, 255, 255, 0.15)' } : {}}
         >
           {option.label}
         </button>
@@ -141,8 +155,9 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
         />
         
         <Drawer.Content 
-          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none max-h-[85vh]"
+          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none"
           style={{ 
+            maxHeight: '80vh',
             backgroundColor: 'rgba(28, 28, 30, 0.95)',
             backdropFilter: 'blur(40px)',
             WebkitBackdropFilter: 'blur(40px)',
@@ -151,7 +166,7 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
           }}
         >
           {/* Drag handle */}
-          <div className="flex justify-center pt-3 pb-2">
+          <div className="flex justify-center pt-3 pb-2 flex-shrink-0">
             <div 
               className="w-9 h-1 rounded-full"
               style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
@@ -159,7 +174,7 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-3">
+          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
             <Drawer.Title className="text-white/90 text-lg font-medium">
               Settings
             </Drawer.Title>
@@ -177,87 +192,97 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
           </div>
 
           {/* Divider */}
-          <div className="h-px mx-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+          <div className="h-px mx-4 flex-shrink-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
           {/* Scrollable content */}
-          <div className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-            
-            {/* Coaching Style */}
-            <div className="space-y-4">
-              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                Coaching Style
-              </h3>
-              
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">
+            <div className="space-y-5">
+              {/* Coaching Style */}
               <div className="space-y-3">
-                <div>
-                  <label className="text-sm text-white/60 mb-2 block">Tone</label>
-                  <SegmentedControl 
-                    options={TONE_OPTIONS} 
-                    value={coachingStyle.tone}
-                    onChange={(v) => handleStyleChange('tone', v as CoachingStyle['tone'])}
-                  />
-                </div>
+                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                  Coaching Style
+                </h3>
                 
-                <div>
-                  <label className="text-sm text-white/60 mb-2 block">Detail Level</label>
-                  <SegmentedControl 
-                    options={DENSITY_OPTIONS} 
-                    value={coachingStyle.density}
-                    onChange={(v) => handleStyleChange('density', v as CoachingStyle['density'])}
-                  />
-                </div>
-                
-                <div>
-                  <label className="text-sm text-white/60 mb-2 block">Communication</label>
-                  <SegmentedControl 
-                    options={FORMALITY_OPTIONS} 
-                    value={coachingStyle.formality}
-                    onChange={(v) => handleStyleChange('formality', v as CoachingStyle['formality'])}
-                  />
+                <div className="space-y-2">
+                  <div>
+                    <label className="text-xs text-white/50 mb-1.5 block">Tone</label>
+                    <SegmentedControl 
+                      options={TONE_OPTIONS} 
+                      value={coachingStyle.tone}
+                      onChange={(v) => handleStyleChange('tone', v as CoachingStyle['tone'])}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs text-white/50 mb-1.5 block">Detail</label>
+                    <SegmentedControl 
+                      options={DENSITY_OPTIONS} 
+                      value={coachingStyle.density}
+                      onChange={(v) => handleStyleChange('density', v as CoachingStyle['density'])}
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="text-xs text-white/50 mb-1.5 block">Style</label>
+                    <SegmentedControl 
+                      options={FORMALITY_OPTIONS} 
+                      value={coachingStyle.formality}
+                      onChange={(v) => handleStyleChange('formality', v as CoachingStyle['formality'])}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Divider */}
-            <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+              {/* Divider */}
+              <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-            {/* Account */}
-            <div className="space-y-3">
-              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                Account
-              </h3>
-              
-              <button
-                onClick={handleSignOut}
-                className="w-full py-3 rounded-xl text-sm text-white/70 hover:text-white transition-colors text-left"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
-              >
-                <span className="px-4">Sign Out</span>
-              </button>
-            </div>
+              {/* Account */}
+              <div className="space-y-2">
+                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                  Account
+                </h3>
+                
+                <button
+                  onClick={handleSignOut}
+                  className="w-full py-2.5 rounded-lg text-sm text-white/60 hover:text-white transition-colors text-left px-3"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
+                >
+                  Sign Out
+                </button>
+              </div>
 
-            {/* Divider */}
-            <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+              {/* Divider */}
+              <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-            {/* Developer */}
-            <div className="space-y-3 pb-8">
-              <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                Developer
-              </h3>
-              
-              <button
-                onClick={handleReset}
-                disabled={loading !== null}
-                className="w-full py-3 rounded-xl text-sm text-red-400/80 hover:text-red-400 transition-colors text-center disabled:opacity-50"
-                style={{ backgroundColor: 'rgba(255, 59, 48, 0.1)', border: '1px solid rgba(255, 59, 48, 0.2)' }}
-              >
-                {loading === 'reset' ? 'Resetting...' : 'Reset All Data & Onboarding'}
-              </button>
+              {/* Developer */}
+              <div className="space-y-2 pb-4">
+                <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                  Developer
+                </h3>
+                
+                <button
+                  onClick={handleResetCoaching}
+                  disabled={loading !== null}
+                  className="w-full py-2.5 rounded-lg text-sm text-orange-400/80 hover:text-orange-400 transition-colors text-left px-3 disabled:opacity-50"
+                  style={{ backgroundColor: 'rgba(255, 165, 0, 0.08)' }}
+                >
+                  {loading === 'reset' ? 'Resetting...' : 'Reset Coaching & Onboarding'}
+                </button>
+
+                <button
+                  onClick={handleDeleteAccount}
+                  disabled={loading !== null}
+                  className="w-full py-2.5 rounded-lg text-sm text-red-400/80 hover:text-red-400 transition-colors text-left px-3 disabled:opacity-50"
+                  style={{ backgroundColor: 'rgba(255, 59, 48, 0.08)' }}
+                >
+                  {loading === 'delete' ? 'Deleting...' : 'Delete Account'}
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Safe area padding */}
-          <div className="h-6 safe-area-bottom" />
+          {/* Safe area */}
+          <div className="h-4 flex-shrink-0 safe-area-bottom" />
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
