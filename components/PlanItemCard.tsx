@@ -242,63 +242,21 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
             >
               Skip
             </button>
-            <button
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="
-                ml-auto w-8 h-8 rounded-full
-                flex items-center justify-center
-                text-foreground/25
-                hover:text-foreground/50 hover:bg-white/5
-                transition-all duration-300
-              "
-              aria-label={showReasoning ? 'Hide reasoning' : 'Show reasoning'}
-            >
-              <svg 
-                className={`w-4 h-4 transition-transform duration-300 ${showReasoning ? 'rotate-180' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
-            </button>
           </>
         ) : isComplete ? (
-          <>
-            <button
-              onClick={() => handleStatusUpdate('pending')}
-              disabled={isUpdating}
-              className="
-                px-3 py-1.5 rounded-lg text-xs
-                text-foreground/40
-                hover:text-foreground/60 hover:bg-white/5
-                disabled:opacity-50
-                transition-all duration-300
-              "
-            >
-              Undo
-            </button>
-            <button
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="
-                ml-auto w-8 h-8 rounded-full
-                flex items-center justify-center
-                text-foreground/25
-                hover:text-foreground/50 hover:bg-white/5
-                transition-all duration-300
-              "
-              aria-label={showReasoning ? 'Hide reasoning' : 'Show reasoning'}
-            >
-              <svg 
-                className={`w-4 h-4 transition-transform duration-300 ${showReasoning ? 'rotate-180' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
-              </svg>
-            </button>
-          </>
+          <button
+            onClick={() => handleStatusUpdate('pending')}
+            disabled={isUpdating}
+            className="
+              px-3 py-1.5 rounded-lg text-xs
+              text-foreground/40
+              hover:text-foreground/60 hover:bg-white/5
+              disabled:opacity-50
+              transition-all duration-300
+            "
+          >
+            Undo
+          </button>
         ) : (
           // Skipped state - minimal, just undo
           <button
