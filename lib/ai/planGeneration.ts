@@ -60,12 +60,13 @@ export async function generateWeeklyPlan(
       edenIntro: result.edenIntro,
       items,
     };
-  } catch (error) {
-    console.error('Error generating plan:', error);
+  } catch (error: unknown) {
+    const err = error as Error;
+    console.error('Error generating plan:', err.message);
     
-    // Return a fallback plan structure
+    // Return a fallback plan structure with error info
     return {
-      edenIntro: "I'm having trouble generating your personalized plan right now. Here's a basic structure to get you started. We'll refine it as I learn more about you.",
+      edenIntro: `I'm having trouble generating your personalized plan right now (${err.message}). Here's a basic structure to get you started. We'll refine it as I learn more about you.`,
       items: getDefaultPlanItems(),
     };
   }

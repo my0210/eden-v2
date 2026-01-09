@@ -45,6 +45,8 @@ export async function generateCompletion(
   } = options;
 
   try {
+    console.log(`[AI] Calling model: ${MODELS[model]}`);
+    
     const response = await openai.chat.completions.create({
       model: MODELS[model],
       messages,
@@ -55,10 +57,17 @@ export async function generateCompletion(
         : { type: 'text' },
     });
 
+    console.log(`[AI] Success - received ${response.choices[0]?.message?.content?.length || 0} chars`);
     return response.choices[0]?.message?.content || '';
-  } catch (error) {
-    console.error('LLM completion error:', error);
-    throw new Error('Failed to generate AI response');
+  } catch (error: unknown) {
+    const err = error as Error & { status?: number; code?: string };
+    console.error('[AI] Error details:', {
+      message: err.message,
+      status: err.status,
+      code: err.code,
+      model: MODELS[model],
+    });
+    throw new Error(`AI error: ${err.message}`);
   }
 }
 
