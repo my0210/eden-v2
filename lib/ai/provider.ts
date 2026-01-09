@@ -7,9 +7,9 @@ const openai = new OpenAI({
 
 // Model configuration - easy to swap providers later
 export const MODELS = {
-  // GPT-5.2 models
-  thinking: 'gpt-5.2-thinking', // For complex reasoning (plan generation)
-  instant: 'gpt-5.2-instant',   // For fast responses (chat)
+  // Best available models
+  thinking: 'gpt-4o',      // For complex reasoning (plan generation)
+  instant: 'gpt-4o-mini',  // For fast responses (chat)
   // Fallback models if needed
   fallback: 'gpt-4o',
 } as const;
