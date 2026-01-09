@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
+import { Drawer } from 'vaul';
 import { ChatMessage, Message } from './ChatMessage';
 import { SuggestedPrompts } from './SuggestedPrompts';
 
@@ -19,13 +19,8 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     "Help me adjust my protocol",
     "Why this routine for me?",
   ]);
-  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -44,25 +39,7 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
-      // Prevent body scroll when open
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-    return () => {
-      document.body.style.overflow = '';
-    };
-  }, [isOpen]);
-
-  // Close on escape
-  useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setIsOpen(false);
-    };
-    if (isOpen) {
-      window.addEventListener('keydown', handleEsc);
-      return () => window.removeEventListener('keydown', handleEsc);
+      setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
 
@@ -123,97 +100,113 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     }
   };
 
-  const overlayContent = isOpen ? (
-    <div 
-      className="fixed inset-0 z-[9999] flex flex-col"
-      style={{ backgroundColor: 'transparent' }}
+  return (
+    <Drawer.Root 
+      open={isOpen} 
+      onOpenChange={setIsOpen}
+      shouldScaleBackground={false}
     >
-      {/* Backdrop - blur only, transparent */}
-      <div 
-        className="absolute inset-0 backdrop-blur-xl"
-        style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
-        onClick={() => setIsOpen(false)}
-      />
-      
-      {/* Content - floating above backdrop */}
-      <div className="relative z-10 flex flex-col h-full">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4">
-          <button
-            onClick={() => setIsOpen(false)}
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
-            aria-label="Close chat"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-          
-          <button
-            className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
-            style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
-            aria-label="Chat history"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-            </svg>
-          </button>
-        </div>
+      <Drawer.Trigger asChild>
+        {trigger}
+      </Drawer.Trigger>
 
-        {/* Messages */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
-          {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <p className="text-white/30 text-sm">Ask Eden anything</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {messages.map(message => (
-                <ChatMessage key={message.id} message={message} />
-              ))}
-              
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div 
-                    className="rounded-2xl px-4 py-3 border border-white/10"
-                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)' }}
-                  >
-                    <div className="flex gap-1">
-                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+      <Drawer.Portal>
+        {/* Backdrop with blur */}
+        <Drawer.Overlay 
+          className="fixed inset-0 z-[100]"
+          style={{ 
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backdropFilter: 'blur(20px)',
+            WebkitBackdropFilter: 'blur(20px)',
+          }}
+        />
+        
+        {/* Sheet content */}
+        <Drawer.Content 
+          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none"
+          style={{ 
+            height: '92vh',
+            backgroundColor: 'rgba(28, 28, 30, 0.85)',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
+            borderTopLeftRadius: '12px',
+            borderTopRightRadius: '12px',
+          }}
+        >
+          {/* Drag handle - Apple style */}
+          <div className="flex justify-center pt-3 pb-2">
+            <div 
+              className="w-9 h-1 rounded-full"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.3)' }}
+            />
+          </div>
+
+          {/* Header with close button */}
+          <div className="flex items-center justify-between px-4 pb-2">
+            <Drawer.Title className="text-white/90 text-lg font-medium">
+              Eden
+            </Drawer.Title>
+            <Drawer.Close asChild>
+              <button
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </Drawer.Close>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px mx-4" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto px-4 py-4">
+            {messages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <p className="text-white/30 text-sm">Ask Eden anything</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {messages.map(message => (
+                  <ChatMessage key={message.id} message={message} />
+                ))}
+                
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <div 
+                      className="rounded-2xl px-4 py-3"
+                      style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+                    >
+                      <div className="flex gap-1.5">
+                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
+                )}
+                
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Suggested Prompts */}
+          {suggestedPrompts.length > 0 && !isLoading && (
+            <div className="px-4 pb-3">
+              <SuggestedPrompts prompts={suggestedPrompts} onSelect={(p) => handleSend(p)} />
             </div>
           )}
-        </div>
 
-        {/* Suggested Prompts */}
-        {suggestedPrompts.length > 0 && !isLoading && (
-          <div className="px-4 pb-2">
-            <SuggestedPrompts prompts={suggestedPrompts} onSelect={(p) => handleSend(p)} />
-          </div>
-        )}
-
-        {/* Input */}
-        <div className="px-4 pt-2 pb-4 safe-area-bottom">
-          <div className="flex items-end gap-3">
-            <button
-              className="w-12 h-12 rounded-full flex items-center justify-center text-white/50 flex-shrink-0"
-              style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
-              aria-label="Add"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
-              </svg>
-            </button>
-            
-            <div className="flex-1 relative">
+          {/* Input area */}
+          <div 
+            className="px-4 pt-3 pb-4 safe-area-bottom"
+            style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}
+          >
+            <div className="relative">
               <textarea
                 ref={inputRef}
                 value={input}
@@ -222,10 +215,9 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
                 placeholder="Ask Eden..."
                 disabled={isLoading}
                 rows={1}
-                className="w-full px-4 py-3 pr-12 rounded-full text-white placeholder:text-white/30 resize-none overflow-hidden focus:outline-none disabled:opacity-50 border border-white/10"
+                className="w-full px-4 py-3 pr-12 rounded-2xl text-white placeholder:text-white/30 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50"
                 style={{ 
-                  backgroundColor: 'rgba(0,0,0,0.4)', 
-                  backdropFilter: 'blur(12px)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
                   minHeight: '48px', 
                   maxHeight: '120px' 
                 }}
@@ -234,8 +226,8 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
               <button
                 onClick={() => handleSend()}
                 disabled={!input.trim() || isLoading}
-                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white disabled:opacity-0 transition-all"
-                style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white disabled:opacity-30 transition-all"
+                style={{ backgroundColor: input.trim() ? 'rgba(52, 199, 89, 0.9)' : 'transparent' }}
                 aria-label="Send"
               >
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -244,18 +236,8 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
               </button>
             </div>
           </div>
-        </div>
-      </div>
-    </div>
-  ) : null;
-
-  return (
-    <>
-      <div onClick={() => setIsOpen(true)}>
-        {trigger}
-      </div>
-      
-      {mounted && overlayContent && createPortal(overlayContent, document.body)}
-    </>
+        </Drawer.Content>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }
