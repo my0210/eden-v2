@@ -113,6 +113,7 @@ export async function POST(request: Request) {
         user_id: user.id,
         week_start_date: weekStartStr,
         eden_intro: generated.edenIntro,
+        domain_intros: generated.domainIntros,
         generation_context: {
           profile: {
             fitnessLevel: profile.currentFitnessLevel,

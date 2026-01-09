@@ -15,6 +15,13 @@ interface GeneratedPlanItem {
 
 interface GeneratedPlan {
   edenIntro: string;
+  domainIntros: {
+    heart?: string;
+    muscle?: string;
+    sleep?: string;
+    metabolism?: string;
+    mind?: string;
+  };
   items: GeneratedPlanItem[];
 }
 
@@ -29,6 +36,7 @@ export async function generateWeeklyPlan(
   startFromDay?: number
 ): Promise<{
   edenIntro: string;
+  domainIntros: Partial<Record<Domain, string>>;
   items: Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[];
 }> {
   const systemPrompt = getSystemPrompt(profile);
@@ -71,6 +79,7 @@ export async function generateWeeklyPlan(
 
     return {
       edenIntro: result.edenIntro,
+      domainIntros: result.domainIntros || {},
       items,
     };
   } catch (error: unknown) {
@@ -80,6 +89,7 @@ export async function generateWeeklyPlan(
     // Return a fallback plan structure with error info
     return {
       edenIntro: `I'm having trouble generating your personalized plan right now (${err.message}). Here's a basic structure to get you started. We'll refine it as I learn more about you.`,
+      domainIntros: {},
       items: getDefaultPlanItems(startFromDay),
     };
   }

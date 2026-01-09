@@ -4,9 +4,9 @@ import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
 import { ChatOverlay } from '@/components/ChatOverlay';
 import { ProfileButton } from '@/components/ProfileButton';
-import { DomainIndicator } from '@/components/DomainIndicator';
+import { WeekHeader } from '@/components/WeekHeader';
 import { PlanGenerator } from '@/components/PlanGenerator';
-import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek } from '@/lib/types';
+import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain } from '@/lib/types';
 
 export default async function WeekPage({
   searchParams,
@@ -65,6 +65,7 @@ export default async function WeekPage({
     userId: planData.user_id,
     weekStartDate: planData.week_start_date,
     edenIntro: planData.eden_intro,
+    domainIntros: (planData.domain_intros || {}) as Partial<Record<Domain, string>>,
     generationContext: planData.generation_context,
     items: (planData.plan_items || []).map((item: Record<string, unknown>) => ({
       id: item.id as string,
@@ -111,19 +112,16 @@ export default async function WeekPage({
         <div className="w-9" /> {/* Spacer for balance */}
       </header>
 
-      {/* Eden's Week Intro - ABOVE week strip */}
-      {weeklyPlan?.edenIntro && (
-        <div className="relative z-10 px-6 py-3">
-          <p className="text-sm text-foreground/50 leading-relaxed">
-            {weeklyPlan.edenIntro}
-          </p>
+      {/* Week Header - Intro + Domain Indicator */}
+      {weeklyPlan && (
+        <div className="relative z-10">
+          <WeekHeader 
+            edenIntro={weeklyPlan.edenIntro}
+            domainIntros={weeklyPlan.domainIntros}
+            items={weeklyPlan.items as PlanItem[]}
+          />
         </div>
       )}
-
-      {/* Domain Indicator */}
-      <div className="relative z-10 px-6 py-2">
-        <DomainIndicator items={weeklyPlan?.items || []} />
-      </div>
 
       {/* Week Strip */}
       <div className="relative z-10 px-6 py-4">

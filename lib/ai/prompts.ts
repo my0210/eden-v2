@@ -98,6 +98,13 @@ ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : '
 ## Response Format (JSON)
 {
   "edenIntro": "Personalized week introduction referencing their specific situation",
+  "domainIntros": {
+    "heart": "Detailed explanation of this week's heart/cardio focus, why these specific activities, what they'll achieve. Write in your coaching style.",
+    "muscle": "Detailed explanation of this week's strength/frame focus, respecting their constraints and goals. Write in your coaching style.",
+    "sleep": "Detailed explanation of this week's sleep/recovery focus and why it matters for them. Write in your coaching style.",
+    "metabolism": "Detailed explanation of this week's nutrition/metabolism approach personalized to them. Write in your coaching style.",
+    "mind": "Detailed explanation of this week's mental/cognitive focus and how it supports their goals. Write in your coaching style."
+  },
   "items": [
     {
       "domain": "heart|muscle|sleep|metabolism|mind",
@@ -109,7 +116,16 @@ ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : '
       "sortOrder": number (priority within the day)
     }
   ]
-}`;
+}
+
+## Domain Intro Guidelines
+Each domainIntro should be 2-4 sentences that:
+1. Explain what you're focusing on in this domain this week
+2. Reference their specific constraints, goals, or situation
+3. Explain the WHY behind the approach
+4. Match your coaching style (tone, density, formality)
+
+Only include domainIntros for domains that have items this week.`;
 }
 
 /**

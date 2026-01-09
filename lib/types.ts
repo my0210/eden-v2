@@ -93,6 +93,7 @@ export interface WeeklyPlan {
   userId: string;
   weekStartDate: string; // ISO date string (Monday)
   edenIntro: string;     // Personalized week introduction
+  domainIntros: Partial<Record<Domain, string>>; // Per-domain intro text
   generationContext: GenerationContext;
   items: PlanItem[];
   createdAt: string;

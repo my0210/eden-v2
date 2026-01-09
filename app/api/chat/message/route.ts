@@ -66,6 +66,7 @@ export async function POST(request: Request) {
       userId: planData.user_id,
       weekStartDate: planData.week_start_date,
       edenIntro: planData.eden_intro,
+      domainIntros: planData.domain_intros || {},
       generationContext: planData.generation_context,
       items: planData.plan_items || [],
       createdAt: planData.created_at,
