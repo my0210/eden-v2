@@ -7,9 +7,10 @@ const openai = new OpenAI({
 
 // Model configuration - easy to swap providers later
 export const MODELS = {
-  // Best available models
-  thinking: 'gpt-4o',      // For complex reasoning (plan generation)
-  instant: 'gpt-4o-mini',  // For fast responses (chat)
+  // GPT-5.2 models (released Dec 11, 2025)
+  thinking: 'gpt-5.2',           // For complex reasoning (plan generation)
+  instant: 'gpt-5.2-chat-latest', // For fast responses (chat)
+  pro: 'gpt-5.2-pro',            // For high-accuracy professional tasks
   // Fallback models if needed
   fallback: 'gpt-4o',
 } as const;
