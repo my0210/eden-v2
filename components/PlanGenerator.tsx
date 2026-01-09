@@ -51,8 +51,8 @@ export function PlanGenerator({ hasPlan, weekStartDate }: PlanGeneratorProps) {
         {isGenerating ? (
           <>
             <div className="w-12 h-12 mx-auto mb-6 rounded-full border-2 border-white/20 border-t-green-400 animate-spin" />
-            <p className="text-foreground/60 mb-2">Creating your plan...</p>
-            <p className="text-foreground/30 text-sm">Eden is personalizing your week</p>
+            <p className="text-foreground/60 mb-2">Creating your protocol...</p>
+            <p className="text-foreground/30 text-sm">Eden is personalizing your plan</p>
           </>
         ) : error ? (
           <>

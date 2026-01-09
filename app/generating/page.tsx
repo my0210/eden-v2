@@ -128,7 +128,7 @@ export default function GeneratingPage() {
 
             {/* Subtle helper text */}
             <p className="text-foreground/20 text-sm">
-              Creating your personalized week
+              Creating your personalized protocol
             </p>
           </div>
         )}
