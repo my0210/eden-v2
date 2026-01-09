@@ -1,14 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 
 export function ProfileButton() {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const buttonRef = useRef<HTMLButtonElement>(null);
   const router = useRouter();
   const supabase = createClient();
+
+  useEffect(() => {
+    if (isOpen && buttonRef.current) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      setMenuPosition({
+        top: rect.bottom + 8,
+        left: rect.left,
+      });
+    }
+  }, [isOpen]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -49,8 +61,9 @@ export function ProfileButton() {
   };
 
   return (
-    <div className="relative z-50">
+    <>
       <button
+        ref={buttonRef}
         onClick={() => setIsOpen(!isOpen)}
         className="
           w-9 h-9 rounded-full 
@@ -69,19 +82,27 @@ export function ProfileButton() {
 
       {isOpen && (
         <>
+          {/* Full screen backdrop */}
           <div 
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-[9998]"
             onClick={() => setIsOpen(false)}
           />
 
-          <div className="
-            absolute top-full left-0 mt-2 z-50
-            w-48 py-2
-            bg-black/80 backdrop-blur-xl 
-            border border-white/10 rounded-xl
-            shadow-2xl
-            animate-fade-in
-          ">
+          {/* Menu - fixed position, always on top */}
+          <div 
+            className="
+              fixed z-[9999]
+              w-48 py-2
+              bg-[#0a0a0a] 
+              border border-white/10 rounded-xl
+              shadow-2xl
+              animate-fade-in
+            "
+            style={{
+              top: menuPosition.top,
+              left: menuPosition.left,
+            }}
+          >
             <div className="px-4 py-3 border-b border-white/10">
               <p className="text-sm text-foreground/80">Eden</p>
               <p className="text-xs text-foreground/40">Your coach</p>
@@ -132,6 +153,6 @@ export function ProfileButton() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }
