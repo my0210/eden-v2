@@ -166,13 +166,13 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
       {/* Intro Section - BELOW domains (content changes based on selection) */}
       <div className="px-6">
         <div 
-          className="rounded-xl p-4 transition-all duration-300"
+          className="rounded-xl p-4 transition-all duration-300 overflow-hidden"
           style={{ 
             backgroundColor: 'rgba(255,255,255,0.03)',
             borderColor: selectedDomain ? DOMAIN_COLORS[selectedDomain] : 'rgba(255,255,255,0.06)',
             borderWidth: '1px',
             borderStyle: 'solid',
-            minHeight: '100px', // Prevents height jumping
+            height: '120px', // Fixed height prevents jumping
           }}
         >
           {/* Header row */}
@@ -207,8 +207,8 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
             )}
           </div>
           
-          {/* Intro text */}
-          <p className="text-sm text-foreground/50 leading-relaxed">
+          {/* Intro text - scrollable if overflow */}
+          <p className="text-sm text-foreground/50 leading-relaxed overflow-y-auto" style={{ maxHeight: '70px' }}>
             {currentIntro}
           </p>
         </div>

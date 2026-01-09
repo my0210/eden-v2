@@ -132,8 +132,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Day View - scrollable content */}
-      <div className="relative z-10 flex-1 px-6 py-4">
+      {/* Day View - scrollable content with extra bottom padding for chat */}
+      <div className="relative z-10 flex-1 px-6 py-4 pb-32">
         <DayView
           date={selectedDate}
           items={dayItems as PlanItem[]}
@@ -142,8 +142,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Chat Trigger - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pt-3 pb-4 safe-area-bottom bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a] to-transparent">
+      {/* Chat Trigger - Fixed at bottom with taller gradient */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 px-6 pt-8 pb-4 safe-area-bottom bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/95 to-transparent">
         <ChatOverlay 
           trigger={
             <button className="
