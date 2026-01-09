@@ -54,112 +54,77 @@ export function ProfileButton() {
         onClick={() => setIsOpen(!isOpen)}
         className="
           w-9 h-9 rounded-full 
-          bg-gradient-to-br from-green-500/20 to-emerald-500/10
-          border border-green-500/30
+          bg-white/5 border border-white/10
           flex items-center justify-center
-          text-green-400 font-medium text-sm
-          hover:border-green-400/50
-          transition-colors duration-200
+          text-foreground/40 
+          hover:bg-white/10 hover:border-white/20
+          transition-all duration-300
         "
-        aria-label="Open profile menu"
+        aria-label="Open menu"
       >
-        E
+        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
       </button>
 
-      {/* Dropdown Menu */}
       {isOpen && (
         <>
-          {/* Backdrop */}
           <div 
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
 
-          {/* Menu */}
           <div className="
             absolute top-full left-0 mt-2 z-50
             w-48 py-2
-            bg-background-secondary border border-default rounded-xl
-            shadow-lg
+            bg-black/80 backdrop-blur-xl 
+            border border-white/10 rounded-xl
+            shadow-2xl
             animate-fade-in
           ">
-            <div className="px-4 py-2 border-b border-muted">
-              <p className="text-sm font-medium">Eden</p>
-              <p className="text-xs text-foreground-muted">Your AI Coach</p>
+            <div className="px-4 py-3 border-b border-white/10">
+              <p className="text-sm text-foreground/80">Eden</p>
+              <p className="text-xs text-foreground/40">Your coach</p>
             </div>
 
             <div className="py-1">
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  // TODO: Navigate to settings
-                }}
-                className="
-                  w-full px-4 py-2 text-left text-sm
-                  text-foreground-muted hover:text-foreground
-                  hover:bg-background-tertiary
-                  transition-colors duration-150
-                "
+                onClick={() => setIsOpen(false)}
+                className="w-full px-4 py-2.5 text-left text-sm text-foreground/50 hover:text-foreground/80 hover:bg-white/5 transition-colors"
               >
                 Settings
               </button>
-              
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  // TODO: Navigate to coaching style
-                }}
-                className="
-                  w-full px-4 py-2 text-left text-sm
-                  text-foreground-muted hover:text-foreground
-                  hover:bg-background-tertiary
-                  transition-colors duration-150
-                "
+                onClick={() => setIsOpen(false)}
+                className="w-full px-4 py-2.5 text-left text-sm text-foreground/50 hover:text-foreground/80 hover:bg-white/5 transition-colors"
               >
                 Coaching Style
               </button>
             </div>
 
             {/* Dev Tools */}
-            <div className="py-1 border-t border-muted">
-              <p className="px-4 py-1 text-xs text-foreground-subtle">Dev</p>
+            <div className="py-1 border-t border-white/10">
+              <p className="px-4 py-1 text-xs text-foreground/30">Dev</p>
               <button
                 onClick={handleReset}
                 disabled={loading !== null}
-                className="
-                  w-full px-4 py-2 text-left text-sm
-                  text-yellow-400 hover:text-yellow-300
-                  hover:bg-background-tertiary
-                  transition-colors duration-150
-                  disabled:opacity-50
-                "
+                className="w-full px-4 py-2.5 text-left text-sm text-yellow-400/70 hover:text-yellow-400 hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 {loading === 'reset' ? 'Resetting...' : '↺ Reset Data'}
               </button>
               <button
                 onClick={handleDelete}
                 disabled={loading !== null}
-                className="
-                  w-full px-4 py-2 text-left text-sm
-                  text-red-400 hover:text-red-300
-                  hover:bg-background-tertiary
-                  transition-colors duration-150
-                  disabled:opacity-50
-                "
+                className="w-full px-4 py-2.5 text-left text-sm text-red-400/70 hover:text-red-400 hover:bg-white/5 transition-colors disabled:opacity-50"
               >
                 {loading === 'delete' ? 'Deleting...' : '✕ Delete Account'}
               </button>
             </div>
 
-            <div className="pt-1 border-t border-muted">
+            <div className="pt-1 border-t border-white/10">
               <button
                 onClick={handleSignOut}
-                className="
-                  w-full px-4 py-2 text-left text-sm
-                  text-foreground-muted hover:text-foreground
-                  hover:bg-background-tertiary
-                  transition-colors duration-150
-                "
+                className="w-full px-4 py-2.5 text-left text-sm text-foreground/40 hover:text-foreground/60 hover:bg-white/5 transition-colors"
               >
                 Sign Out
               </button>

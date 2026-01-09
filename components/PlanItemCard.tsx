@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { PlanItem, Domain, DOMAIN_LABELS, DOMAIN_COLORS } from '@/lib/types';
+import { PlanItem, Domain, DOMAIN_COLORS } from '@/lib/types';
 
 interface PlanItemCardProps {
   item: PlanItem;
@@ -13,7 +13,6 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
   const [isUpdating, setIsUpdating] = useState(false);
 
   const domainColor = DOMAIN_COLORS[item.domain as Domain];
-  const domainLabel = DOMAIN_LABELS[item.domain as Domain];
 
   const handleStatusUpdate = async (newStatus: 'done' | 'skipped') => {
     if (isUpdating) return;
@@ -26,11 +25,7 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
         body: JSON.stringify({ status: newStatus }),
       });
 
-      if (!response.ok) {
-        throw new Error('Failed to update status');
-      }
-
-      // Optimistic update would go here, or trigger a revalidation
+      if (!response.ok) throw new Error('Failed to update status');
       window.location.reload();
     } catch (error) {
       console.error('Error updating item status:', error);
@@ -44,108 +39,95 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
 
   return (
     <div className={`
-      card card-hover
-      ${isPriority ? 'border-l-2' : ''}
-      ${isComplete ? 'opacity-70' : ''}
-      ${isSkipped ? 'opacity-50' : ''}
-    `}
-    style={isPriority ? { borderLeftColor: domainColor } : {}}
-    >
+      p-4 rounded-xl 
+      bg-white/5 border border-white/10
+      transition-all duration-300
+      hover:bg-white/[0.07] hover:border-white/15
+      ${isComplete || isSkipped ? 'opacity-50' : ''}
+    `}>
       {/* Header */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        {/* Domain dot */}
+        <div 
+          className="w-2 h-2 rounded-full mt-2 flex-shrink-0"
+          style={{ backgroundColor: domainColor }}
+        />
+        
         <div className="flex-1 min-w-0">
-          {/* Priority Badge */}
-          {isPriority && item.status === 'pending' && (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-yellow-400 mb-1">
-              ★ Priority
-            </span>
-          )}
-
-          {/* Title */}
           <h3 className={`
-            font-medium 
-            ${isComplete ? 'line-through text-foreground-muted' : ''}
-            ${isSkipped ? 'line-through text-foreground-subtle' : ''}
+            font-medium text-foreground/90
+            ${isComplete || isSkipped ? 'line-through text-foreground/40' : ''}
           `}>
             {item.title}
           </h3>
 
-          {/* Personalization Context - Always visible */}
-          <p className="text-foreground-muted text-sm mt-1">
+          <p className="text-foreground/40 text-sm mt-1">
             {item.durationMinutes && (
-              <span className="text-foreground-subtle">
-                {item.durationMinutes} min · 
-              </span>
+              <span className="text-foreground/30">{item.durationMinutes}m · </span>
             )}
             {item.personalizationContext}
           </p>
         </div>
-
-        {/* Domain Badge */}
-        <span 
-          className="text-xs font-medium px-2 py-1 rounded-full flex-shrink-0"
-          style={{ 
-            backgroundColor: `${domainColor}15`,
-            color: domainColor,
-          }}
-        >
-          {domainLabel}
-        </span>
       </div>
 
-      {/* Reasoning (expandable) */}
+      {/* Reasoning */}
       {showReasoning && (
-        <div className="mt-3 pt-3 border-t border-muted animate-fade-in">
-          <p className="text-sm text-foreground-muted leading-relaxed">
-            <span className="text-foreground-subtle font-medium">Why: </span>
+        <div className="mt-3 pt-3 border-t border-white/10 animate-fade-in">
+          <p className="text-sm text-foreground/40 leading-relaxed">
             {item.reasoning}
           </p>
         </div>
       )}
 
       {/* Actions */}
-      <div className="flex items-center gap-2 mt-3 pt-3 border-t border-muted">
+      <div className="flex items-center gap-2 mt-4">
         {item.status === 'pending' ? (
           <>
             <button
               onClick={() => handleStatusUpdate('done')}
               disabled={isUpdating}
-              className="btn btn-primary text-xs py-1.5 px-3 disabled:opacity-50"
+              className="
+                px-4 py-2 rounded-lg text-sm
+                bg-white/10 border border-white/10
+                text-foreground/70
+                hover:bg-white/15 hover:border-white/20
+                disabled:opacity-50
+                transition-all duration-300
+              "
             >
               Done
             </button>
             <button
               onClick={() => handleStatusUpdate('skipped')}
               disabled={isUpdating}
-              className="btn btn-ghost text-xs py-1.5 px-3 disabled:opacity-50"
+              className="
+                px-4 py-2 rounded-lg text-sm
+                text-foreground/40
+                hover:text-foreground/60 hover:bg-white/5
+                disabled:opacity-50
+                transition-all duration-300
+              "
             >
               Skip
             </button>
             <button
               onClick={() => setShowReasoning(!showReasoning)}
-              className="btn btn-ghost text-xs py-1.5 px-3 ml-auto"
+              className="
+                ml-auto px-3 py-2 text-sm
+                text-foreground/30
+                hover:text-foreground/50
+                transition-colors
+              "
             >
-              {showReasoning ? 'Hide Why' : 'Why?'}
+              {showReasoning ? 'Hide' : 'Why?'}
             </button>
           </>
         ) : (
-          <>
-            <span className={`
-              text-xs font-medium px-2 py-1 rounded-full
-              ${isComplete ? 'bg-green-500/10 text-green-400' : 'bg-zinc-500/10 text-zinc-400'}
-            `}>
-              {isComplete ? '✓ Completed' : '⊘ Skipped'}
-            </span>
-            <button
-              onClick={() => setShowReasoning(!showReasoning)}
-              className="btn btn-ghost text-xs py-1.5 px-3 ml-auto"
-            >
-              {showReasoning ? 'Hide Why' : 'Why?'}
-            </button>
-          </>
+          <span className="text-sm text-foreground/30">
+            {isComplete ? '✓ Done' : 'Skipped'}
+          </span>
         )}
       </div>
     </div>
   );
 }
-

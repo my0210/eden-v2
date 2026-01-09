@@ -39,55 +39,50 @@ export default function LoginPage() {
 
   if (success) {
     return (
-      <div className="w-full max-w-sm text-center">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-green-500/20 flex items-center justify-center">
-          <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      <div className="text-center animate-fade-in-up">
+        <div className="w-12 h-12 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+          <svg className="w-6 h-6 text-white/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
         </div>
-        <h1 className="text-2xl font-bold mb-2">Check your email</h1>
-        <p className="text-foreground-muted mb-6">
-          We sent a magic link to<br />
-          <span className="text-foreground font-medium">{email}</span>
-        </p>
-        <p className="text-sm text-foreground-subtle">
-          Click the link in your email to sign in. The link expires in 1 hour.
-        </p>
+        <p className="text-foreground/60 mb-2">Check your email</p>
+        <p className="text-foreground/40 text-sm mb-8">{email}</p>
         <button
           onClick={() => setSuccess(false)}
-          className="mt-6 text-sm text-green-400 hover:text-green-300"
+          className="text-sm text-foreground/40 hover:text-foreground/60 transition-colors"
         >
-          Use a different email
+          Use different email
         </button>
       </div>
     );
   }
 
   return (
-    <div className="w-full max-w-sm">
-      <h1 className="text-2xl font-bold text-center mb-2">Welcome to Eden</h1>
-      <p className="text-foreground-muted text-center mb-8">
-        Your personalized longevity coach
-      </p>
-
-      <form onSubmit={handleMagicLink} className="space-y-4">
+    <div className="animate-fade-in-up">
+      <form onSubmit={handleMagicLink} className="space-y-6">
         {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="p-3 rounded-lg bg-red-500/10 text-red-400/80 text-sm text-center">
             {error}
           </div>
         )}
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium mb-2">
-            Email
-          </label>
           <input
             id="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="input"
-            placeholder="you@example.com"
+            className="
+              w-full px-4 py-4 
+              bg-white/5 
+              border border-white/10 
+              rounded-xl
+              text-foreground text-center
+              placeholder:text-foreground/30
+              focus:outline-none focus:border-white/20
+              transition-colors
+            "
+            placeholder="your@email.com"
             required
             autoComplete="email"
             autoFocus
@@ -97,14 +92,22 @@ export default function LoginPage() {
         <button
           type="submit"
           disabled={loading}
-          className="btn btn-primary w-full py-3 text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+          className="
+            w-full px-6 py-4 rounded-xl
+            bg-white/10 
+            border border-white/10
+            text-foreground/80 font-medium
+            hover:bg-white/15 hover:border-white/20
+            disabled:opacity-50 disabled:cursor-not-allowed
+            transition-all duration-300
+          "
         >
-          {loading ? 'Sending...' : 'Send Magic Link'}
+          {loading ? 'Sending...' : 'Continue'}
         </button>
       </form>
 
-      <p className="mt-8 text-center text-foreground-subtle text-xs">
-        No password needed. We&apos;ll send you a secure link to sign in.
+      <p className="mt-8 text-center text-foreground/30 text-xs">
+        We&apos;ll send you a magic link
       </p>
     </div>
   );

@@ -37,7 +37,6 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
 
-      // Build profile from answers
       const profile = {
         goals: {
           primary: answers.primaryGoals || [],
@@ -72,7 +71,6 @@ export default function OnboardingPage() {
         onboarding_completed: true,
       };
 
-      // Save to Supabase
       const { error } = await supabase
         .from('user_profiles')
         .update(profile)
@@ -80,7 +78,6 @@ export default function OnboardingPage() {
 
       if (error) throw error;
 
-      // Redirect to main app
       router.push('/week');
       router.refresh();
     } catch (error) {
@@ -92,83 +89,58 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col relative overflow-hidden">
+      {/* Ambient gradient orb */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-[600px] h-[600px]">
+          <div 
+            className="absolute inset-0 rounded-full opacity-15 blur-[120px] animate-breathe"
+            style={{
+              background: 'radial-gradient(circle, rgba(34,197,94,0.5) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+            }}
+          />
+        </div>
+      </div>
+
       {/* Header */}
-      <header className="px-6 py-4 border-b border-default">
-        <div className="flex items-center justify-between">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
-            <span className="text-xl font-bold text-white">E</span>
-          </div>
-          
-          {/* Progress indicator */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-foreground-muted">
-              {currentStep} of {TOTAL_STEPS}
-            </span>
-            <div className="w-24 h-1.5 bg-background-tertiary rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-green-500 transition-all duration-300"
-                style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
-              />
-            </div>
+      <header className="relative z-10 px-6 py-6 flex items-center justify-between">
+        <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-foreground/40">{currentStep}/{TOTAL_STEPS}</span>
+          <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+            <div 
+              className="h-full bg-white/40 transition-all duration-500"
+              style={{ width: `${(currentStep / TOTAL_STEPS) * 100}%` }}
+            />
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex flex-col px-6 py-8 overflow-y-auto">
+      <main className="relative z-10 flex-1 flex flex-col px-6 py-8 overflow-y-auto">
         <div className="max-w-md mx-auto w-full">
-          {currentStep === 1 && (
-            <GoalsStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
-          
-          {currentStep === 2 && (
-            <CurrentStateStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
-          
-          {currentStep === 3 && (
-            <ScheduleStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
-          
-          {currentStep === 4 && (
-            <EquipmentStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
-          
-          {currentStep === 5 && (
-            <CapacityStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
-          
-          {currentStep === 6 && (
-            <CoachingStyleStep 
-              answers={answers} 
-              updateAnswers={updateAnswers} 
-            />
-          )}
+          {currentStep === 1 && <GoalsStep answers={answers} updateAnswers={updateAnswers} />}
+          {currentStep === 2 && <CurrentStateStep answers={answers} updateAnswers={updateAnswers} />}
+          {currentStep === 3 && <ScheduleStep answers={answers} updateAnswers={updateAnswers} />}
+          {currentStep === 4 && <EquipmentStep answers={answers} updateAnswers={updateAnswers} />}
+          {currentStep === 5 && <CapacityStep answers={answers} updateAnswers={updateAnswers} />}
+          {currentStep === 6 && <CoachingStyleStep answers={answers} updateAnswers={updateAnswers} />}
         </div>
       </main>
 
       {/* Navigation */}
-      <footer className="px-6 py-4 border-t border-default safe-area-bottom">
+      <footer className="relative z-10 px-6 py-6 safe-area-bottom">
         <div className="max-w-md mx-auto flex gap-3">
           {currentStep > 1 && (
             <button
               onClick={prevStep}
-              className="btn btn-secondary flex-1 py-3"
+              className="
+                flex-1 py-4 rounded-xl
+                bg-white/5 border border-white/10
+                text-foreground/60
+                hover:bg-white/10 hover:border-white/20
+                transition-all duration-300
+              "
             >
               Back
             </button>
@@ -177,7 +149,13 @@ export default function OnboardingPage() {
           {currentStep < TOTAL_STEPS ? (
             <button
               onClick={nextStep}
-              className="btn btn-primary flex-1 py-3"
+              className="
+                flex-1 py-4 rounded-xl
+                bg-white/10 border border-white/10
+                text-foreground/80 font-medium
+                hover:bg-white/15 hover:border-white/20
+                transition-all duration-300
+              "
             >
               Continue
             </button>
@@ -185,9 +163,16 @@ export default function OnboardingPage() {
             <button
               onClick={handleComplete}
               disabled={isSubmitting}
-              className="btn btn-primary flex-1 py-3 disabled:opacity-50"
+              className="
+                flex-1 py-4 rounded-xl
+                bg-white/10 border border-white/10
+                text-foreground/80 font-medium
+                hover:bg-white/15 hover:border-white/20
+                disabled:opacity-50
+                transition-all duration-300
+              "
             >
-              {isSubmitting ? 'Saving...' : 'Start My Journey'}
+              {isSubmitting ? 'Starting...' : 'Begin'}
             </button>
           )}
         </div>
@@ -200,14 +185,14 @@ export default function OnboardingPage() {
 
 function GoalsStep({ answers, updateAnswers }: StepProps) {
   const goals = [
-    { id: 'longevity', label: 'Live longer and healthier' },
-    { id: 'performance', label: 'Improve physical performance' },
-    { id: 'weight', label: 'Reach a healthy weight' },
-    { id: 'energy', label: 'Have more energy' },
-    { id: 'sleep', label: 'Sleep better' },
-    { id: 'stress', label: 'Manage stress' },
-    { id: 'strength', label: 'Build strength and muscle' },
-    { id: 'cardio', label: 'Improve cardiovascular fitness' },
+    { id: 'longevity', label: 'Live longer' },
+    { id: 'performance', label: 'Perform better' },
+    { id: 'weight', label: 'Healthy weight' },
+    { id: 'energy', label: 'More energy' },
+    { id: 'sleep', label: 'Better sleep' },
+    { id: 'stress', label: 'Less stress' },
+    { id: 'strength', label: 'Build strength' },
+    { id: 'cardio', label: 'Cardio fitness' },
   ];
 
   const selectedGoals = answers.primaryGoals || [];
@@ -220,24 +205,22 @@ function GoalsStep({ answers, updateAnswers }: StepProps) {
   };
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">What are your health goals?</h1>
-        <p className="text-foreground-muted">
-          Select all that apply. These help Eden prioritize your weekly plans.
-        </p>
+        <h1 className="text-2xl font-light mb-2">What matters to you?</h1>
+        <p className="text-foreground/40 text-sm">Select all that apply</p>
       </div>
 
-      <div className="grid gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {goals.map(goal => (
           <button
             key={goal.id}
             onClick={() => toggleGoal(goal.id)}
             className={`
-              p-4 rounded-xl text-left transition-all duration-200
+              p-4 rounded-xl text-left transition-all duration-300
               ${selectedGoals.includes(goal.id)
-                ? 'bg-green-500/10 border-2 border-green-500/50 text-foreground'
-                : 'bg-background-secondary border border-default text-foreground-muted hover:border-foreground-subtle'
+                ? 'bg-white/15 border border-white/30 text-foreground'
+                : 'bg-white/5 border border-white/10 text-foreground/60 hover:bg-white/10'
               }
             `}
           >
@@ -247,14 +230,17 @@ function GoalsStep({ answers, updateAnswers }: StepProps) {
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">
-          What does &quot;being in your prime&quot; mean to you?
-        </label>
         <textarea
           value={answers.primeSpanMeaning || ''}
           onChange={(e) => updateAnswers({ primeSpanMeaning: e.target.value })}
-          placeholder="e.g., Having energy to play with my kids, feeling strong at 60, running a marathon..."
-          className="input min-h-[100px]"
+          placeholder="What does 'being in your prime' mean to you?"
+          className="
+            w-full px-4 py-4 min-h-[100px]
+            bg-white/5 border border-white/10 rounded-xl
+            text-foreground placeholder:text-foreground/30
+            focus:outline-none focus:border-white/20
+            transition-colors resize-none
+          "
         />
       </div>
     </div>
@@ -262,54 +248,54 @@ function GoalsStep({ answers, updateAnswers }: StepProps) {
 }
 
 function CurrentStateStep({ answers, updateAnswers }: StepProps) {
-  const activityLevels: { id: FitnessLevel; label: string; description: string }[] = [
-    { id: 'sedentary', label: 'Sedentary', description: 'Little to no regular exercise' },
-    { id: 'light', label: 'Light Activity', description: 'Light exercise 1-2 times/week' },
-    { id: 'moderate', label: 'Moderate', description: 'Moderate exercise 3-4 times/week' },
-    { id: 'active', label: 'Active', description: 'Hard exercise 5-6 times/week' },
-    { id: 'very_active', label: 'Very Active', description: 'Daily intense exercise' },
+  const levels: { id: FitnessLevel; label: string }[] = [
+    { id: 'sedentary', label: 'Sedentary' },
+    { id: 'light', label: 'Light activity' },
+    { id: 'moderate', label: 'Moderate' },
+    { id: 'active', label: 'Active' },
+    { id: 'very_active', label: 'Very active' },
   ];
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">Your current activity level</h1>
-        <p className="text-foreground-muted">
-          Be honest - this helps Eden start you at the right level.
-        </p>
+        <h1 className="text-2xl font-light mb-2">Current activity level</h1>
+        <p className="text-foreground/40 text-sm">Be honest — this helps Eden start you right</p>
       </div>
 
       <div className="space-y-3">
-        {activityLevels.map(level => (
+        {levels.map(level => (
           <button
             key={level.id}
             onClick={() => updateAnswers({ currentActivityLevel: level.id })}
             className={`
-              w-full p-4 rounded-xl text-left transition-all duration-200
+              w-full p-4 rounded-xl text-left transition-all duration-300
               ${answers.currentActivityLevel === level.id
-                ? 'bg-green-500/10 border-2 border-green-500/50'
-                : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+                ? 'bg-white/15 border border-white/30 text-foreground'
+                : 'bg-white/5 border border-white/10 text-foreground/60 hover:bg-white/10'
               }
             `}
           >
-            <div className="font-medium">{level.label}</div>
-            <div className="text-sm text-foreground-muted">{level.description}</div>
+            {level.label}
           </button>
         ))}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Any health conditions to consider? (optional)
-        </label>
         <input
           type="text"
           value={(answers.healthConditions || []).join(', ')}
           onChange={(e) => updateAnswers({ 
             healthConditions: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
           })}
-          placeholder="e.g., lower back issues, high blood pressure"
-          className="input"
+          placeholder="Any health conditions? (optional)"
+          className="
+            w-full px-4 py-4
+            bg-white/5 border border-white/10 rounded-xl
+            text-foreground placeholder:text-foreground/30
+            focus:outline-none focus:border-white/20
+            transition-colors
+          "
         />
       </div>
     </div>
@@ -317,16 +303,11 @@ function CurrentStateStep({ answers, updateAnswers }: StepProps) {
 }
 
 function ScheduleStep({ answers, updateAnswers }: StepProps) {
-  const workoutTimes = [
-    { id: 'morning', label: 'Morning', description: 'Before work' },
-    { id: 'lunch', label: 'Lunch', description: 'Midday break' },
-    { id: 'afternoon', label: 'Afternoon', description: 'After work' },
-    { id: 'evening', label: 'Evening', description: 'Before dinner' },
-  ];
-
+  const times = ['Morning', 'Lunch', 'Afternoon', 'Evening'];
   const selectedTimes = answers.preferredWorkoutTimes || [];
 
-  const toggleTime = (timeId: string) => {
+  const toggleTime = (time: string) => {
+    const timeId = time.toLowerCase();
     const newTimes = selectedTimes.includes(timeId)
       ? selectedTimes.filter(t => t !== timeId)
       : [...selectedTimes, timeId];
@@ -334,43 +315,43 @@ function ScheduleStep({ answers, updateAnswers }: StepProps) {
   };
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">When can you work out?</h1>
-        <p className="text-foreground-muted">
-          Select your preferred times. Eden will schedule around these.
-        </p>
+        <h1 className="text-2xl font-light mb-2">When can you train?</h1>
+        <p className="text-foreground/40 text-sm">Select your preferred times</p>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        {workoutTimes.map(time => (
+        {times.map(time => (
           <button
-            key={time.id}
-            onClick={() => toggleTime(time.id)}
+            key={time}
+            onClick={() => toggleTime(time)}
             className={`
-              p-4 rounded-xl text-center transition-all duration-200
-              ${selectedTimes.includes(time.id)
-                ? 'bg-green-500/10 border-2 border-green-500/50'
-                : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+              p-4 rounded-xl text-center transition-all duration-300
+              ${selectedTimes.includes(time.toLowerCase())
+                ? 'bg-white/15 border border-white/30 text-foreground'
+                : 'bg-white/5 border border-white/10 text-foreground/60 hover:bg-white/10'
               }
             `}
           >
-            <div className="font-medium">{time.label}</div>
-            <div className="text-xs text-foreground-muted">{time.description}</div>
+            {time}
           </button>
         ))}
       </div>
 
       <div>
-        <label className="block text-sm font-medium mb-2">
-          Your typical work schedule
-        </label>
         <input
           type="text"
           value={answers.workSchedule || ''}
           onChange={(e) => updateAnswers({ workSchedule: e.target.value })}
-          placeholder="e.g., 9-5 Mon-Fri, shift work, flexible"
-          className="input"
+          placeholder="Work schedule (e.g., 9-5 Mon-Fri)"
+          className="
+            w-full px-4 py-4
+            bg-white/5 border border-white/10 rounded-xl
+            text-foreground placeholder:text-foreground/30
+            focus:outline-none focus:border-white/20
+            transition-colors
+          "
         />
       </div>
     </div>
@@ -378,17 +359,7 @@ function ScheduleStep({ answers, updateAnswers }: StepProps) {
 }
 
 function EquipmentStep({ answers, updateAnswers }: StepProps) {
-  const equipment = [
-    'Dumbbells',
-    'Barbell',
-    'Kettlebell',
-    'Resistance bands',
-    'Pull-up bar',
-    'Yoga mat',
-    'Treadmill',
-    'Stationary bike',
-  ];
-
+  const equipment = ['Dumbbells', 'Barbell', 'Kettlebell', 'Bands', 'Pull-up bar', 'Yoga mat'];
   const selectedEquipment = answers.homeEquipment || [];
 
   const toggleEquipment = (item: string) => {
@@ -399,80 +370,58 @@ function EquipmentStep({ answers, updateAnswers }: StepProps) {
   };
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">Your equipment access</h1>
-        <p className="text-foreground-muted">
-          Eden will tailor workouts to what you have available.
-        </p>
+        <h1 className="text-2xl font-light mb-2">Your equipment</h1>
+        <p className="text-foreground/40 text-sm">Eden adapts to what you have</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex gap-4">
+      <div className="flex gap-3">
+        <button
+          onClick={() => updateAnswers({ gymAccess: true })}
+          className={`
+            flex-1 p-6 rounded-xl text-center transition-all duration-300
+            ${answers.gymAccess === true
+              ? 'bg-white/15 border border-white/30'
+              : 'bg-white/5 border border-white/10 hover:bg-white/10'
+            }
+          `}
+        >
+          <div className="text-2xl mb-2">🏋️</div>
+          <div className="text-sm text-foreground/60">Gym</div>
+        </button>
+        
+        <button
+          onClick={() => updateAnswers({ gymAccess: false })}
+          className={`
+            flex-1 p-6 rounded-xl text-center transition-all duration-300
+            ${answers.gymAccess === false
+              ? 'bg-white/15 border border-white/30'
+              : 'bg-white/5 border border-white/10 hover:bg-white/10'
+            }
+          `}
+        >
+          <div className="text-2xl mb-2">🏠</div>
+          <div className="text-sm text-foreground/60">Home</div>
+        </button>
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {equipment.map(item => (
           <button
-            onClick={() => updateAnswers({ gymAccess: true })}
+            key={item}
+            onClick={() => toggleEquipment(item)}
             className={`
-              flex-1 p-4 rounded-xl text-center transition-all duration-200
-              ${answers.gymAccess === true
-                ? 'bg-green-500/10 border-2 border-green-500/50'
-                : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+              px-4 py-2 rounded-full text-sm transition-all duration-300
+              ${selectedEquipment.includes(item)
+                ? 'bg-white/15 border border-white/30 text-foreground'
+                : 'bg-white/5 border border-white/10 text-foreground/50 hover:bg-white/10'
               }
             `}
           >
-            <div className="text-2xl mb-1">🏋️</div>
-            <div className="font-medium">Gym Access</div>
+            {item}
           </button>
-          
-          <button
-            onClick={() => updateAnswers({ gymAccess: false })}
-            className={`
-              flex-1 p-4 rounded-xl text-center transition-all duration-200
-              ${answers.gymAccess === false
-                ? 'bg-green-500/10 border-2 border-green-500/50'
-                : 'bg-background-secondary border border-default hover:border-foreground-subtle'
-              }
-            `}
-          >
-            <div className="text-2xl mb-1">🏠</div>
-            <div className="font-medium">Home Only</div>
-          </button>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-3">
-            Home equipment (select all you have)
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {equipment.map(item => (
-              <button
-                key={item}
-                onClick={() => toggleEquipment(item)}
-                className={`
-                  px-3 py-1.5 rounded-full text-sm transition-all duration-200
-                  ${selectedEquipment.includes(item)
-                    ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                    : 'bg-background-tertiary text-foreground-muted border border-transparent hover:border-foreground-subtle'
-                  }
-                `}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <input
-            type="checkbox"
-            id="outdoorAccess"
-            checked={answers.outdoorAccess ?? true}
-            onChange={(e) => updateAnswers({ outdoorAccess: e.target.checked })}
-            className="w-5 h-5 rounded border-default bg-background-secondary"
-          />
-          <label htmlFor="outdoorAccess" className="text-foreground-muted">
-            I have outdoor space for walks/runs
-          </label>
-        </div>
+        ))}
       </div>
     </div>
   );
@@ -480,29 +429,25 @@ function EquipmentStep({ answers, updateAnswers }: StepProps) {
 
 function CapacityStep({ answers, updateAnswers }: StepProps) {
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">Your time and capacity</h1>
-        <p className="text-foreground-muted">
-          Be realistic - Eden won&apos;t overwhelm you.
-        </p>
+        <h1 className="text-2xl font-light mb-2">Your capacity</h1>
+        <p className="text-foreground/40 text-sm">Be realistic — Eden won't overwhelm you</p>
       </div>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-3">
-            Max workout days per week
-          </label>
+          <label className="block text-sm text-foreground/50 mb-3">Workout days per week</label>
           <div className="flex gap-2">
             {[2, 3, 4, 5, 6].map(days => (
               <button
                 key={days}
                 onClick={() => updateAnswers({ maxWorkoutDays: days })}
                 className={`
-                  flex-1 py-3 rounded-xl font-medium transition-all duration-200
+                  flex-1 py-4 rounded-xl font-medium transition-all duration-300
                   ${answers.maxWorkoutDays === days
-                    ? 'bg-green-500/20 text-green-400 border-2 border-green-500/50'
-                    : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+                    ? 'bg-white/15 border border-white/30 text-foreground'
+                    : 'bg-white/5 border border-white/10 text-foreground/50 hover:bg-white/10'
                   }
                 `}
               >
@@ -513,19 +458,17 @@ function CapacityStep({ answers, updateAnswers }: StepProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-3">
-            Max daily time for health activities (minutes)
-          </label>
+          <label className="block text-sm text-foreground/50 mb-3">Daily minutes available</label>
           <div className="flex gap-2">
-            {[30, 45, 60, 90, 120].map(mins => (
+            {[30, 45, 60, 90].map(mins => (
               <button
                 key={mins}
                 onClick={() => updateAnswers({ maxDailyHealthMinutes: mins })}
                 className={`
-                  flex-1 py-3 rounded-xl font-medium text-sm transition-all duration-200
+                  flex-1 py-4 rounded-xl font-medium transition-all duration-300
                   ${answers.maxDailyHealthMinutes === mins
-                    ? 'bg-green-500/20 text-green-400 border-2 border-green-500/50'
-                    : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+                    ? 'bg-white/15 border border-white/30 text-foreground'
+                    : 'bg-white/5 border border-white/10 text-foreground/50 hover:bg-white/10'
                   }
                 `}
               >
@@ -540,10 +483,10 @@ function CapacityStep({ answers, updateAnswers }: StepProps) {
 }
 
 function CoachingStyleStep({ answers, updateAnswers }: StepProps) {
-  const tones: { id: CoachingStyle['tone']; label: string; emoji: string }[] = [
-    { id: 'supportive', label: 'Supportive', emoji: '💚' },
-    { id: 'neutral', label: 'Balanced', emoji: '⚖️' },
-    { id: 'tough', label: 'Tough Love', emoji: '💪' },
+  const tones: { id: CoachingStyle['tone']; label: string }[] = [
+    { id: 'supportive', label: 'Supportive' },
+    { id: 'neutral', label: 'Balanced' },
+    { id: 'tough', label: 'Tough love' },
   ];
 
   const densities: { id: CoachingStyle['density']; label: string }[] = [
@@ -553,49 +496,46 @@ function CoachingStyleStep({ answers, updateAnswers }: StepProps) {
   ];
 
   return (
-    <div className="space-y-6 animate-slide-up">
+    <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-bold mb-2">How should Eden coach you?</h1>
-        <p className="text-foreground-muted">
-          Customize Eden&apos;s communication style.
-        </p>
+        <h1 className="text-2xl font-light mb-2">How should Eden coach you?</h1>
+        <p className="text-foreground/40 text-sm">Customize your experience</p>
       </div>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm font-medium mb-3">Tone</label>
+          <label className="block text-sm text-foreground/50 mb-3">Tone</label>
           <div className="flex gap-3">
             {tones.map(tone => (
               <button
                 key={tone.id}
                 onClick={() => updateAnswers({ coachingTone: tone.id })}
                 className={`
-                  flex-1 py-4 rounded-xl text-center transition-all duration-200
+                  flex-1 py-4 rounded-xl text-center transition-all duration-300
                   ${answers.coachingTone === tone.id
-                    ? 'bg-green-500/10 border-2 border-green-500/50'
-                    : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+                    ? 'bg-white/15 border border-white/30 text-foreground'
+                    : 'bg-white/5 border border-white/10 text-foreground/50 hover:bg-white/10'
                   }
                 `}
               >
-                <div className="text-2xl mb-1">{tone.emoji}</div>
-                <div className="text-sm font-medium">{tone.label}</div>
+                {tone.label}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-3">Detail Level</label>
+          <label className="block text-sm text-foreground/50 mb-3">Detail level</label>
           <div className="space-y-2">
             {densities.map(density => (
               <button
                 key={density.id}
                 onClick={() => updateAnswers({ coachingDensity: density.id })}
                 className={`
-                  w-full p-4 rounded-xl text-left transition-all duration-200
+                  w-full p-4 rounded-xl text-left transition-all duration-300
                   ${answers.coachingDensity === density.id
-                    ? 'bg-green-500/10 border-2 border-green-500/50'
-                    : 'bg-background-secondary border border-default hover:border-foreground-subtle'
+                    ? 'bg-white/15 border border-white/30 text-foreground'
+                    : 'bg-white/5 border border-white/10 text-foreground/50 hover:bg-white/10'
                   }
                 `}
               >
@@ -613,4 +553,3 @@ interface StepProps {
   answers: OnboardingAnswers;
   updateAnswers: (updates: Partial<OnboardingAnswers>) => void;
 }
-

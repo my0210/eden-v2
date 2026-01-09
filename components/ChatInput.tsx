@@ -12,7 +12,6 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
   const [isSending, setIsSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea
   useEffect(() => {
     const textarea = textareaRef.current;
     if (textarea) {
@@ -31,7 +30,6 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
       if (onSend) {
         onSend(trimmedMessage);
       } else {
-        // Default behavior: send to API
         const response = await fetch('/api/chat/message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -45,12 +43,8 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
           throw new Error('Failed to send message');
         }
 
-        // Handle response - could open a chat modal or show inline
         const data = await response.json();
         console.log('Chat response:', data);
-        
-        // For now, just alert the response
-        // TODO: Implement proper chat UI
         alert(data.message || 'Message sent!');
       }
 
@@ -70,23 +64,24 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
   };
 
   return (
-    <div className="flex items-end gap-2">
-      <div className="flex-1 relative">
+    <div className="flex items-end gap-3">
+      <div className="flex-1">
         <textarea
           ref={textareaRef}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Eden anything..."
+          placeholder="Ask Eden..."
           disabled={isSending}
           rows={1}
           className="
             w-full px-4 py-3 
-            bg-background-secondary border border-default rounded-xl
-            text-foreground placeholder:text-foreground-subtle
+            bg-white/5 border border-white/10 rounded-xl
+            text-foreground placeholder:text-foreground/30
             resize-none overflow-hidden
-            focus:outline-none focus:border-green-500/50 focus:ring-1 focus:ring-green-500/20
+            focus:outline-none focus:border-white/20
             disabled:opacity-50
+            transition-colors
           "
           style={{ minHeight: '48px', maxHeight: '120px' }}
         />
@@ -97,17 +92,18 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
         disabled={!message.trim() || isSending}
         className="
           w-12 h-12 rounded-xl
-          bg-green-500 hover:bg-green-600
-          disabled:bg-background-tertiary disabled:text-foreground-subtle
-          text-background font-medium
-          transition-colors duration-200
+          bg-white/10 border border-white/10
+          hover:bg-white/15 hover:border-white/20
+          disabled:opacity-30
+          text-foreground/60
+          transition-all duration-300
           flex items-center justify-center
           flex-shrink-0
         "
         aria-label="Send message"
       >
         {isSending ? (
-          <span className="animate-pulse-soft">•</span>
+          <span className="animate-pulse">•</span>
         ) : (
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
@@ -122,4 +118,3 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
     </div>
   );
 }
-

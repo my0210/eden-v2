@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
-import { startOfWeek, format, addDays, isToday, isBefore, parseISO } from 'date-fns';
+import { startOfWeek, format, addDays, isToday, isBefore } from 'date-fns';
 import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
 import { ChatInput } from '@/components/ChatInput';
@@ -19,19 +19,16 @@ export default async function WeekPage({
     return null;
   }
 
-  // Get current week start (Monday)
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
-  // Get user profile
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('*')
     .eq('id', user.id)
     .single();
 
-  // Get weekly plan
   const { data: planData } = await supabase
     .from('weekly_plans')
     .select('*, plan_items(*)')
@@ -39,7 +36,6 @@ export default async function WeekPage({
     .eq('week_start_date', weekStartStr)
     .single();
 
-  // Determine which day to show
   const params = await searchParams;
   const selectedDayParam = params.day;
   let selectedDay: DayOfWeek;
@@ -47,12 +43,10 @@ export default async function WeekPage({
   if (selectedDayParam !== undefined) {
     selectedDay = parseInt(selectedDayParam, 10) as DayOfWeek;
   } else {
-    // Default to today's day of week (1 = Monday, 0 = Sunday)
     const todayDow = today.getDay();
     selectedDay = todayDow as DayOfWeek;
   }
 
-  // Transform data
   const userProfile: UserProfile | null = profile ? {
     id: profile.id,
     email: profile.email,
@@ -88,38 +82,41 @@ export default async function WeekPage({
     createdAt: planData.created_at,
   } : null;
 
-  // Get items for selected day
   const dayItems = weeklyPlan?.items
     .filter(item => item.dayOfWeek === selectedDay)
     .sort((a, b) => a.sortOrder - b.sortOrder) || [];
 
-  // Calculate completion status for each day
   const dayCompletionStatus = calculateDayCompletion(weeklyPlan?.items || [], weekStart);
-
-  // Get selected date
   const selectedDate = addDays(weekStart, selectedDay === 0 ? 6 : selectedDay - 1);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="sticky top-0 z-10 bg-background border-b border-default px-4 py-3">
-        <div className="flex items-center justify-between">
-          <ProfileButton />
-          <span className="text-foreground-muted text-sm">
-            Week of {format(weekStart, 'MMM d')}
-          </span>
+    <div className="min-h-screen flex flex-col relative">
+      {/* Ambient gradient orb */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
+        <div className="relative w-[800px] h-[800px]">
+          <div 
+            className="absolute inset-0 rounded-full opacity-10 blur-[150px]"
+            style={{
+              background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+            }}
+          />
         </div>
+      </div>
+
+      {/* Header */}
+      <header className="relative z-10 px-6 py-4 flex items-center justify-between">
+        <ProfileButton />
+        <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+        <div className="w-9" /> {/* Spacer for balance */}
       </header>
 
       {/* Domain Indicator */}
-      <div className="px-4 py-3 border-b border-muted">
-        <DomainIndicator 
-          items={weeklyPlan?.items || []} 
-        />
+      <div className="relative z-10 px-6 py-2">
+        <DomainIndicator items={weeklyPlan?.items || []} />
       </div>
 
       {/* Week Strip */}
-      <div className="px-4 py-3 border-b border-muted">
+      <div className="relative z-10 px-6 py-4">
         <WeekStrip 
           weekStart={weekStart}
           selectedDay={selectedDay}
@@ -127,8 +124,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Day View - Main Content */}
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      {/* Day View */}
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 py-4">
         <DayView
           date={selectedDate}
           items={dayItems as PlanItem[]}
@@ -138,8 +135,8 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Chat Input - Fixed at Bottom */}
-      <div className="sticky bottom-0 border-t border-default bg-background px-4 py-3 safe-area-bottom">
+      {/* Chat Input */}
+      <div className="relative z-10 px-6 py-4 safe-area-bottom">
         <ChatInput userId={user.id} />
       </div>
     </div>
@@ -174,7 +171,6 @@ function calculateDayCompletion(
     }
   });
 
-  // Calculate percentages
   Object.keys(result).forEach(key => {
     const day = parseInt(key) as DayOfWeek;
     if (result[day].total > 0) {
@@ -186,4 +182,3 @@ function calculateDayCompletion(
 
   return result;
 }
-
