@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Drawer } from 'vaul';
+import { createPortal } from 'react-dom';
 import { ChatMessage, Message } from './ChatMessage';
 import { SuggestedPrompts } from './SuggestedPrompts';
 
@@ -15,8 +15,13 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
+  const [mounted, setMounted] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -35,7 +40,25 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      setTimeout(() => inputRef.current?.focus(), 100);
+      // Prevent body scroll when open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
+  // Close on escape
+  useEffect(() => {
+    const handleEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsOpen(false);
+    };
+    if (isOpen) {
+      window.addEventListener('keydown', handleEsc);
+      return () => window.removeEventListener('keydown', handleEsc);
     }
   }, [isOpen]);
 
@@ -43,7 +66,6 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     const text = messageText || input.trim();
     if (!text || isLoading) return;
 
-    // Add user message
     const userMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -67,7 +89,6 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
 
       const data = await response.json();
 
-      // Add Eden's response
       const edenMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -75,13 +96,11 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
       };
       setMessages(prev => [...prev, edenMessage]);
 
-      // Set suggested prompts if available
       if (data.suggestedPrompts) {
         setSuggestedPrompts(data.suggestedPrompts);
       }
     } catch (error) {
       console.error('Error sending message:', error);
-      // Add error message
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
@@ -100,149 +119,139 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
     }
   };
 
-  const handlePromptClick = (prompt: string) => {
-    handleSend(prompt);
-  };
+  const overlayContent = isOpen ? (
+    <div 
+      className="fixed inset-0 z-[9999] flex flex-col"
+      style={{ backgroundColor: 'transparent' }}
+    >
+      {/* Backdrop - blur only, transparent */}
+      <div 
+        className="absolute inset-0 backdrop-blur-xl"
+        style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}
+        onClick={() => setIsOpen(false)}
+      />
+      
+      {/* Content - floating above backdrop */}
+      <div className="relative z-10 flex flex-col h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-4">
+          <button
+            onClick={() => setIsOpen(false)}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
+            aria-label="Close chat"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          
+          <button
+            className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white transition-colors"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
+            aria-label="Chat history"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+        </div>
 
-  return (
-    <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
-      <Drawer.Trigger asChild>
-        {trigger}
-      </Drawer.Trigger>
-
-      <Drawer.Portal>
-        {/* Blurred backdrop - you can see through it */}
-        <Drawer.Overlay className="fixed inset-0 bg-black/40 backdrop-blur-xl z-[100]" />
-        
-        <Drawer.Content className="fixed inset-0 z-[101] flex flex-col pointer-events-none">
-          {/* Header - floating */}
-          <div className="flex items-center justify-between px-4 py-4 pointer-events-auto">
-            <Drawer.Close asChild>
-              <button
-                className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/70 hover:bg-black/60 transition-colors"
-                aria-label="Close chat"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </Drawer.Close>
-            
-            <Drawer.Title className="sr-only">Chat with Eden</Drawer.Title>
-            
-            {/* History button placeholder */}
-            <button
-              className="w-10 h-10 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/70 hover:bg-black/60 transition-colors"
-              aria-label="Chat history"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Messages Area - scrollable, floating cards */}
-          <div className="flex-1 overflow-y-auto px-4 py-4 pointer-events-auto">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center px-6">
-                {/* Empty state - subtle */}
-                <p className="text-foreground/30 text-sm">
-                  Ask Eden anything about your plan
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {messages.map(message => (
-                  <ChatMessage key={message.id} message={message} />
-                ))}
-                
-                {isLoading && (
-                  <div className="flex justify-start">
-                    <div className="bg-black/60 backdrop-blur-xl border border-white/10 rounded-2xl px-4 py-3">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center">
+              <p className="text-white/30 text-sm">Ask Eden anything</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {messages.map(message => (
+                <ChatMessage key={message.id} message={message} />
+              ))}
+              
+              {isLoading && (
+                <div className="flex justify-start">
+                  <div 
+                    className="rounded-2xl px-4 py-3 border border-white/10"
+                    style={{ backgroundColor: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(20px)' }}
+                  >
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                      <span className="w-2 h-2 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                     </div>
                   </div>
-                )}
-                
-                <div ref={messagesEndRef} />
-              </div>
-            )}
-          </div>
-
-          {/* Suggested Prompts - floating above input */}
-          {suggestedPrompts.length > 0 && !isLoading && (
-            <div className="px-4 pb-2 pointer-events-auto">
-              <SuggestedPrompts 
-                prompts={suggestedPrompts} 
-                onSelect={handlePromptClick} 
-              />
+                </div>
+              )}
+              
+              <div ref={messagesEndRef} />
             </div>
           )}
+        </div>
 
-          {/* Input Area - floating at bottom */}
-          <div className="px-4 pt-2 pb-4 safe-area-bottom pointer-events-auto">
-            <div className="flex items-end gap-3">
-              {/* Plus button like Bevel */}
+        {/* Suggested Prompts */}
+        {suggestedPrompts.length > 0 && !isLoading && (
+          <div className="px-4 pb-2">
+            <SuggestedPrompts prompts={suggestedPrompts} onSelect={(p) => handleSend(p)} />
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="px-4 pt-2 pb-4 safe-area-bottom">
+          <div className="flex items-end gap-3">
+            <button
+              className="w-12 h-12 rounded-full flex items-center justify-center text-white/50 flex-shrink-0"
+              style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
+              aria-label="Add"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+            </button>
+            
+            <div className="flex-1 relative">
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask Eden..."
+                disabled={isLoading}
+                rows={1}
+                className="w-full px-4 py-3 pr-12 rounded-full text-white placeholder:text-white/30 resize-none overflow-hidden focus:outline-none disabled:opacity-50 border border-white/10"
+                style={{ 
+                  backgroundColor: 'rgba(0,0,0,0.4)', 
+                  backdropFilter: 'blur(12px)',
+                  minHeight: '48px', 
+                  maxHeight: '120px' 
+                }}
+              />
+              
               <button
-                className="w-12 h-12 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-foreground/50 hover:bg-black/60 transition-colors flex-shrink-0"
-                aria-label="Add attachment"
+                onClick={() => handleSend()}
+                disabled={!input.trim() || isLoading}
+                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white disabled:opacity-0 transition-all"
+                style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
+                aria-label="Send"
               >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" />
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
                 </svg>
               </button>
-              
-              <div className="flex-1 relative">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask Eden..."
-                  disabled={isLoading}
-                  rows={1}
-                  className="
-                    w-full px-4 py-3 pr-12
-                    bg-black/40 backdrop-blur-md border border-white/10 rounded-full
-                    text-foreground placeholder:text-foreground/30
-                    resize-none overflow-hidden
-                    focus:outline-none focus:border-white/20
-                    disabled:opacity-50
-                    transition-colors
-                  "
-                  style={{ minHeight: '48px', maxHeight: '120px' }}
-                />
-                
-                {/* Send button inside input */}
-                <button
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
-                  className="
-                    absolute right-2 top-1/2 -translate-y-1/2
-                    w-8 h-8 rounded-full
-                    bg-white/10
-                    hover:bg-white/20
-                    disabled:opacity-0
-                    text-foreground/60
-                    transition-all duration-200
-                    flex items-center justify-center
-                  "
-                  aria-label="Send message"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-                  </svg>
-                </button>
-              </div>
             </div>
           </div>
-        </Drawer.Content>
-      </Drawer.Portal>
-    </Drawer.Root>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  return (
+    <>
+      <div onClick={() => setIsOpen(true)}>
+        {trigger}
+      </div>
+      
+      {mounted && overlayContent && createPortal(overlayContent, document.body)}
+    </>
   );
 }
-

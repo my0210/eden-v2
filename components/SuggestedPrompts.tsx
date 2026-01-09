@@ -14,19 +14,12 @@ export function SuggestedPrompts({ prompts, onSelect }: SuggestedPromptsProps) {
         <button
           key={index}
           onClick={() => onSelect(prompt)}
-          className="
-            w-full px-4 py-3 
-            bg-black/40 backdrop-blur-md border border-white/10 rounded-2xl
-            text-left text-sm text-foreground/70
-            hover:bg-black/60 hover:border-white/15 hover:text-foreground/90
-            transition-all duration-200
-            flex items-center justify-between gap-3
-            active:scale-[0.98]
-          "
+          className="w-full px-4 py-3 border border-white/10 rounded-2xl text-left text-sm text-white/70 hover:text-white/90 transition-all duration-200 flex items-center justify-between gap-3 active:scale-[0.98]"
+          style={{ backgroundColor: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(12px)' }}
         >
           <span className="line-clamp-2">{prompt}</span>
           <svg 
-            className="w-4 h-4 flex-shrink-0 text-foreground/40" 
+            className="w-4 h-4 flex-shrink-0 text-white/40" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor"

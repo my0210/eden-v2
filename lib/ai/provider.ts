@@ -47,10 +47,13 @@ export async function generateCompletion(
   try {
     console.log(`[AI] Calling model: ${MODELS[model]}`);
     
+    // gpt-5.2-chat-latest doesn't support custom temperature
+    const useTemperature = model !== 'instant';
+    
     const response = await openai.chat.completions.create({
       model: MODELS[model],
       messages,
-      temperature,
+      ...(useTemperature ? { temperature } : {}),
       max_completion_tokens: maxTokens, // GPT-5.2 uses max_completion_tokens
       response_format: responseFormat === 'json' 
         ? { type: 'json_object' } 
