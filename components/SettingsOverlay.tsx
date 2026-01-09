@@ -110,6 +110,25 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
     router.refresh();
   };
 
+  const handleRegeneratePlan = async () => {
+    if (!confirm('Regenerate your weekly plan? This will replace your current plan for this week.')) return;
+    
+    setLoading('regenerate');
+    try {
+      const res = await fetch('/api/plan/generate', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ forceRegenerate: true }),
+      });
+      if (res.ok) {
+        setIsOpen(false);
+        router.refresh();
+      }
+    } finally {
+      setLoading(null);
+    }
+  };
+
   const SegmentedControl = ({ 
     options, 
     value, 
@@ -270,6 +289,15 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
                 <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
                   Developer
                 </h3>
+
+                <button
+                  onClick={handleRegeneratePlan}
+                  disabled={loading !== null}
+                  className="w-full py-2.5 rounded-lg text-sm text-blue-400/80 hover:text-blue-400 transition-colors text-left px-3 disabled:opacity-50"
+                  style={{ backgroundColor: 'rgba(59, 130, 246, 0.08)' }}
+                >
+                  {loading === 'regenerate' ? 'Regenerating...' : 'Regenerate Week Plan'}
+                </button>
                 
                 <button
                   onClick={handleResetCoaching}
