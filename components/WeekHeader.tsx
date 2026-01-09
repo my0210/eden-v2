@@ -182,13 +182,14 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
       {/* Intro Section - BELOW domains (content changes based on selection) */}
       <div className="px-6">
         <div 
-          className="rounded-xl p-4 transition-all duration-300"
+          className="rounded-xl p-4 transition-all duration-300 cursor-pointer"
           style={{ 
             backgroundColor: 'rgba(255,255,255,0.03)',
             borderColor: selectedDomain ? DOMAIN_COLORS[selectedDomain] : 'rgba(255,255,255,0.06)',
             borderWidth: '1px',
             borderStyle: 'solid',
           }}
+          onClick={() => (needsExpand || isExpanded) && setIsExpanded(!isExpanded)}
         >
           {/* Header row */}
           <div className="flex items-center justify-between mb-2">
@@ -209,17 +210,30 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
                 {currentHeader}
               </span>
             </div>
-            {selectedDomain && (
-              <button
-                onClick={() => setSelectedDomain(null)}
-                className="text-foreground/30 hover:text-foreground/50 transition-colors p-1"
-                aria-label="Back to overview"
-              >
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+            <div className="flex items-center gap-2">
+              {selectedDomain && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setSelectedDomain(null); }}
+                  className="text-foreground/30 hover:text-foreground/50 transition-colors p-1"
+                  aria-label="Back to overview"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              {/* Chevron indicator */}
+              {(needsExpand || isExpanded) && (
+                <svg 
+                  className={`w-4 h-4 text-foreground/20 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
                 </svg>
-              </button>
-            )}
+              )}
+            </div>
           </div>
           
           {/* Intro text with expand/collapse */}
@@ -231,16 +245,6 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
           >
             {currentIntro}
           </p>
-          
-          {/* Read more/less button */}
-          {(needsExpand || isExpanded) && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="text-xs text-foreground/30 hover:text-foreground/50 mt-2 transition-colors"
-            >
-              {isExpanded ? '← Less' : 'More →'}
-            </button>
-          )}
         </div>
       </div>
     </div>

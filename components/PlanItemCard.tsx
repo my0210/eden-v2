@@ -124,64 +124,82 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
 
   return (
     <div className={cardClasses}>
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        {/* Domain icon */}
-        <div className="mt-0.5">
-          <DomainIcon domain={item.domain as Domain} color={domainColor} />
-        </div>
-        
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            {isComplete && (
-              <span className="text-green-400/80 text-sm">✓</span>
-            )}
-            <h3 className={`
-              font-medium
-              ${isComplete 
-                ? 'text-foreground/70' 
-                : isSkipped 
-                  ? 'line-through text-foreground/30' 
-                  : 'text-foreground/90'
-              }
-            `}>
-              {item.title}
-            </h3>
+      {/* Clickable header area - toggles reasoning */}
+      <div 
+        className="cursor-pointer"
+        onClick={() => setShowReasoning(!showReasoning)}
+      >
+        <div className="flex items-start gap-3">
+          {/* Domain icon */}
+          <div className="mt-0.5">
+            <DomainIcon domain={item.domain as Domain} color={domainColor} />
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              {isComplete && (
+                <span className="text-green-400/80 text-sm">✓</span>
+              )}
+              <h3 className={`
+                font-medium
+                ${isComplete 
+                  ? 'text-foreground/70' 
+                  : isSkipped 
+                    ? 'line-through text-foreground/30' 
+                    : 'text-foreground/90'
+                }
+              `}>
+                {item.title}
+              </h3>
+            </div>
+
+            <p className={`text-sm mt-1 ${isSkipped ? 'text-foreground/20' : 'text-foreground/40'}`}>
+              {item.durationMinutes && (
+                <span className="text-foreground/30">{item.durationMinutes}m · </span>
+              )}
+              {item.personalizationContext}
+            </p>
           </div>
 
-          <p className={`text-sm mt-1 ${isSkipped ? 'text-foreground/20' : 'text-foreground/40'}`}>
-            {item.durationMinutes && (
-              <span className="text-foreground/30">{item.durationMinutes}m · </span>
-            )}
-            {item.personalizationContext}
-          </p>
+          {/* Chevron indicator + Ask Eden */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Ask Eden */}
+            <button
+              onClick={(e) => { e.stopPropagation(); handleAskEden(); }}
+              className="
+                group
+                h-8 px-2 rounded-full
+                flex items-center gap-0
+                text-foreground/20
+                hover:text-foreground/50 hover:bg-white/5
+                transition-all duration-300
+              "
+              aria-label="Ask Eden about this"
+            >
+              <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+              </svg>
+              <span className="
+                max-w-0 overflow-hidden whitespace-nowrap
+                group-hover:max-w-[80px] group-hover:ml-1.5
+                transition-all duration-300 ease-out
+                text-xs font-medium
+              ">
+                Ask Eden
+              </span>
+            </button>
+            
+            {/* Chevron */}
+            <svg 
+              className={`w-4 h-4 text-foreground/20 transition-transform duration-300 ${showReasoning ? 'rotate-180' : ''}`}
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+            </svg>
+          </div>
         </div>
-
-        {/* Ask Eden - anchored top right with expanding label */}
-        <button
-          onClick={handleAskEden}
-          className="
-            group flex-shrink-0
-            h-8 px-2 rounded-full
-            flex items-center gap-0
-            text-foreground/20
-            hover:text-foreground/50 hover:bg-white/5
-            transition-all duration-300
-          "
-          aria-label="Ask Eden about this"
-        >
-          <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-          </svg>
-          <span className="
-            max-w-0 overflow-hidden whitespace-nowrap
-            group-hover:max-w-[80px] group-hover:ml-1.5
-            transition-all duration-300 ease-out
-            text-xs font-medium
-          ">
-            Ask Eden
-          </span>
-        </button>
       </div>
 
       {/* Reasoning */}
