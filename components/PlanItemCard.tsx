@@ -198,7 +198,7 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
             >
               Skip
             </button>
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex items-center gap-2">
               <button
                 onClick={handleAskEden}
                 className="
@@ -213,13 +213,22 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
               <button
                 onClick={() => setShowReasoning(!showReasoning)}
                 className="
-                  px-3 py-2 text-sm
-                  text-foreground/30
-                  hover:text-foreground/50
-                  transition-colors
+                  w-8 h-8 rounded-full
+                  flex items-center justify-center
+                  text-foreground/25
+                  hover:text-foreground/50 hover:bg-white/5
+                  transition-all duration-300
                 "
+                aria-label={showReasoning ? 'Hide reasoning' : 'Show reasoning'}
               >
-                {showReasoning ? 'Hide' : 'Why?'}
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-300 ${showReasoning ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
               </button>
             </div>
           </>
@@ -238,7 +247,7 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
             >
               Undo
             </button>
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex items-center gap-2">
               <button
                 onClick={handleAskEden}
                 className="
@@ -253,13 +262,22 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
               <button
                 onClick={() => setShowReasoning(!showReasoning)}
                 className="
-                  px-3 py-2 text-sm
-                  text-foreground/30
-                  hover:text-foreground/50
-                  transition-colors
+                  w-8 h-8 rounded-full
+                  flex items-center justify-center
+                  text-foreground/25
+                  hover:text-foreground/50 hover:bg-white/5
+                  transition-all duration-300
                 "
+                aria-label={showReasoning ? 'Hide reasoning' : 'Show reasoning'}
               >
-                {showReasoning ? 'Hide' : 'Why?'}
+                <svg 
+                  className={`w-4 h-4 transition-transform duration-300 ${showReasoning ? 'rotate-180' : ''}`}
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                </svg>
               </button>
             </div>
           </>
