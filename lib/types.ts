@@ -70,7 +70,7 @@ export const DOMAINS: Domain[] = ['heart', 'muscle', 'sleep', 'metabolism', 'min
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   heart: 'Heart',
-  muscle: 'Muscle',
+  muscle: 'Frame',
   sleep: 'Sleep',
   metabolism: 'Metabolism',
   mind: 'Mind',

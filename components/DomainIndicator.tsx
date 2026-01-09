@@ -8,7 +8,7 @@ interface DomainIndicatorProps {
 
 const DOMAIN_SHORT_LABELS: Record<Domain, string> = {
   heart: 'Heart',
-  muscle: 'Muscle',
+  muscle: 'Frame',
   sleep: 'Sleep',
   metabolism: 'Metab',
   mind: 'Mind',
