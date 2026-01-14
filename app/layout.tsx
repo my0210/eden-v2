@@ -14,7 +14,7 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: 'Eden - AI Longevity Coach',
-  description: 'Your personalized AI health coach for optimal longevity across Heart, Muscle, Sleep, Metabolism, and Mind.',
+  description: 'Your personalized AI health coach for optimal longevity across Heart, Frame, Recovery, Metabolism, and Mind.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
