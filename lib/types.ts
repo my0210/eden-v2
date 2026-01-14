@@ -64,9 +64,9 @@ export type FitnessLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very
 // Domain Types
 // ============================================================
 
-export type Domain = 'heart' | 'frame' | 'recovery' | 'metabolism' | 'mind';
+export type Domain = 'heart' | 'frame' | 'mind' | 'metabolism' | 'recovery';
 
-export const DOMAINS: Domain[] = ['heart', 'frame', 'recovery', 'metabolism', 'mind'];
+export const DOMAINS: Domain[] = ['heart', 'frame', 'mind', 'metabolism', 'recovery'];
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   heart: 'Heart',
