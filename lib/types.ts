@@ -64,22 +64,22 @@ export type FitnessLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very
 // Domain Types
 // ============================================================
 
-export type Domain = 'heart' | 'muscle' | 'sleep' | 'metabolism' | 'mind';
+export type Domain = 'heart' | 'frame' | 'recovery' | 'metabolism' | 'mind';
 
-export const DOMAINS: Domain[] = ['heart', 'muscle', 'sleep', 'metabolism', 'mind'];
+export const DOMAINS: Domain[] = ['heart', 'frame', 'recovery', 'metabolism', 'mind'];
 
 export const DOMAIN_LABELS: Record<Domain, string> = {
   heart: 'Heart',
-  muscle: 'Frame',
-  sleep: 'Sleep',
+  frame: 'Frame',
+  recovery: 'Recovery',
   metabolism: 'Metabolism',
   mind: 'Mind',
 };
 
 export const DOMAIN_COLORS: Record<Domain, string> = {
   heart: '#ef4444',    // red
-  muscle: '#f97316',   // orange
-  sleep: '#8b5cf6',    // purple
+  frame: '#f97316',    // orange
+  recovery: '#8b5cf6', // purple
   metabolism: '#22c55e', // green
   mind: '#3b82f6',     // blue
 };

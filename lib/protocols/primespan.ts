@@ -154,11 +154,11 @@ export const HEART_PROTOCOL: DomainProtocol = {
 };
 
 // ============================================================
-// MUSCLE Protocol
+// FRAME Protocol
 // ============================================================
 
-export const MUSCLE_PROTOCOL: DomainProtocol = {
-  domain: 'muscle',
+export const FRAME_PROTOCOL: DomainProtocol = {
+  domain: 'frame',
   name: 'Strength & Body Composition',
   description: 'Build and maintain muscle mass, strength, and healthy body composition.',
   primaryGoals: [
@@ -223,11 +223,11 @@ export const MUSCLE_PROTOCOL: DomainProtocol = {
 };
 
 // ============================================================
-// SLEEP Protocol
+// RECOVERY Protocol
 // ============================================================
 
-export const SLEEP_PROTOCOL: DomainProtocol = {
-  domain: 'sleep',
+export const RECOVERY_PROTOCOL: DomainProtocol = {
+  domain: 'recovery',
   name: 'Sleep & Recovery',
   description: 'Optimize sleep quality and recovery for health and performance.',
   primaryGoals: [
@@ -475,8 +475,8 @@ export const MIND_PROTOCOL: DomainProtocol = {
 
 export const ALL_PROTOCOLS: Record<Domain, DomainProtocol> = {
   heart: HEART_PROTOCOL,
-  muscle: MUSCLE_PROTOCOL,
-  sleep: SLEEP_PROTOCOL,
+  frame: FRAME_PROTOCOL,
+  recovery: RECOVERY_PROTOCOL,
   metabolism: METABOLISM_PROTOCOL,
   mind: MIND_PROTOCOL,
 };
@@ -493,8 +493,8 @@ export function getPersonalizedTargets(
 ): Record<Domain, Record<string, string>> {
   const result: Record<Domain, Record<string, string>> = {
     heart: {},
-    muscle: {},
-    sleep: {},
+    frame: {},
+    recovery: {},
     metabolism: {},
     mind: {},
   };

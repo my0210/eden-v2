@@ -17,8 +17,8 @@ interface GeneratedPlan {
   edenIntro: string;
   domainIntros: {
     heart?: string;
-    muscle?: string;
-    sleep?: string;
+    frame?: string;
+    recovery?: string;
     metabolism?: string;
     mind?: string;
   };
@@ -113,7 +113,7 @@ function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'week
       sortOrder: 0,
     },
     {
-      domain: 'sleep',
+      domain: 'recovery',
       dayOfWeek: 1 as DayOfWeek,
       title: 'Wind down routine by 10pm',
       durationMinutes: undefined,
@@ -124,7 +124,7 @@ function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'week
     },
     // Tuesday
     {
-      domain: 'muscle',
+      domain: 'frame',
       dayOfWeek: 2 as DayOfWeek,
       title: 'Strength training - Upper body',
       durationMinutes: 45,
@@ -166,7 +166,7 @@ function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'week
     },
     // Thursday
     {
-      domain: 'muscle',
+      domain: 'frame',
       dayOfWeek: 4 as DayOfWeek,
       title: 'Strength training - Lower body',
       durationMinutes: 45,
@@ -176,7 +176,7 @@ function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'week
       sortOrder: 0,
     },
     {
-      domain: 'sleep',
+      domain: 'recovery',
       dayOfWeek: 4 as DayOfWeek,
       title: 'No screens 30 min before bed',
       durationMinutes: undefined,
@@ -229,7 +229,7 @@ function getDefaultPlanItems(startFromDay?: number): Omit<PlanItem, 'id' | 'week
     },
     // Sunday
     {
-      domain: 'sleep',
+      domain: 'recovery',
       dayOfWeek: 0 as DayOfWeek,
       title: 'Recovery day - Extra sleep if needed',
       durationMinutes: undefined,
