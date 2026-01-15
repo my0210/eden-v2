@@ -1,6 +1,6 @@
 'use client';
 
-import Link from 'next/link';
+import { useViewTransition } from '@/lib/useViewTransition';
 
 // Bar chart icon for "You" metrics view
 function BarChartIcon({ className }: { className?: string }) {
@@ -22,9 +22,15 @@ function BarChartIcon({ className }: { className?: string }) {
 }
 
 export function YouButton() {
+  const { navigateForward } = useViewTransition();
+
+  const handleClick = () => {
+    navigateForward('/you');
+  };
+
   return (
-    <Link
-      href="/you"
+    <button
+      onClick={handleClick}
       className="
         w-9 h-9 rounded-full
         flex items-center justify-center
@@ -36,6 +42,6 @@ export function YouButton() {
       aria-label="Open metrics"
     >
       <BarChartIcon className="w-5 h-5" />
-    </Link>
+    </button>
   );
 }

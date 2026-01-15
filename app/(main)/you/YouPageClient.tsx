@@ -1,14 +1,14 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
+import { useViewTransition } from '@/lib/useViewTransition';
 import { DOMAINS } from '@/lib/types';
 import { DomainCard } from '@/components/metrics/DomainCard';
 
 export function YouPageClient() {
-  const router = useRouter();
+  const { navigateBack } = useViewTransition();
 
   const handleBack = () => {
-    router.push('/week');
+    navigateBack('/week');
   };
 
   return (
