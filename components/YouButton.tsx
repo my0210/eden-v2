@@ -1,6 +1,7 @@
 'use client';
 
-import Link from 'next/link';
+import { useState } from 'react';
+import { YouOverlay } from './YouOverlay';
 
 // Bar chart icon for "You" metrics view
 function BarChartIcon({ className }: { className?: string }) {
@@ -22,20 +23,25 @@ function BarChartIcon({ className }: { className?: string }) {
 }
 
 export function YouButton() {
+  const [isOpen, setIsOpen] = useState(false);
+
   return (
-    <Link
-      href="/you"
-      className="
-        w-9 h-9 rounded-full
-        flex items-center justify-center
-        text-foreground/40
-        hover:text-foreground/60 hover:bg-white/5
-        active:scale-95
-        transition-all duration-200
-      "
-      aria-label="Open metrics"
-    >
-      <BarChartIcon className="w-5 h-5" />
-    </Link>
+    <>
+      <button
+        onClick={() => setIsOpen(true)}
+        className="
+          w-9 h-9 rounded-full
+          flex items-center justify-center
+          text-foreground/40
+          hover:text-foreground/60 hover:bg-white/5
+          active:scale-95
+          transition-all duration-200
+        "
+        aria-label="Open metrics"
+      >
+        <BarChartIcon className="w-5 h-5" />
+      </button>
+      <YouOverlay isOpen={isOpen} onClose={() => setIsOpen(false)} />
+    </>
   );
 }

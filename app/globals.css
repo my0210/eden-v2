@@ -312,19 +312,3 @@ body {
   }
 }
 
-/* View Transitions API - slide animations */
-::view-transition-old(root) {
-  animation: 250ms ease-out both vt-slide-out-to-left;
-}
-
-::view-transition-new(root) {
-  animation: 250ms ease-out both vt-slide-in-from-right;
-}
-
-@keyframes vt-slide-out-to-left {
-  to { transform: translateX(-100%); }
-}
-
-@keyframes vt-slide-in-from-right {
-  from { transform: translateX(100%); }
-}
