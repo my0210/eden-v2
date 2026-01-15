@@ -1,23 +1,17 @@
 'use client';
 
-import { useViewTransition } from '@/lib/useViewTransition';
+import Link from 'next/link';
 import { DOMAINS } from '@/lib/types';
 import { DomainCard } from '@/components/metrics/DomainCard';
 
 export function YouPageClient() {
-  const { navigateBack } = useViewTransition();
-
-  const handleBack = () => {
-    navigateBack('/week');
-  };
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#0a0a0a' }}>
       {/* Header */}
       <header className="sticky top-0 z-10 px-6 py-4 flex items-center justify-between border-b border-white/5" style={{ backgroundColor: '#0a0a0a' }}>
         <span className="text-lg font-medium text-foreground/80">You</span>
-        <button
-          onClick={handleBack}
+        <Link
+          href="/week"
           className="
             w-9 h-9 rounded-full
             flex items-center justify-center
@@ -37,7 +31,7 @@ export function YouPageClient() {
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </Link>
       </header>
 
       {/* Content */}

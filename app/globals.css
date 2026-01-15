@@ -313,44 +313,18 @@ body {
 }
 
 /* View Transitions API - slide animations */
-@view-transition {
-  navigation: auto;
-}
-
-/* Default: slide from right (forward navigation) */
 ::view-transition-old(root) {
-  animation: slide-out-left 300ms ease-out both;
+  animation: 250ms ease-out both vt-slide-out-to-left;
 }
 
 ::view-transition-new(root) {
-  animation: slide-in-right 300ms ease-out both;
+  animation: 250ms ease-out both vt-slide-in-from-right;
 }
 
-/* Reverse: slide from left (back navigation) */
-.view-transition-back::view-transition-old(root) {
-  animation: slide-out-right 300ms ease-out both;
+@keyframes vt-slide-out-to-left {
+  to { transform: translateX(-100%); }
 }
 
-.view-transition-back::view-transition-new(root) {
-  animation: slide-in-left 300ms ease-out both;
-}
-
-@keyframes slide-out-left {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(-30%); opacity: 0; }
-}
-
-@keyframes slide-in-right {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
-}
-
-@keyframes slide-out-right {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
-}
-
-@keyframes slide-in-left {
-  from { transform: translateX(-30%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+@keyframes vt-slide-in-from-right {
+  from { transform: translateX(100%); }
 }
