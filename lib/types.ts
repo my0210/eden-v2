@@ -12,6 +12,7 @@ export interface UserProfile {
   coachingStyle: CoachingStyle;
   currentFitnessLevel: FitnessLevel;
   onboardingCompleted: boolean;
+  isAdmin: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -215,6 +216,23 @@ export interface AdaptationChange {
   itemId?: string;
   description: string;
 }
+
+// ============================================================
+// User Feedback Types
+// ============================================================
+
+export interface UserFeedback {
+  id: string;
+  userId: string;
+  rating: 1 | 2 | 3 | 4 | 5;
+  message?: string;
+  status: UserFeedbackStatus;
+  createdAt: string;
+  // Joined data for admin view
+  userEmail?: string;
+}
+
+export type UserFeedbackStatus = 'new' | 'reviewed' | 'resolved';
 
 // ============================================================
 // Onboarding Types

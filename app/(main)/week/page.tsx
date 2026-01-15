@@ -3,7 +3,7 @@ import { startOfWeek, format, addDays, isToday, isBefore } from 'date-fns';
 import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
 import { ChatOverlay } from '@/components/ChatOverlay';
-import { ProfileButton } from '@/components/ProfileButton';
+import { UserFeedbackWrapper } from '@/components/UserFeedbackWrapper';
 import { WeekHeader } from '@/components/WeekHeader';
 import { PlanGenerator } from '@/components/PlanGenerator';
 import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain } from '@/lib/types';
@@ -56,6 +56,7 @@ export default async function WeekPage({
     coachingStyle: profile.coaching_style,
     currentFitnessLevel: profile.current_fitness_level,
     onboardingCompleted: profile.onboarding_completed,
+    isAdmin: profile.is_admin || false,
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
   } : null;
@@ -107,7 +108,10 @@ export default async function WeekPage({
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-        <ProfileButton coachingStyle={userProfile?.coachingStyle} />
+        <UserFeedbackWrapper 
+          coachingStyle={userProfile?.coachingStyle} 
+          isAdmin={userProfile?.isAdmin}
+        />
         <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
         <div className="w-9" /> {/* Spacer for balance */}
       </header>

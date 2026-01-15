@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Drawer } from 'vaul';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface CoachingStyle {
   tone: 'supportive' | 'neutral' | 'tough';
@@ -14,6 +15,8 @@ interface CoachingStyle {
 interface SettingsOverlayProps {
   trigger: React.ReactNode;
   initialCoachingStyle?: CoachingStyle;
+  isAdmin?: boolean;
+  onOpenFeedback?: () => void;
 }
 
 const TONE_OPTIONS = [
@@ -34,7 +37,7 @@ const FORMALITY_OPTIONS = [
   { value: 'clinical', label: 'Medical' },
 ] as const;
 
-export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverlayProps) {
+export function SettingsOverlay({ trigger, initialCoachingStyle, isAdmin, onOpenFeedback }: SettingsOverlayProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -262,6 +265,18 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
                 </h3>
                 
                 <button
+                  onClick={() => {
+                    setIsOpen(false);
+                    // Small delay to let drawer close animation start
+                    setTimeout(() => onOpenFeedback?.(), 150);
+                  }}
+                  className="w-full py-2.5 rounded-lg text-sm text-white/60 hover:text-white transition-colors text-left px-3"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
+                >
+                  Send Feedback
+                </button>
+
+                <button
                   onClick={handleSignOut}
                   className="w-full py-2.5 rounded-lg text-sm text-white/60 hover:text-white transition-colors text-left px-3"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
@@ -269,6 +284,28 @@ export function SettingsOverlay({ trigger, initialCoachingStyle }: SettingsOverl
                   Sign Out
                 </button>
               </div>
+
+              {/* Admin Section - Only visible to admins */}
+              {isAdmin && (
+                <>
+                  <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                  
+                  <div className="space-y-2">
+                    <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                      Admin
+                    </h3>
+                    
+                    <Link
+                      href="/admin/user-feedback"
+                      onClick={() => setIsOpen(false)}
+                      className="w-full py-2.5 rounded-lg text-sm text-purple-400/80 hover:text-purple-400 transition-colors text-left px-3 block"
+                      style={{ backgroundColor: 'rgba(139, 92, 246, 0.08)' }}
+                    >
+                      View User Feedback
+                    </Link>
+                  </div>
+                </>
+              )}
 
               {/* Divider */}
               <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
