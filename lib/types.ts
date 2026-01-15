@@ -312,3 +312,76 @@ export interface ChatAction {
   payload: Record<string, unknown>;
 }
 
+// ============================================================
+// Metric Types
+// ============================================================
+
+export type MetricValueType = 'number' | 'duration' | 'scale_1_10' | 'boolean' | 'text';
+
+export type MetricSource = 'manual' | 'apple_health' | 'garmin' | 'whoop' | 'oura' | 'lab' | 'other';
+
+export type MetricFrequency = 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'once';
+
+export interface MetricDefinition {
+  id: string;
+  domain: Domain;
+  subDomain: string;
+  name: string;
+  description?: string;
+  whatItTellsYou?: string;
+  unit?: string;
+  valueType: MetricValueType;
+  measurementSources: string[];
+  frequencyHint?: MetricFrequency;
+  sortOrder: number;
+  createdAt: string;
+}
+
+export interface UserMetricEntry {
+  id: string;
+  userId: string;
+  metricDefinitionId: string;
+  value: number;
+  unit?: string;
+  source: MetricSource;
+  recordedAt: string;
+  notes?: string;
+  rawData?: Record<string, unknown>;
+  createdAt: string;
+}
+
+// Extended type with metric definition joined
+export interface UserMetricEntryWithDefinition extends UserMetricEntry {
+  metricDefinition: MetricDefinition;
+}
+
+// Summary types for the "You" view
+export interface DomainMetricSummary {
+  domain: Domain;
+  totalMetrics: number;
+  trackedMetrics: number;
+  lastActivity?: string;
+  subDomains: SubDomainMetricSummary[];
+}
+
+export interface SubDomainMetricSummary {
+  subDomain: string;
+  metrics: MetricWithLatestValue[];
+}
+
+export interface MetricWithLatestValue {
+  definition: MetricDefinition;
+  latestEntry?: UserMetricEntry;
+  previousEntry?: UserMetricEntry;
+  trend?: 'up' | 'down' | 'stable';
+}
+
+// Sub-domain mapping for each domain
+export const DOMAIN_SUBDOMAINS: Record<Domain, string[]> = {
+  heart: ['Aerobic Capacity', 'Cardiac Efficiency', 'Cardiovascular Health'],
+  frame: ['Upper Body Strength', 'Lower Body Strength', 'Grip Strength', 'Stability & Balance', 'Body Composition', 'Mobility & Flexibility', 'Structural Health'],
+  mind: ['Attention & Focus', 'Digital Behavior', 'Mental Practices', 'Stress & Emotional', 'Cognitive Performance'],
+  metabolism: ['Glucose Regulation', 'Energy & Nutrition', 'Metabolic Health Markers', 'Hormonal Health'],
+  recovery: ['Sleep Quantity', 'Sleep Quality', 'Sleep Consistency', 'Autonomic Recovery', 'Stress Recovery', 'Subjective Recovery'],
+};
+

@@ -3,9 +3,10 @@ import { startOfWeek, format, addDays, isToday, isBefore } from 'date-fns';
 import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
 import { ChatOverlay } from '@/components/ChatOverlay';
-import { UserFeedbackWrapper } from '@/components/UserFeedbackWrapper';
 import { WeekHeader } from '@/components/WeekHeader';
 import { PlanGenerator } from '@/components/PlanGenerator';
+import { SettingsButton } from '@/components/SettingsButton';
+import { YouButton } from '@/components/YouButton';
 import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain } from '@/lib/types';
 
 export default async function WeekPage({
@@ -108,12 +109,9 @@ export default async function WeekPage({
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-        <UserFeedbackWrapper 
-          coachingStyle={userProfile?.coachingStyle} 
-          isAdmin={userProfile?.isAdmin}
-        />
+        <SettingsButton isAdmin={userProfile?.isAdmin} />
         <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
-        <div className="w-9" /> {/* Spacer for balance */}
+        <YouButton />
       </header>
 
       {/* Week Header - Intro + Domain Indicator */}

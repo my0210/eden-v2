@@ -13,7 +13,9 @@ interface CoachingStyle {
 }
 
 interface SettingsOverlayProps {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  isOpen?: boolean;
+  onClose?: () => void;
   initialCoachingStyle?: CoachingStyle;
   isAdmin?: boolean;
 }
@@ -47,8 +49,15 @@ const RATING_EMOJIS = [
 type ViewState = 'settings' | 'feedback';
 type FeedbackState = 'idle' | 'loading' | 'success' | 'error';
 
-export function SettingsOverlay({ trigger, initialCoachingStyle, isAdmin }: SettingsOverlayProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, initialCoachingStyle, isAdmin }: SettingsOverlayProps) {
+  const [internalIsOpen, setInternalIsOpen] = useState(false);
+  
+  // Use controlled mode if isOpen prop is provided
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
+  const setIsOpen = isControlled 
+    ? (open: boolean) => { if (!open && onClose) onClose(); }
+    : setInternalIsOpen;
   const [view, setView] = useState<ViewState>('settings');
   const [loading, setLoading] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -215,9 +224,11 @@ export function SettingsOverlay({ trigger, initialCoachingStyle, isAdmin }: Sett
 
   return (
     <Drawer.Root open={isOpen} onOpenChange={setIsOpen}>
-      <Drawer.Trigger asChild>
-        {trigger}
-      </Drawer.Trigger>
+      {trigger && (
+        <Drawer.Trigger asChild>
+          {trigger}
+        </Drawer.Trigger>
+      )}
 
       <Drawer.Portal>
         <Drawer.Overlay 
