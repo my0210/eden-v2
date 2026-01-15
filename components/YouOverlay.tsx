@@ -79,25 +79,13 @@ export function YouOverlay({ isOpen, onClose }: YouOverlayProps) {
 
   return (
     <>
-      {/* Backdrop */}
-      <div 
-        className={`
-          fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm
-          transition-opacity duration-300
-          ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}
-        `}
-        onClick={onClose}
-      />
-      
-      {/* Overlay Panel */}
+      {/* Full screen overlay - like Instagram camera (no backdrop, full takeover) */}
       <div
         ref={overlayRef}
         className={`
-          fixed inset-y-0 right-0 z-[70] w-full max-w-md
+          fixed inset-0 z-[70]
           bg-background
-          shadow-2xl shadow-black/50
           transition-transform duration-300 ease-out
-          ${isOpen ? 'translate-x-0' : 'translate-x-full'}
         `}
         style={{
           transform: isOpen 
