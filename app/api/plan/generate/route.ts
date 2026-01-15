@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       coachingStyle: profileData.coaching_style,
       currentFitnessLevel: profileData.current_fitness_level,
       onboardingCompleted: profileData.onboarding_completed,
+      isAdmin: profileData.is_admin || false,
       createdAt: profileData.created_at,
       updatedAt: profileData.updated_at,
     };

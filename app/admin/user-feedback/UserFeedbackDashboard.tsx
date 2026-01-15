@@ -130,7 +130,7 @@ export function UserFeedbackDashboard() {
                 {status.charAt(0).toUpperCase() + status.slice(1)}
                 {status !== 'all' && (
                   <span className="ml-1.5 text-white/30">
-                    {feedback.filter(f => status === 'all' || f.status === status).length}
+                    {feedback.filter(f => f.status === status).length}
                   </span>
                 )}
               </button>

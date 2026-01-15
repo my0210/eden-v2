@@ -41,15 +41,19 @@ export async function GET() {
   }
 
   // Transform the data to include userEmail at top level
-  const transformedFeedback = feedback?.map(item => ({
-    id: item.id,
-    userId: item.user_id,
-    rating: item.rating,
-    message: item.message,
-    status: item.status,
-    createdAt: item.created_at,
-    userEmail: (item.user_profiles as { email: string })?.email,
-  })) || [];
+  const transformedFeedback = feedback?.map(item => {
+    // user_profiles is an object when using !inner join
+    const userProfile = item.user_profiles as unknown as { email: string } | null;
+    return {
+      id: item.id,
+      userId: item.user_id,
+      rating: item.rating,
+      message: item.message,
+      status: item.status,
+      createdAt: item.created_at,
+      userEmail: userProfile?.email,
+    };
+  }) || [];
 
   return NextResponse.json({ feedback: transformedFeedback });
 }
