@@ -46,8 +46,8 @@ export function UserFeedbackWrapper({ coachingStyle, isAdmin }: UserFeedbackWrap
         }
       />
 
-      {/* Floating Feedback Button */}
-      <div className="fixed bottom-6 left-6 z-40 safe-area-bottom">
+      {/* Floating Feedback Button - bottom left, away from Chat FAB */}
+      <div className="fixed bottom-6 left-4 z-40 pb-safe">
         <UserFeedbackButton ref={feedbackButtonRef} />
       </div>
     </>

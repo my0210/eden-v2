@@ -52,7 +52,7 @@ export function UserFeedbackForm({ onSuccess, onClose }: UserFeedbackFormProps) 
   if (submitState === 'success') {
     return (
       <div
-        className="w-72 p-4 rounded-xl"
+        className="w-[280px] max-w-[calc(100vw-2rem)] p-4 rounded-xl"
         style={{
           backgroundColor: 'rgba(28, 28, 30, 0.95)',
           backdropFilter: 'blur(40px)',
@@ -70,7 +70,7 @@ export function UserFeedbackForm({ onSuccess, onClose }: UserFeedbackFormProps) 
 
   return (
     <div
-      className="w-72 p-4 rounded-xl"
+      className="w-[280px] max-w-[calc(100vw-2rem)] p-4 rounded-xl"
       style={{
         backgroundColor: 'rgba(28, 28, 30, 0.95)',
         backdropFilter: 'blur(40px)',

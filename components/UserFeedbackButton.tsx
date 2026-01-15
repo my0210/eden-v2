@@ -67,14 +67,14 @@ export const UserFeedbackButton = forwardRef<UserFeedbackButtonRef>(
     };
 
     return (
-      <div className="fixed bottom-6 right-6 z-50">
-        {/* Popover */}
+      <div className="relative">
+        {/* Popover - opens above and to the right on mobile-friendly left position */}
         {isOpen && (
           <div
             ref={popoverRef}
-            className="absolute bottom-full right-0 mb-3"
+            className="absolute bottom-full left-0 mb-3"
             style={{
-              transformOrigin: 'bottom right',
+              transformOrigin: 'bottom left',
               opacity: isVisible ? 1 : 0,
               transform: isVisible ? 'scale(1)' : 'scale(0.93)',
               transition: 'opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
@@ -91,9 +91,9 @@ export const UserFeedbackButton = forwardRef<UserFeedbackButtonRef>(
         <button
           ref={buttonRef}
           onClick={() => setIsOpen(!isOpen)}
-          className="w-12 h-12 rounded-full flex items-center justify-center shadow-lg transition-all duration-150 active:scale-[0.97]"
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg transition-all duration-150 active:scale-[0.97]"
           style={{
-            backgroundColor: isOpen ? 'rgba(255, 255, 255, 0.2)' : 'rgba(255, 255, 255, 0.1)',
+            backgroundColor: isOpen ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.08)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
           }}
@@ -101,13 +101,13 @@ export const UserFeedbackButton = forwardRef<UserFeedbackButtonRef>(
         >
           {isOpen ? (
             // X icon when open
-            <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           ) : (
-            // Message icon when closed
-            <svg className="w-5 h-5 text-white/80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            // Feedback icon when closed
+            <svg className="w-4 h-4 text-white/70" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
             </svg>
           )}
         </button>
