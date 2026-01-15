@@ -19,10 +19,21 @@ const SOURCE_OPTIONS: { value: MetricSource; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+// Format date to local datetime-local input format
+function toLocalDateTimeString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps) {
   const [value, setValue] = useState('');
   const [source, setSource] = useState<MetricSource>('manual');
   const [notes, setNotes] = useState('');
+  const [recordedAt, setRecordedAt] = useState(toLocalDateTimeString(new Date()));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,6 +71,7 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
           value: numValue,
           source,
           notes: notes.trim() || null,
+          recordedAt: new Date(recordedAt).toISOString(),
         }),
       });
 
@@ -84,8 +96,15 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
     return 'Enter value';
   };
 
+  const inputStyles = {
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    border: '1px solid rgba(255,255,255,0.1)',
+  };
+
+  const focusColor = domainColor;
+
   return (
-    <div className="fixed inset-0 z-[90] flex items-end justify-center">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-sm"
@@ -94,7 +113,7 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
       
       {/* Form Panel */}
       <div 
-        className="relative w-full max-w-md bg-background rounded-t-2xl"
+        className="relative w-full max-w-md rounded-t-2xl"
         style={{ 
           backgroundColor: 'rgba(28, 28, 30, 0.98)',
         }}
@@ -130,13 +149,46 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
               value={value}
               onChange={(e) => setValue(e.target.value)}
               placeholder={getPlaceholder()}
-              className="w-full px-4 py-3 rounded-xl text-lg text-foreground/90 placeholder-foreground/30 focus:outline-none focus:ring-2 transition-all"
+              className="w-full px-4 py-3 rounded-xl text-lg text-foreground/90 placeholder-foreground/30 transition-colors"
               style={{ 
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                // @ts-ignore
-                '--tw-ring-color': domainColor,
+                ...inputStyles,
+                outline: 'none',
+                boxShadow: 'none',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = focusColor;
+                e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.target.style.boxShadow = 'none';
               }}
               autoFocus
+            />
+          </div>
+
+          {/* Date/Time Input */}
+          <div>
+            <label className="text-xs text-foreground/50 mb-2 block">Date & Time</label>
+            <input
+              type="datetime-local"
+              value={recordedAt}
+              onChange={(e) => setRecordedAt(e.target.value)}
+              className="w-full px-4 py-3 rounded-xl text-sm text-foreground/90 transition-colors"
+              style={{ 
+                ...inputStyles,
+                outline: 'none',
+                boxShadow: 'none',
+                colorScheme: 'dark',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = focusColor;
+                e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.target.style.boxShadow = 'none';
+              }}
             />
           </div>
 
@@ -146,9 +198,19 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
             <select
               value={source}
               onChange={(e) => setSource(e.target.value as MetricSource)}
-              className="w-full px-4 py-3 rounded-xl text-sm text-foreground/90 focus:outline-none focus:ring-2 transition-all appearance-none"
+              className="w-full px-4 py-3 rounded-xl text-sm text-foreground/90 transition-colors appearance-none cursor-pointer"
               style={{ 
-                backgroundColor: 'rgba(255,255,255,0.06)',
+                ...inputStyles,
+                outline: 'none',
+                boxShadow: 'none',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = focusColor;
+                e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.target.style.boxShadow = 'none';
               }}
             >
               {SOURCE_OPTIONS.map((opt) => (
@@ -167,9 +229,19 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any additional context..."
               rows={2}
-              className="w-full px-4 py-3 rounded-xl text-sm text-foreground/90 placeholder-foreground/30 focus:outline-none focus:ring-2 resize-none transition-all"
+              className="w-full px-4 py-3 rounded-xl text-sm text-foreground/90 placeholder-foreground/30 resize-none transition-colors"
               style={{ 
-                backgroundColor: 'rgba(255,255,255,0.06)',
+                ...inputStyles,
+                outline: 'none',
+                boxShadow: 'none',
+              }}
+              onFocus={(e) => {
+                e.target.style.borderColor = focusColor;
+                e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                e.target.style.boxShadow = 'none';
               }}
             />
           </div>
