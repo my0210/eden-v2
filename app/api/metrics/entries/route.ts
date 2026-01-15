@@ -160,3 +160,105 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, value, source, recordedAt, notes } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'Entry id is required' }, { status: 400 });
+    }
+
+    // Build update object with only provided fields
+    const updateData: Record<string, unknown> = {};
+    if (value !== undefined) updateData.value = parseFloat(value);
+    if (source !== undefined) updateData.source = source;
+    if (recordedAt !== undefined) updateData.recorded_at = recordedAt;
+    if (notes !== undefined) updateData.notes = notes || null;
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+    }
+
+    // Update the entry (RLS ensures user can only update their own)
+    const { data: entry, error: updateError } = await supabase
+      .from('user_metric_entries')
+      .update(updateData)
+      .eq('id', id)
+      .eq('user_id', user.id)
+      .select()
+      .single();
+
+    if (updateError) {
+      console.error('Error updating entry:', updateError);
+      return NextResponse.json({ error: 'Failed to update entry' }, { status: 500 });
+    }
+
+    if (!entry) {
+      return NextResponse.json({ error: 'Entry not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({
+      entry: {
+        id: entry.id,
+        userId: entry.user_id,
+        metricDefinitionId: entry.metric_definition_id,
+        value: entry.value,
+        unit: entry.unit,
+        source: entry.source,
+        recordedAt: entry.recorded_at,
+        notes: entry.notes,
+        rawData: entry.raw_data,
+        createdAt: entry.created_at,
+      }
+    });
+  } catch (error) {
+    console.error('Error in metrics entries PUT API:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    
+    // Check authentication
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const searchParams = request.nextUrl.searchParams;
+    const id = searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: 'Entry id is required' }, { status: 400 });
+    }
+
+    // Delete the entry (RLS ensures user can only delete their own)
+    const { error: deleteError } = await supabase
+      .from('user_metric_entries')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', user.id);
+
+    if (deleteError) {
+      console.error('Error deleting entry:', deleteError);
+      return NextResponse.json({ error: 'Failed to delete entry' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error in metrics entries DELETE API:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

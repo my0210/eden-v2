@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { MetricDefinition, UserMetricEntry, DOMAIN_COLORS, Domain } from '@/lib/types';
 import { formatDistanceToNow, format, subDays } from 'date-fns';
 import { MetricLogForm } from './MetricLogForm';
+import { MetricEditForm } from './MetricEditForm';
 
 interface MetricDetailViewProps {
   metricId: string;
@@ -19,6 +20,9 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
   const [data, setData] = useState<MetricData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showLogForm, setShowLogForm] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<UserMetricEntry | null>(null);
+  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMetricData();
@@ -62,6 +66,34 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
   const handleLogSuccess = () => {
     setShowLogForm(false);
     fetchMetricData(); // Refresh data
+  };
+
+  const handleEditSuccess = () => {
+    setEditingEntry(null);
+    setSelectedEntryId(null);
+    fetchMetricData(); // Refresh data
+  };
+
+  const handleDelete = async (entryId: string) => {
+    setDeletingId(entryId);
+    try {
+      const response = await fetch(`/api/metrics/entries?id=${entryId}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        setSelectedEntryId(null);
+        fetchMetricData(); // Refresh data
+      } else {
+        console.error('Failed to delete entry');
+      }
+    } catch (error) {
+      console.error('Error deleting entry:', error);
+    }
+    setDeletingId(null);
+  };
+
+  const toggleEntryActions = (entryId: string) => {
+    setSelectedEntryId(selectedEntryId === entryId ? null : entryId);
   };
 
   if (isLoading) {
@@ -250,23 +282,61 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
             <h2 className="text-xs font-medium text-foreground/40 uppercase tracking-wider">
               History
             </h2>
+            <p className="text-xs text-foreground/30 mb-2">Tap an entry to edit or delete</p>
             <div 
               className="rounded-xl divide-y divide-white/5 overflow-hidden"
               style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
             >
               {entries.slice(0, 20).map((entry) => (
-                <div key={entry.id} className="px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <div className="text-sm text-foreground/70">
-                      {formatValue(entry.value, entry.unit || definition.unit)}
+                <div key={entry.id}>
+                  <button
+                    onClick={() => toggleEntryActions(entry.id)}
+                    className="w-full px-4 py-3 flex items-center justify-between text-left hover:bg-white/5 transition-colors"
+                  >
+                    <div>
+                      <div className="text-sm text-foreground/70">
+                        {formatValue(entry.value, entry.unit || definition.unit)}
+                      </div>
+                      <div className="text-xs text-foreground/30">
+                        {format(new Date(entry.recordedAt), 'MMM d, yyyy • h:mm a')}
+                      </div>
                     </div>
-                    <div className="text-xs text-foreground/30">
-                      {format(new Date(entry.recordedAt), 'MMM d, yyyy • h:mm a')}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-foreground/30 capitalize">
+                        {entry.source}
+                      </span>
+                      <svg 
+                        className={`w-4 h-4 text-foreground/30 transition-transform ${selectedEntryId === entry.id ? 'rotate-180' : ''}`} 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor" 
+                        strokeWidth={1.5}
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                      </svg>
                     </div>
-                  </div>
-                  <span className="text-xs text-foreground/30 capitalize">
-                    {entry.source}
-                  </span>
+                  </button>
+                  
+                  {/* Action buttons */}
+                  {selectedEntryId === entry.id && (
+                    <div className="px-4 pb-3 flex gap-2">
+                      <button
+                        onClick={() => setEditingEntry(entry)}
+                        className="flex-1 py-2 rounded-lg text-xs font-medium text-foreground/70 hover:text-foreground/90 transition-colors"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDelete(entry.id)}
+                        disabled={deletingId === entry.id}
+                        className="flex-1 py-2 rounded-lg text-xs font-medium text-red-400/80 hover:text-red-400 transition-colors disabled:opacity-50"
+                        style={{ backgroundColor: 'rgba(239,68,68,0.1)' }}
+                      >
+                        {deletingId === entry.id ? 'Deleting...' : 'Delete'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -280,6 +350,19 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
           metric={definition}
           onClose={() => setShowLogForm(false)}
           onSuccess={handleLogSuccess}
+        />
+      )}
+
+      {/* Edit Form Modal */}
+      {editingEntry && (
+        <MetricEditForm
+          metric={definition}
+          entry={editingEntry}
+          onClose={() => {
+            setEditingEntry(null);
+            setSelectedEntryId(null);
+          }}
+          onSuccess={handleEditSuccess}
         />
       )}
     </div>
