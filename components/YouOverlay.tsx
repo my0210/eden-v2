@@ -82,12 +82,9 @@ export function YouOverlay({ isOpen, onClose }: YouOverlayProps) {
       {/* Full screen overlay - like Instagram camera (no backdrop, full takeover) */}
       <div
         ref={overlayRef}
-        className={`
-          fixed inset-0 z-[70]
-          bg-background
-          transition-transform duration-300 ease-out
-        `}
+        className="fixed inset-0 z-[100] transition-transform duration-300 ease-out"
         style={{
+          backgroundColor: '#0a0a0a',
           transform: isOpen 
             ? `translateX(${swipeOffset}px)` 
             : 'translateX(100%)',
@@ -100,7 +97,7 @@ export function YouOverlay({ isOpen, onClose }: YouOverlayProps) {
         }}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-white/5">
+        <div className="sticky top-0 z-10 border-b border-white/5" style={{ backgroundColor: '#0a0a0a' }}>
           <div className="flex items-center justify-between px-6 py-4">
             <span className="text-lg font-medium text-foreground/80">You</span>
             <button
