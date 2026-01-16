@@ -13,6 +13,9 @@ export interface UserProfile {
   currentFitnessLevel: FitnessLevel;
   onboardingCompleted: boolean;
   isAdmin: boolean;
+  unitSystem: UnitSystem;
+  glucoseUnit?: GlucoseUnit;
+  lipidsUnit?: LipidsUnit;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,6 +63,14 @@ export interface CoachingStyle {
 }
 
 export type FitnessLevel = 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active';
+export type UnitSystem = 'metric' | 'imperial';
+export type GlucoseUnit = 'mg/dL' | 'mmol/L';
+export type LipidsUnit = 'mg/dL' | 'mmol/L';
+
+export interface UnitPreferences {
+  glucoseUnit?: GlucoseUnit;
+  lipidsUnit?: LipidsUnit;
+}
 
 // ============================================================
 // Domain Types
@@ -330,12 +341,33 @@ export interface MetricDefinition {
   description?: string;
   whatItTellsYou?: string;
   unit?: string;
+  canonicalUnit?: string;
+  unitType?: MetricUnitType;
+  testType?: string;
+  isCalculated?: boolean;
   valueType: MetricValueType;
   measurementSources: string[];
   frequencyHint?: MetricFrequency;
   sortOrder: number;
   createdAt: string;
 }
+
+export type MetricUnitType =
+  | 'mass'
+  | 'length'
+  | 'temperature'
+  | 'glucose'
+  | 'lipids_cholesterol'
+  | 'lipids_triglycerides'
+  | 'lipids'
+  | 'pressure'
+  | 'duration'
+  | 'count'
+  | 'ratio'
+  | 'percentage'
+  | 'score'
+  | 'rate'
+  | 'unitless';
 
 export interface UserMetricEntry {
   id: string;
@@ -374,6 +406,7 @@ export interface MetricWithLatestValue {
   latestEntry?: UserMetricEntry;
   previousEntry?: UserMetricEntry;
   trend?: 'up' | 'down' | 'stable';
+  scoring?: MetricScoring;
 }
 
 // Sub-domain mapping for each domain
@@ -384,4 +417,16 @@ export const DOMAIN_SUBDOMAINS: Record<Domain, string[]> = {
   metabolism: ['Glucose Regulation', 'Energy & Nutrition', 'Metabolic Health Markers', 'Hormonal Health'],
   recovery: ['Sleep Quantity', 'Sleep Quality', 'Sleep Consistency', 'Autonomic Recovery', 'Stress Recovery', 'Subjective Recovery'],
 };
+
+export type ScoreCurveType = 'linear' | 'logistic' | 'step' | 'piecewise';
+
+export interface MetricScoring {
+  id: string;
+  metricDefinitionId: string;
+  optimalRangeMin?: number;
+  optimalRangeMax?: number;
+  curveType: ScoreCurveType;
+  curveParams?: Record<string, unknown>;
+  createdAt: string;
+}
 

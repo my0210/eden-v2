@@ -1,15 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { MetricWithLatestValue } from '@/lib/types';
+import { MetricWithLatestValue, UnitPreferences, UnitSystem } from '@/lib/types';
 import { formatDistanceToNow } from 'date-fns';
 import { MetricDetailView } from './MetricDetailView';
+import { formatDurationMinutes, toDisplayValue, inferUnitType } from '@/lib/units';
 
 interface MetricRowProps {
   metric: MetricWithLatestValue;
+  unitSystem: UnitSystem;
+  unitPreferences?: UnitPreferences;
 }
 
-export function MetricRow({ metric }: MetricRowProps) {
+export function MetricRow({ metric, unitSystem, unitPreferences }: MetricRowProps) {
   const [showDetail, setShowDetail] = useState(false);
   
   const { definition, latestEntry } = metric;
@@ -19,7 +22,8 @@ export function MetricRow({ metric }: MetricRowProps) {
     if (!latestEntry) return '—';
     
     const value = latestEntry.value;
-    const unit = latestEntry.unit || definition.unit || '';
+    const unitType = definition.unitType || inferUnitType(definition.unit, definition.valueType);
+    const unit = latestEntry.unit || definition.canonicalUnit || definition.unit || '';
     
     // Format based on value type
     if (definition.valueType === 'scale_1_10') {
@@ -27,23 +31,21 @@ export function MetricRow({ metric }: MetricRowProps) {
     }
     
     if (definition.valueType === 'duration') {
-      // Assume value is in seconds, format nicely
-      if (value >= 3600) {
-        return `${(value / 3600).toFixed(1)}h`;
-      } else if (value >= 60) {
-        return `${Math.round(value / 60)}m`;
-      }
-      return `${value}s`;
+      return formatDurationMinutes(value);
     }
+
+    const converted = toDisplayValue(value, unitType, unitSystem, unitPreferences);
+    const displayValue = converted.value;
+    const displayUnit = converted.unit || unit;
     
     // Number with unit
-    if (typeof value === 'number') {
+    if (typeof displayValue === 'number') {
       // Format with appropriate precision
-      const formatted = Number.isInteger(value) ? value : value.toFixed(1);
-      return unit ? `${formatted} ${unit}` : formatted;
+      const formatted = Number.isInteger(displayValue) ? displayValue : displayValue.toFixed(1);
+      return displayUnit ? `${formatted} ${displayUnit}` : formatted;
     }
     
-    return `${value}${unit ? ' ' + unit : ''}`;
+    return `${displayValue}${displayUnit ? ' ' + displayUnit : ''}`;
   };
   
   // Format the time since last entry
@@ -99,6 +101,8 @@ export function MetricRow({ metric }: MetricRowProps) {
         <MetricDetailView
           metricId={definition.id}
           onClose={() => setShowDetail(false)}
+          unitSystem={unitSystem}
+          unitPreferences={unitPreferences}
         />
       )}
     </>

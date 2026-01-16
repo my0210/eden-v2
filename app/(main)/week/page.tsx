@@ -58,6 +58,9 @@ export default async function WeekPage({
     currentFitnessLevel: profile.current_fitness_level,
     onboardingCompleted: profile.onboarding_completed,
     isAdmin: profile.is_admin || false,
+    unitSystem: profile.unit_system || 'metric',
+    glucoseUnit: profile.glucose_unit || 'mg/dL',
+    lipidsUnit: profile.lipids_unit || 'mg/dL',
     createdAt: profile.created_at,
     updatedAt: profile.updated_at,
   } : null;
@@ -109,7 +112,13 @@ export default async function WeekPage({
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-        <SettingsButton isAdmin={userProfile?.isAdmin} />
+        <SettingsButton 
+          isAdmin={userProfile?.isAdmin} 
+          unitSystem={userProfile?.unitSystem}
+          glucoseUnit={userProfile?.glucoseUnit}
+          lipidsUnit={userProfile?.lipidsUnit}
+          coachingStyle={userProfile?.coachingStyle}
+        />
         <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
         <YouButton />
       </header>

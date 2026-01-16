@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { toCanonicalValue, inferUnitType } from '@/lib/units';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -10,6 +11,12 @@ export async function GET(request: NextRequest) {
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('unit_system, glucose_unit, lipids_unit')
+      .eq('id', user.id)
+      .single();
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -30,6 +37,11 @@ export async function GET(request: NextRequest) {
           sub_domain,
           name,
           unit,
+          canonical_unit,
+          unit_type,
+          test_type,
+          is_calculated,
+          is_derived,
           value_type
         )
       `)
@@ -78,11 +90,53 @@ export async function GET(request: NextRequest) {
         subDomain: entry.metric_definitions.sub_domain,
         name: entry.metric_definitions.name,
         unit: entry.metric_definitions.unit,
+        canonicalUnit: entry.metric_definitions.canonical_unit,
+        unitType: entry.metric_definitions.unit_type,
+        testType: entry.metric_definitions.test_type,
+        isCalculated: entry.metric_definitions.is_calculated || entry.metric_definitions.is_derived,
         valueType: entry.metric_definitions.value_type,
       } : undefined,
     })) || [];
 
-    return NextResponse.json({ entries: transformedEntries });
+    let scoring = null;
+    if (metricId) {
+      const { data: testRow } = await supabase
+        .from('metric_tests')
+        .select('id')
+        .eq('metric_definition_id', metricId)
+        .eq('is_active', true)
+        .limit(1)
+        .single();
+
+      if (testRow?.id) {
+        const { data: scoringRow } = await supabase
+          .from('metric_scoring')
+          .select('*')
+          .eq('metric_test_id', testRow.id)
+          .single();
+        if (scoringRow) {
+          scoring = {
+            id: scoringRow.id,
+            metricDefinitionId: metricId,
+            optimalRangeMin: scoringRow.optimal_range_min,
+            optimalRangeMax: scoringRow.optimal_range_max,
+            curveType: scoringRow.score_curve || scoringRow.curve_type,
+            curveParams: scoringRow.curve_params,
+            createdAt: scoringRow.created_at,
+          };
+        }
+      }
+    }
+
+    return NextResponse.json({ 
+      entries: transformedEntries, 
+      unitSystem: profile?.unit_system || 'metric', 
+      unitPreferences: {
+        glucoseUnit: profile?.glucose_unit || 'mg/dL',
+        lipidsUnit: profile?.lipids_unit || 'mg/dL',
+      },
+      scoring 
+    });
   } catch (error) {
     console.error('Error in metrics entries GET API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -100,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { metricDefinitionId, value, unit, source, recordedAt, notes, rawData } = body;
+    const { metricDefinitionId, value, unit, inputUnit, source, recordedAt, notes, rawData } = body;
 
     if (!metricDefinitionId || value === undefined) {
       return NextResponse.json(
@@ -112,7 +166,7 @@ export async function POST(request: NextRequest) {
     // Verify the metric definition exists
     const { data: metricDef, error: metricError } = await supabase
       .from('metric_definitions')
-      .select('id, unit')
+      .select('id, unit, canonical_unit, unit_type')
       .eq('id', metricDefinitionId)
       .single();
 
@@ -121,13 +175,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert the entry
+    let canonicalValue = parseFloat(value);
+    const resolvedUnitType = metricDef?.unit_type || inferUnitType(metricDef?.unit, undefined);
+    if (!isNaN(canonicalValue) && resolvedUnitType && inputUnit) {
+      canonicalValue = toCanonicalValue(canonicalValue, resolvedUnitType, inputUnit);
+    }
+
+    const canonicalUnit = metricDef?.canonical_unit || metricDef?.unit || unit || null;
+
+    const { data: testRow } = await supabase
+      .from('metric_tests')
+      .select('id')
+      .eq('metric_definition_id', metricDefinitionId)
+      .eq('is_active', true)
+      .limit(1)
+      .single();
+
     const { data: entry, error: insertError } = await supabase
       .from('user_metric_entries')
       .insert({
         user_id: user.id,
         metric_definition_id: metricDefinitionId,
-        value: parseFloat(value),
-        unit: unit || metricDef.unit,
+        metric_test_id: testRow?.id || null,
+        value: canonicalValue,
+        unit: canonicalUnit,
         source: source || 'manual',
         recorded_at: recordedAt || new Date().toISOString(),
         notes: notes || null,
@@ -172,7 +243,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { id, value, source, recordedAt, notes } = body;
+    const { id, value, source, recordedAt, notes, inputUnit } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'Entry id is required' }, { status: 400 });
@@ -180,7 +251,45 @@ export async function PUT(request: NextRequest) {
 
     // Build update object with only provided fields
     const updateData: Record<string, unknown> = {};
-    if (value !== undefined) updateData.value = parseFloat(value);
+    if (value !== undefined) {
+      const parsedValue = parseFloat(value);
+      if (!isNaN(parsedValue)) {
+        let canonicalValue = parsedValue;
+        if (inputUnit) {
+          const { data: existingEntry } = await supabase
+            .from('user_metric_entries')
+            .select('metric_definition_id')
+            .eq('id', id)
+            .eq('user_id', user.id)
+            .single();
+
+          if (existingEntry?.metric_definition_id) {
+          const { data: metricDef } = await supabase
+              .from('metric_definitions')
+            .select('unit_type, unit, canonical_unit')
+              .eq('id', existingEntry.metric_definition_id)
+              .single();
+            const resolvedType = metricDef?.unit_type || inferUnitType(metricDef?.unit, undefined);
+            if (resolvedType) {
+              canonicalValue = toCanonicalValue(parsedValue, resolvedType, inputUnit);
+            }
+          updateData.unit = metricDef?.canonical_unit || metricDef?.unit || null;
+
+            const { data: testRow } = await supabase
+              .from('metric_tests')
+              .select('id')
+              .eq('metric_definition_id', existingEntry.metric_definition_id)
+              .eq('is_active', true)
+              .limit(1)
+              .single();
+            if (testRow?.id) {
+              updateData.metric_test_id = testRow.id;
+            }
+          }
+        }
+        updateData.value = canonicalValue;
+      }
+    }
     if (source !== undefined) updateData.source = source;
     if (recordedAt !== undefined) updateData.recorded_at = recordedAt;
     if (notes !== undefined) updateData.notes = notes || null;

@@ -24,9 +24,17 @@ function MenuIcon({ className }: { className?: string }) {
 
 interface SettingsButtonProps {
   isAdmin?: boolean;
+  unitSystem?: 'metric' | 'imperial';
+  glucoseUnit?: 'mg/dL' | 'mmol/L';
+  lipidsUnit?: 'mg/dL' | 'mmol/L';
+  coachingStyle?: {
+    tone: 'supportive' | 'neutral' | 'tough';
+    density: 'minimal' | 'balanced' | 'detailed';
+    formality: 'casual' | 'professional' | 'clinical';
+  };
 }
 
-export function SettingsButton({ isAdmin }: SettingsButtonProps) {
+export function SettingsButton({ isAdmin, unitSystem, glucoseUnit, lipidsUnit, coachingStyle }: SettingsButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -50,6 +58,10 @@ export function SettingsButton({ isAdmin }: SettingsButtonProps) {
         isOpen={isOpen} 
         onClose={() => setIsOpen(false)}
         isAdmin={isAdmin}
+        initialUnitSystem={unitSystem}
+        initialGlucoseUnit={glucoseUnit}
+        initialLipidsUnit={lipidsUnit}
+        initialCoachingStyle={coachingStyle}
       />
     </>
   );

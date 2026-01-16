@@ -1,22 +1,27 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MetricDefinition, UserMetricEntry, DOMAIN_COLORS, Domain } from '@/lib/types';
+import { MetricDefinition, UserMetricEntry, DOMAIN_COLORS, Domain, UnitSystem, MetricScoring, UnitPreferences } from '@/lib/types';
 import { formatDistanceToNow, format, subDays } from 'date-fns';
 import { MetricLogForm } from './MetricLogForm';
 import { MetricEditForm } from './MetricEditForm';
+import { formatDurationMinutes, toDisplayValue, inferUnitType } from '@/lib/units';
+import { computeMetricScore } from '@/lib/scoring';
 
 interface MetricDetailViewProps {
   metricId: string;
   onClose: () => void;
+  unitSystem: UnitSystem;
+  unitPreferences?: UnitPreferences;
 }
 
 interface MetricData {
   definition: MetricDefinition;
   entries: UserMetricEntry[];
+  scoring?: MetricScoring | null;
 }
 
-export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
+export function MetricDetailView({ metricId, onClose, unitSystem, unitPreferences }: MetricDetailViewProps) {
   const [data, setData] = useState<MetricData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showLogForm, setShowLogForm] = useState(false);
@@ -41,6 +46,7 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
           setData({
             definition: result.entries[0].metricDefinition,
             entries: result.entries,
+            scoring: result.scoring || null,
           });
         } else {
           // Fetch definition separately
@@ -52,6 +58,7 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
               setData({
                 definition: def,
                 entries: result.entries || [],
+                scoring: result.scoring || null,
               });
             }
           }
@@ -115,7 +122,7 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
     );
   }
 
-  const { definition, entries } = data;
+  const { definition, entries, scoring } = data;
   const latestEntry = entries[0];
   const previousEntry = entries[1];
   const domainColor = DOMAIN_COLORS[definition.domain as Domain];
@@ -128,18 +135,35 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
   // Determine trend
   const trend = delta === null ? null : delta > 0 ? 'up' : delta < 0 ? 'down' : 'stable';
 
+  const latestScore = latestEntry && scoring
+    ? computeMetricScore(latestEntry.value, scoring)
+    : null;
+
   // Format value for display
   const formatValue = (value: number, unit?: string) => {
     if (definition.valueType === 'scale_1_10') {
       return `${value}/10`;
     }
     if (definition.valueType === 'duration') {
-      if (value >= 3600) return `${(value / 3600).toFixed(1)}h`;
-      if (value >= 60) return `${Math.round(value / 60)}m`;
-      return `${value}s`;
+      return formatDurationMinutes(value);
     }
-    const formatted = Number.isInteger(value) ? value : value.toFixed(1);
-    return unit ? `${formatted} ${unit}` : `${formatted}`;
+    const unitType = definition.unitType || inferUnitType(definition.unit, definition.valueType);
+    const converted = toDisplayValue(value, unitType, unitSystem, unitPreferences);
+    const displayValue = converted.value;
+    const displayUnit = converted.unit || unit;
+    const formatted = Number.isInteger(displayValue) ? displayValue : displayValue.toFixed(1);
+    return displayUnit ? `${formatted} ${displayUnit}` : `${formatted}`;
+  };
+
+  const formatRange = (min?: number, max?: number) => {
+    if (min === undefined || max === undefined) return null;
+    const unitType = definition.unitType || inferUnitType(definition.unit, definition.valueType);
+    const minConverted = toDisplayValue(min, unitType, unitSystem, unitPreferences);
+    const maxConverted = toDisplayValue(max, unitType, unitSystem, unitPreferences);
+    const unitLabel = minConverted.unit || maxConverted.unit || definition.unit || '';
+    const minFormatted = Number.isInteger(minConverted.value) ? minConverted.value : minConverted.value.toFixed(1);
+    const maxFormatted = Number.isInteger(maxConverted.value) ? maxConverted.value : maxConverted.value.toFixed(1);
+    return `${minFormatted}–${maxFormatted}${unitLabel ? ` ${unitLabel}` : ''}`;
   };
 
   // Calculate chart data (last 30 days)
@@ -184,14 +208,24 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
           {latestEntry ? (
             <div className="space-y-1">
               <div className="text-4xl font-light text-foreground/90">
-                {formatValue(latestEntry.value, latestEntry.unit || definition.unit)}
+                {formatValue(latestEntry.value, latestEntry.unit || definition.canonicalUnit || definition.unit)}
               </div>
+              {latestScore !== null && (
+                <div className="text-xs text-foreground/40">
+                  Score {latestScore}
+                </div>
+              )}
+              {scoring?.optimalRangeMin !== undefined && scoring?.optimalRangeMax !== undefined && (
+                <div className="text-xs text-foreground/30">
+                  Optimal range {formatRange(scoring.optimalRangeMin, scoring.optimalRangeMax)}
+                </div>
+              )}
               {delta !== null && (
                 <div className={`text-sm ${trend === 'up' ? 'text-green-400' : trend === 'down' ? 'text-red-400' : 'text-foreground/40'}`}>
                   {trend === 'up' && '↑ '}
                   {trend === 'down' && '↓ '}
                   {trend === 'stable' && '→ '}
-                  {delta > 0 ? '+' : ''}{formatValue(delta, definition.unit)} from previous
+                  {delta > 0 ? '+' : ''}{formatValue(delta, definition.canonicalUnit || definition.unit)} from previous
                 </div>
               )}
               <div className="text-xs text-foreground/40">
@@ -206,13 +240,14 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
         {/* Log Entry Button */}
         <button
           onClick={() => setShowLogForm(true)}
-          className="w-full py-3 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98]"
+          disabled={definition.isCalculated}
+          className="w-full py-3 rounded-xl text-sm font-medium transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ 
             backgroundColor: `${domainColor}20`,
             color: domainColor,
           }}
         >
-          + Log Entry
+          {definition.isCalculated ? 'Calculated Metric' : '+ Log Entry'}
         </button>
 
         {/* Trend Chart */}
@@ -236,7 +271,7 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
                       backgroundColor: domainColor,
                       opacity: 0.3 + (i / chartData.length) * 0.7,
                     }}
-                    title={`${formatValue(entry.value, definition.unit)} on ${format(new Date(entry.recordedAt), 'MMM d')}`}
+                    title={`${formatValue(entry.value, definition.canonicalUnit || definition.unit)} on ${format(new Date(entry.recordedAt), 'MMM d')}`}
                   />
                 );
               })}
@@ -290,7 +325,7 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
                 <div key={entry.id} className="px-4 py-3 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <div className="text-sm text-foreground/70">
-                      {formatValue(entry.value, entry.unit || definition.unit)}
+                      {formatValue(entry.value, entry.unit || definition.canonicalUnit || definition.unit)}
                     </div>
                     <div className="text-xs text-foreground/30">
                       {format(new Date(entry.recordedAt), 'MMM d, yyyy • h:mm a')}
@@ -383,6 +418,8 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
           metric={definition}
           onClose={() => setShowLogForm(false)}
           onSuccess={handleLogSuccess}
+          unitSystem={unitSystem}
+          unitPreferences={unitPreferences}
         />
       )}
 
@@ -396,6 +433,8 @@ export function MetricDetailView({ metricId, onClose }: MetricDetailViewProps) {
             setSelectedEntryId(null);
           }}
           onSuccess={handleEditSuccess}
+          unitSystem={unitSystem}
+          unitPreferences={unitPreferences}
         />
       )}
     </div>

@@ -11,6 +11,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('unit_system, glucose_unit, lipids_unit')
+      .eq('id', user.id)
+      .single();
+
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
     const domain = searchParams.get('domain');
@@ -36,6 +42,7 @@ export async function GET(request: NextRequest) {
     const metricIds = definitions?.map(d => d.id) || [];
     
     let latestEntries: Record<string, unknown> = {};
+    let scoring: Record<string, unknown> = {};
     
     if (metricIds.length > 0) {
       // Get the latest entry for each metric definition
@@ -65,6 +72,37 @@ export async function GET(request: NextRequest) {
           }
         });
       }
+
+      const { data: tests } = await supabase
+        .from('metric_tests')
+        .select('id, metric_definition_id')
+        .in('metric_definition_id', metricIds)
+        .eq('is_active', true);
+
+      const testIds = tests?.map(test => test.id) || [];
+      if (testIds.length > 0) {
+        const { data: scoringRows } = await supabase
+          .from('metric_scoring')
+          .select('*')
+          .in('metric_test_id', testIds);
+
+        if (scoringRows && tests) {
+          const testById = new Map(tests.map(test => [test.id, test.metric_definition_id]));
+          scoringRows.forEach(row => {
+            const metricDefinitionId = testById.get(row.metric_test_id);
+            if (!metricDefinitionId) return;
+            scoring[metricDefinitionId] = {
+              id: row.id,
+              metricDefinitionId,
+              optimalRangeMin: row.optimal_range_min,
+              optimalRangeMax: row.optimal_range_max,
+              curveType: row.score_curve || row.curve_type,
+              curveParams: row.curve_params,
+              createdAt: row.created_at,
+            };
+          });
+        }
+      }
     }
 
     // Transform definitions to camelCase
@@ -76,6 +114,10 @@ export async function GET(request: NextRequest) {
       description: def.description,
       whatItTellsYou: def.what_it_tells_you,
       unit: def.unit,
+      canonicalUnit: def.canonical_unit,
+      unitType: def.unit_type,
+      testType: def.test_type,
+      isCalculated: def.is_calculated || def.is_derived,
       valueType: def.value_type,
       measurementSources: def.measurement_sources || [],
       frequencyHint: def.frequency_hint,
@@ -86,6 +128,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       definitions: transformedDefinitions,
       latestEntries,
+      scoring,
+      unitSystem: profile?.unit_system || 'metric',
+      unitPreferences: {
+        glucoseUnit: profile?.glucose_unit || 'mg/dL',
+        lipidsUnit: profile?.lipids_unit || 'mg/dL',
+      },
     });
   } catch (error) {
     console.error('Error in metrics definitions API:', error);

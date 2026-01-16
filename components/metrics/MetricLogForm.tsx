@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { MetricDefinition, MetricSource, DOMAIN_COLORS, Domain } from '@/lib/types';
+import { MetricDefinition, MetricSource, DOMAIN_COLORS, Domain, UnitSystem, UnitPreferences } from '@/lib/types';
+import { convertValueBetweenUnits, getDefaultInputUnit, getUnitOptions, inferUnitType } from '@/lib/units';
 
 interface MetricLogFormProps {
   metric: MetricDefinition;
   onClose: () => void;
   onSuccess: () => void;
+  unitSystem: UnitSystem;
+  unitPreferences?: UnitPreferences;
 }
 
 const SOURCE_OPTIONS: { value: MetricSource; label: string }[] = [
@@ -29,11 +32,13 @@ function toLocalDateTimeString(date: Date): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps) {
+export function MetricLogForm({ metric, onClose, onSuccess, unitSystem, unitPreferences }: MetricLogFormProps) {
   const [value, setValue] = useState('');
   const [source, setSource] = useState<MetricSource>('manual');
   const [notes, setNotes] = useState('');
   const [recordedAt, setRecordedAt] = useState(toLocalDateTimeString(new Date()));
+  const resolvedUnitType = metric.unitType || inferUnitType(metric.unit, metric.valueType);
+  const [inputUnit, setInputUnit] = useState(getDefaultInputUnit(resolvedUnitType, unitSystem, unitPreferences));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,6 +77,7 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
           source,
           notes: notes.trim() || null,
           recordedAt: new Date(recordedAt).toISOString(),
+          inputUnit: inputUnit || null,
         }),
       });
 
@@ -91,7 +97,7 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
   // Get placeholder text based on metric type
   const getPlaceholder = () => {
     if (metric.valueType === 'scale_1_10') return '1-10';
-    if (metric.valueType === 'duration') return 'e.g., 45 (minutes)';
+    if (metric.valueType === 'duration') return 'e.g., 45';
     if (metric.unit) return `e.g., ${metric.unit}`;
     return 'Enter value';
   };
@@ -141,30 +147,60 @@ export function MetricLogForm({ metric, onClose, onSuccess }: MetricLogFormProps
           {/* Value Input */}
           <div>
             <label className="text-xs text-foreground/50 mb-2 block">
-              Value {metric.unit && `(${metric.unit})`}
+              Value {((metric.canonicalUnit || metric.unit) && `(${metric.canonicalUnit || metric.unit})`)}
             </label>
-            <input
-              type="number"
-              step="any"
-              value={value}
-              onChange={(e) => setValue(e.target.value)}
-              placeholder={getPlaceholder()}
-              className="w-full px-4 py-3 rounded-xl text-lg text-foreground/90 placeholder-foreground/30 transition-colors"
-              style={{ 
-                ...inputStyles,
-                outline: 'none',
-                boxShadow: 'none',
-              }}
-              onFocus={(e) => {
-                e.target.style.borderColor = focusColor;
-                e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
-              }}
-              onBlur={(e) => {
-                e.target.style.borderColor = 'rgba(255,255,255,0.1)';
-                e.target.style.boxShadow = 'none';
-              }}
-              autoFocus
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                step="any"
+                value={value}
+                onChange={(e) => setValue(e.target.value)}
+                placeholder={getPlaceholder()}
+                className="flex-1 px-4 py-3 rounded-xl text-lg text-foreground/90 placeholder-foreground/30 transition-colors"
+                style={{ 
+                  ...inputStyles,
+                  outline: 'none',
+                  boxShadow: 'none',
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = focusColor;
+                  e.target.style.boxShadow = `0 0 0 1px ${focusColor}`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = 'rgba(255,255,255,0.1)';
+                  e.target.style.boxShadow = 'none';
+                }}
+                autoFocus
+              />
+              {getUnitOptions(resolvedUnitType).length > 0 && (
+                <select
+                  value={inputUnit}
+                  onChange={(e) => {
+                    const nextUnit = e.target.value;
+                    if (value) {
+                      const parsed = parseFloat(value);
+                      if (!isNaN(parsed)) {
+                        const converted = convertValueBetweenUnits(parsed, resolvedUnitType, inputUnit, nextUnit);
+                        setValue(String(Number.isInteger(converted) ? converted : converted.toFixed(2)));
+                      }
+                    }
+                    setInputUnit(nextUnit);
+                  }}
+                  className="px-3 py-3 rounded-xl text-sm text-foreground/90 transition-colors appearance-none cursor-pointer"
+                  style={{ 
+                    ...inputStyles,
+                    outline: 'none',
+                    boxShadow: 'none',
+                  }}
+                >
+                  {getUnitOptions(resolvedUnitType).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
 
           {/* Date/Time Input */}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Domain, DOMAIN_LABELS, DOMAIN_COLORS, DOMAIN_SUBDOMAINS, MetricDefinition, MetricWithLatestValue } from '@/lib/types';
 import { SubDomainSection } from './SubDomainSection';
+import { computeAverageScore, computeMetricScore } from '@/lib/scoring';
 
 interface DomainCardProps {
   domain: Domain;
@@ -66,10 +67,21 @@ export function DomainCard({ domain }: DomainCardProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [totalMetrics, setTotalMetrics] = useState(0);
   const [trackedMetrics, setTrackedMetrics] = useState(0);
+  const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
+  const [unitPreferences, setUnitPreferences] = useState<{ glucoseUnit?: string; lipidsUnit?: string }>({});
 
   const color = DOMAIN_COLORS[domain];
   const label = DOMAIN_LABELS[domain];
   const subDomains = DOMAIN_SUBDOMAINS[domain];
+  const allMetrics = Object.values(metrics).flat();
+  const scoredValues = allMetrics
+    .map(metric => {
+      if (!metric.latestEntry || !metric.scoring) return null;
+      return computeMetricScore(metric.latestEntry.value, metric.scoring);
+    })
+    .filter((score): score is number => typeof score === 'number');
+  const minimumCount = Math.max(3, Math.ceil(allMetrics.length * 0.3));
+  const domainScore = computeAverageScore(scoredValues, minimumCount);
 
   // Fetch metrics when card is expanded
   useEffect(() => {
@@ -97,6 +109,7 @@ export function DomainCard({ domain }: DomainCardProps) {
           grouped[def.subDomain].push({
             definition: def,
             latestEntry: data.latestEntries?.[def.id],
+            scoring: data.scoring?.[def.id],
           });
           total++;
           if (data.latestEntries?.[def.id]) {
@@ -107,6 +120,12 @@ export function DomainCard({ domain }: DomainCardProps) {
         setMetrics(grouped);
         setTotalMetrics(total);
         setTrackedMetrics(tracked);
+        if (data.unitSystem === 'imperial') {
+          setUnitSystem('imperial');
+        } else {
+          setUnitSystem('metric');
+        }
+        setUnitPreferences(data.unitPreferences || {});
       }
     } catch (error) {
       console.error('Failed to fetch metrics:', error);
@@ -144,6 +163,9 @@ export function DomainCard({ domain }: DomainCardProps) {
                 : 'Tap to explore metrics'
               }
             </div>
+            <div className="text-[10px] text-foreground/30">
+              {domainScore !== null ? `Score ${domainScore}` : 'Score —'}
+            </div>
           </div>
         </div>
         
@@ -174,6 +196,8 @@ export function DomainCard({ domain }: DomainCardProps) {
                   subDomain={subDomain}
                   metrics={metrics[subDomain] || []}
                   domainColor={color}
+                  unitSystem={unitSystem}
+                  unitPreferences={unitPreferences}
                 />
               ))}
             </div>

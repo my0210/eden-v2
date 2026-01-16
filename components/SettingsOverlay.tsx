@@ -5,6 +5,7 @@ import { Drawer } from 'vaul';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { UnitSystem, GlucoseUnit, LipidsUnit } from '@/lib/types';
 
 interface CoachingStyle {
   tone: 'supportive' | 'neutral' | 'tough';
@@ -17,6 +18,9 @@ interface SettingsOverlayProps {
   isOpen?: boolean;
   onClose?: () => void;
   initialCoachingStyle?: CoachingStyle;
+  initialUnitSystem?: UnitSystem;
+  initialGlucoseUnit?: GlucoseUnit;
+  initialLipidsUnit?: LipidsUnit;
   isAdmin?: boolean;
 }
 
@@ -38,6 +42,21 @@ const FORMALITY_OPTIONS = [
   { value: 'clinical', label: 'Medical' },
 ] as const;
 
+const UNIT_SYSTEM_OPTIONS = [
+  { value: 'metric', label: 'Metric' },
+  { value: 'imperial', label: 'Imperial' },
+] as const;
+
+const GLUCOSE_UNIT_OPTIONS = [
+  { value: 'mg/dL', label: 'mg/dL' },
+  { value: 'mmol/L', label: 'mmol/L' },
+] as const;
+
+const LIPIDS_UNIT_OPTIONS = [
+  { value: 'mg/dL', label: 'mg/dL' },
+  { value: 'mmol/L', label: 'mmol/L' },
+] as const;
+
 const RATING_EMOJIS = [
   { value: 1, emoji: '😠', label: 'Very unhappy' },
   { value: 2, emoji: '😕', label: 'Unhappy' },
@@ -49,7 +68,7 @@ const RATING_EMOJIS = [
 type ViewState = 'settings' | 'feedback';
 type FeedbackState = 'idle' | 'loading' | 'success' | 'error';
 
-export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, initialCoachingStyle, isAdmin }: SettingsOverlayProps) {
+export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, initialCoachingStyle, initialUnitSystem, initialGlucoseUnit, initialLipidsUnit, isAdmin }: SettingsOverlayProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
   
   // Use controlled mode if isOpen prop is provided
@@ -64,6 +83,9 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
   const [coachingStyle, setCoachingStyle] = useState<CoachingStyle>(
     initialCoachingStyle || { tone: 'supportive', density: 'balanced', formality: 'professional' }
   );
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>(initialUnitSystem || 'metric');
+  const [glucoseUnit, setGlucoseUnit] = useState<GlucoseUnit>(initialGlucoseUnit || 'mg/dL');
+  const [lipidsUnit, setLipidsUnit] = useState<LipidsUnit>(initialLipidsUnit || 'mg/dL');
   
   // Feedback state
   const [feedbackRating, setFeedbackRating] = useState<number | null>(null);
@@ -94,6 +116,24 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
     }
   }, [initialCoachingStyle]);
 
+  useEffect(() => {
+    if (initialUnitSystem) {
+      setUnitSystem(initialUnitSystem);
+    }
+  }, [initialUnitSystem]);
+
+  useEffect(() => {
+    if (initialGlucoseUnit) {
+      setGlucoseUnit(initialGlucoseUnit);
+    }
+  }, [initialGlucoseUnit]);
+
+  useEffect(() => {
+    if (initialLipidsUnit) {
+      setLipidsUnit(initialLipidsUnit);
+    }
+  }, [initialLipidsUnit]);
+
   const handleStyleChange = <K extends keyof CoachingStyle>(key: K, value: CoachingStyle[K]) => {
     setCoachingStyle(prev => ({ ...prev, [key]: value }));
     saveStyle({ ...coachingStyle, [key]: value });
@@ -111,6 +151,54 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
       setTimeout(() => setSaved(false), 1500);
     } catch (e) {
       console.error('Failed to save style:', e);
+    }
+  };
+
+  const handleUnitSystemChange = async (value: UnitSystem) => {
+    setUnitSystem(value);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from('user_profiles')
+        .update({ unit_system: value })
+        .eq('id', user.id);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      console.error('Failed to save unit system:', e);
+    }
+  };
+
+  const handleGlucoseUnitChange = async (value: GlucoseUnit) => {
+    setGlucoseUnit(value);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from('user_profiles')
+        .update({ glucose_unit: value })
+        .eq('id', user.id);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      console.error('Failed to save glucose unit:', e);
+    }
+  };
+
+  const handleLipidsUnitChange = async (value: LipidsUnit) => {
+    setLipidsUnit(value);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase
+        .from('user_profiles')
+        .update({ lipids_unit: value })
+        .eq('id', user.id);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+    } catch (e) {
+      console.error('Failed to save lipids unit:', e);
     }
   };
 
@@ -342,6 +430,52 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                         onChange={(v) => handleStyleChange('formality', v as CoachingStyle['formality'])}
                       />
                     </div>
+                  </div>
+                </div>
+
+                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+
+                {/* Unit System */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                      Units
+                    </h3>
+                    {saved && (
+                      <span className="text-xs text-green-400/80 animate-pulse">
+                        Saved
+                      </span>
+                    )}
+                  </div>
+                  <SegmentedControl
+                    options={UNIT_SYSTEM_OPTIONS}
+                    value={unitSystem}
+                    onChange={(v) => handleUnitSystemChange(v as UnitSystem)}
+                  />
+                </div>
+
+                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+
+                {/* Lab Units */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                    Lab Units
+                  </h3>
+                  <div>
+                    <label className="text-xs text-white/50 mb-1.5 block">Glucose</label>
+                    <SegmentedControl
+                      options={GLUCOSE_UNIT_OPTIONS}
+                      value={glucoseUnit}
+                      onChange={(v) => handleGlucoseUnitChange(v as GlucoseUnit)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-white/50 mb-1.5 block">Lipids</label>
+                    <SegmentedControl
+                      options={LIPIDS_UNIT_OPTIONS}
+                      value={lipidsUnit}
+                      onChange={(v) => handleLipidsUnitChange(v as LipidsUnit)}
+                    />
                   </div>
                 </div>
 
