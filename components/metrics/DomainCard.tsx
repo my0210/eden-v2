@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Domain, DOMAIN_LABELS, DOMAIN_COLORS, DOMAIN_SUBDOMAINS, MetricDefinition, MetricWithLatestValue } from '@/lib/types';
+import { Domain, DOMAIN_LABELS, DOMAIN_COLORS, DOMAIN_SUBDOMAINS, MetricDefinition, MetricWithLatestValue, UnitPreferences } from '@/lib/types';
 import { SubDomainSection } from './SubDomainSection';
 import { computeAverageScore, computeMetricScore } from '@/lib/scoring';
 
@@ -68,7 +68,7 @@ export function DomainCard({ domain }: DomainCardProps) {
   const [totalMetrics, setTotalMetrics] = useState(0);
   const [trackedMetrics, setTrackedMetrics] = useState(0);
   const [unitSystem, setUnitSystem] = useState<'metric' | 'imperial'>('metric');
-  const [unitPreferences, setUnitPreferences] = useState<{ glucoseUnit?: string; lipidsUnit?: string }>({});
+  const [unitPreferences, setUnitPreferences] = useState<UnitPreferences>({});
 
   const color = DOMAIN_COLORS[domain];
   const label = DOMAIN_LABELS[domain];
