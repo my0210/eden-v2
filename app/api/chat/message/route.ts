@@ -47,6 +47,9 @@ export async function POST(request: Request) {
       currentFitnessLevel: profileData.current_fitness_level,
       onboardingCompleted: profileData.onboarding_completed,
       isAdmin: profileData.is_admin || false,
+      unitSystem: profileData.unit_system || 'metric',
+      glucoseUnit: profileData.glucose_unit || 'mg/dL',
+      lipidsUnit: profileData.lipids_unit || 'mg/dL',
       createdAt: profileData.created_at,
       updatedAt: profileData.updated_at,
     };
