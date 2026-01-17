@@ -74,7 +74,9 @@ export function MetricDetailView({ metricId, onClose, unitSystem, unitPreference
     setShowLogForm(false);
     fetchMetricData(); // Refresh data
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('metrics:updated'));
+      window.dispatchEvent(new CustomEvent('metrics:updated', {
+        detail: { metricDefinitionId: metricId },
+      }));
     }
   };
 
@@ -83,7 +85,9 @@ export function MetricDetailView({ metricId, onClose, unitSystem, unitPreference
     setSelectedEntryId(null);
     fetchMetricData(); // Refresh data
     if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('metrics:updated'));
+      window.dispatchEvent(new CustomEvent('metrics:updated', {
+        detail: { metricDefinitionId: metricId },
+      }));
     }
   };
 
@@ -97,7 +101,9 @@ export function MetricDetailView({ metricId, onClose, unitSystem, unitPreference
         setSelectedEntryId(null);
         fetchMetricData(); // Refresh data
         if (typeof window !== 'undefined') {
-          window.dispatchEvent(new CustomEvent('metrics:updated'));
+          window.dispatchEvent(new CustomEvent('metrics:updated', {
+            detail: { metricDefinitionId: metricId },
+          }));
         }
       } else {
         console.error('Failed to delete entry');

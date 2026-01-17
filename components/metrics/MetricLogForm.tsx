@@ -86,6 +86,12 @@ export function MetricLogForm({ metric, onClose, onSuccess, unitSystem, unitPref
         throw new Error(data.error || 'Failed to log entry');
       }
 
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('metrics:updated', {
+          detail: { metricDefinitionId: metric.id },
+        }));
+      }
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');
