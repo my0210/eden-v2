@@ -90,6 +90,18 @@ export function DomainCard({ domain }: DomainCardProps) {
     }
   }, [isExpanded]);
 
+  useEffect(() => {
+    const handleMetricsUpdated = () => {
+      if (isExpanded) {
+        fetchMetrics();
+      }
+    };
+    window.addEventListener('metrics:updated', handleMetricsUpdated);
+    return () => {
+      window.removeEventListener('metrics:updated', handleMetricsUpdated);
+    };
+  }, [isExpanded]);
+
   const fetchMetrics = async () => {
     setIsLoading(true);
     try {

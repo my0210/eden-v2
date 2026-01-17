@@ -73,12 +73,18 @@ export function MetricDetailView({ metricId, onClose, unitSystem, unitPreference
   const handleLogSuccess = () => {
     setShowLogForm(false);
     fetchMetricData(); // Refresh data
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('metrics:updated'));
+    }
   };
 
   const handleEditSuccess = () => {
     setEditingEntry(null);
     setSelectedEntryId(null);
     fetchMetricData(); // Refresh data
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('metrics:updated'));
+    }
   };
 
   const handleDelete = async (entryId: string) => {
@@ -90,6 +96,9 @@ export function MetricDetailView({ metricId, onClose, unitSystem, unitPreference
       if (response.ok) {
         setSelectedEntryId(null);
         fetchMetricData(); // Refresh data
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('metrics:updated'));
+        }
       } else {
         console.error('Failed to delete entry');
       }
