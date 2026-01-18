@@ -99,7 +99,9 @@ export async function POST(request: Request) {
     const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Generate the plan (starting from today, not the whole week)
+    console.log('[Plan Generation] Starting for week:', weekStartStr, 'from day:', currentDayOfWeek);
     const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext, currentDayOfWeek);
+    console.log('[Plan Generation] Generated:', generated.items.length, 'items');
 
     // Delete existing plan if force regenerating
     if (forceRegenerate) {
@@ -135,28 +137,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to create plan' }, { status: 500 });
     }
 
-    // Create plan items
-    const itemsToInsert = generated.items.map(item => ({
-      weekly_plan_id: newPlan.id,
-      domain: item.domain,
-      day_of_week: item.dayOfWeek,
-      title: item.title,
-      duration_minutes: item.durationMinutes,
-      personalization_context: item.personalizationContext,
-      reasoning: item.reasoning,
-      status: item.status,
-      sort_order: item.sortOrder,
-    }));
+    // Create plan items (only if there are items to insert)
+    if (generated.items.length > 0) {
+      const itemsToInsert = generated.items.map(item => ({
+        weekly_plan_id: newPlan.id,
+        domain: item.domain,
+        day_of_week: item.dayOfWeek,
+        title: item.title,
+        duration_minutes: item.durationMinutes,
+        personalization_context: item.personalizationContext,
+        reasoning: item.reasoning,
+        status: item.status,
+        sort_order: item.sortOrder,
+      }));
 
-    const { error: itemsError } = await supabase
-      .from('plan_items')
-      .insert(itemsToInsert);
+      const { error: itemsError } = await supabase
+        .from('plan_items')
+        .insert(itemsToInsert);
 
-    if (itemsError) {
-      console.error('Error creating plan items:', itemsError);
-      // Clean up the plan
-      await supabase.from('weekly_plans').delete().eq('id', newPlan.id);
-      return NextResponse.json({ error: 'Failed to create plan items' }, { status: 500 });
+      if (itemsError) {
+        console.error('Error creating plan items:', itemsError);
+        // Clean up the plan
+        await supabase.from('weekly_plans').delete().eq('id', newPlan.id);
+        return NextResponse.json({ error: 'Failed to create plan items' }, { status: 500 });
+      }
     }
 
     // Log adaptation for plan generation
