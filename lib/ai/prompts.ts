@@ -133,7 +133,7 @@ ${constraintsDesc}
 ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : ''}
 
 ## Requirements
-1. Create items across ALL 5 domains (Heart, Muscle, Sleep, Metabolism, Mind)
+1. Create items across ALL 5 domains (Heart, Frame, Recovery, Metabolism, Mind)
 2. Respect ALL user constraints - schedule, equipment, capacity limits
 3. Each item MUST include:
    - personalizationContext: A brief note showing why this is personalized (e.g., "Home workout since no gym today", "Lunch break window per your schedule")
