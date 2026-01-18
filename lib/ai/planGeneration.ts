@@ -54,10 +54,6 @@ export async function generateWeeklyPlan(
       maxTokens: 8192,
     });
 
-    // #region agent log
-    console.log('[DEBUG] Raw AI result', JSON.stringify({hasItems:!!result.items,itemCount:result.items?.length,rawDomains:result.items?.map(i=>i.domain),rawDays:result.items?.map(i=>i.dayOfWeek)}));
-    // #endregion
-
     // Transform and filter items to only include today and future days
     let items = result.items.map((item, index) => ({
       domain: item.domain,
@@ -71,9 +67,6 @@ export async function generateWeeklyPlan(
     }));
 
     // Filter out past days if startFromDay is specified
-    // #region agent log
-    console.log('[DEBUG] Before filter', JSON.stringify({startFromDay,itemCountBefore:items.length}));
-    // #endregion
     if (startFromDay !== undefined) {
       items = items.filter(item => {
         // Handle week wrapping (e.g., if today is Friday (5), include Sat (6), Sun (0))
@@ -83,9 +76,6 @@ export async function generateWeeklyPlan(
         return item.dayOfWeek >= startFromDay || item.dayOfWeek === 0;
       });
     }
-    // #region agent log
-    console.log('[DEBUG] After filter', JSON.stringify({itemCountAfter:items.length,remainingDays:items.map(i=>i.dayOfWeek)}));
-    // #endregion
 
     return {
       edenIntro: result.edenIntro,

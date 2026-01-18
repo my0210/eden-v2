@@ -99,13 +99,7 @@ export async function POST(request: Request) {
     const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Generate the plan (starting from today, not the whole week)
-    // #region agent log
-    console.log('[DEBUG] Starting plan generation', JSON.stringify({weekStartStr,currentDayOfWeek}));
-    // #endregion
     const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext, currentDayOfWeek);
-    // #region agent log
-    console.log('[DEBUG] Plan generated', JSON.stringify({itemCount:generated.items.length,edenIntroLength:generated.edenIntro?.length,domains:generated.items.map(i=>i.domain),dayOfWeeks:generated.items.map(i=>i.dayOfWeek)}));
-    // #endregion
 
     // Delete existing plan if force regenerating
     if (forceRegenerate) {
@@ -142,9 +136,6 @@ export async function POST(request: Request) {
     }
 
     // Create plan items (only if there are items to insert)
-    // #region agent log
-    console.log('[DEBUG] Items check', JSON.stringify({itemsLength:generated.items.length,hasItems:generated.items.length>0}));
-    // #endregion
     if (generated.items.length > 0) {
       const itemsToInsert = generated.items.map(item => ({
         weekly_plan_id: newPlan.id,
@@ -158,18 +149,11 @@ export async function POST(request: Request) {
         sort_order: item.sortOrder,
       }));
 
-      // #region agent log
-      console.log('[DEBUG] About to insert items', JSON.stringify({itemCount:itemsToInsert.length,firstItem:itemsToInsert[0],planId:newPlan.id}));
-      // #endregion
-
       const { error: itemsError } = await supabase
         .from('plan_items')
         .insert(itemsToInsert);
 
       if (itemsError) {
-        // #region agent log
-        console.log('[DEBUG] Items insert FAILED', JSON.stringify({error:itemsError.message,code:itemsError.code,details:itemsError.details,hint:itemsError.hint}));
-        // #endregion
         console.error('Error creating plan items:', itemsError);
         // Clean up the plan
         await supabase.from('weekly_plans').delete().eq('id', newPlan.id);
