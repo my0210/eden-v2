@@ -55,7 +55,7 @@ export async function generateWeeklyPlan(
     });
 
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:57',message:'Raw AI result',data:{hasItems:!!result.items,itemCount:result.items?.length,rawDomains:result.items?.map(i=>i.domain),rawDays:result.items?.map(i=>i.dayOfWeek)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,E'})}).catch(()=>{});
+    console.log('[DEBUG] Raw AI result', JSON.stringify({hasItems:!!result.items,itemCount:result.items?.length,rawDomains:result.items?.map(i=>i.domain),rawDays:result.items?.map(i=>i.dayOfWeek)}));
     // #endregion
 
     // Transform and filter items to only include today and future days
@@ -72,7 +72,7 @@ export async function generateWeeklyPlan(
 
     // Filter out past days if startFromDay is specified
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:78',message:'Before filter',data:{startFromDay,itemCountBefore:items.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    console.log('[DEBUG] Before filter', JSON.stringify({startFromDay,itemCountBefore:items.length}));
     // #endregion
     if (startFromDay !== undefined) {
       items = items.filter(item => {
@@ -84,7 +84,7 @@ export async function generateWeeklyPlan(
       });
     }
     // #region agent log
-    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:90',message:'After filter',data:{itemCountAfter:items.length,remainingDays:items.map(i=>i.dayOfWeek)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    console.log('[DEBUG] After filter', JSON.stringify({itemCountAfter:items.length,remainingDays:items.map(i=>i.dayOfWeek)}));
     // #endregion
 
     return {
