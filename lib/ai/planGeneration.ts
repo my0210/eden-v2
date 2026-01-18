@@ -54,6 +54,10 @@ export async function generateWeeklyPlan(
       maxTokens: 8192,
     });
 
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:57',message:'Raw AI result',data:{hasItems:!!result.items,itemCount:result.items?.length,rawDomains:result.items?.map(i=>i.domain),rawDays:result.items?.map(i=>i.dayOfWeek)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,E'})}).catch(()=>{});
+    // #endregion
+
     // Transform and filter items to only include today and future days
     let items = result.items.map((item, index) => ({
       domain: item.domain,
@@ -67,6 +71,9 @@ export async function generateWeeklyPlan(
     }));
 
     // Filter out past days if startFromDay is specified
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:78',message:'Before filter',data:{startFromDay,itemCountBefore:items.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     if (startFromDay !== undefined) {
       items = items.filter(item => {
         // Handle week wrapping (e.g., if today is Friday (5), include Sat (6), Sun (0))
@@ -76,6 +83,9 @@ export async function generateWeeklyPlan(
         return item.dayOfWeek >= startFromDay || item.dayOfWeek === 0;
       });
     }
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'planGeneration.ts:90',message:'After filter',data:{itemCountAfter:items.length,remainingDays:items.map(i=>i.dayOfWeek)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
 
     return {
       edenIntro: result.edenIntro,

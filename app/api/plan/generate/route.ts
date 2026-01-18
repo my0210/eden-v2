@@ -99,9 +99,13 @@ export async function POST(request: Request) {
     const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Generate the plan (starting from today, not the whole week)
-    console.log('[Plan Generation] Starting for week:', weekStartStr, 'from day:', currentDayOfWeek);
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:102',message:'Starting plan generation',data:{weekStartStr,currentDayOfWeek},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext, currentDayOfWeek);
-    console.log('[Plan Generation] Generated:', generated.items.length, 'items');
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:106',message:'Plan generated',data:{itemCount:generated.items.length,edenIntroLength:generated.edenIntro?.length,domains:generated.items.map(i=>i.domain),dayOfWeeks:generated.items.map(i=>i.dayOfWeek)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})}).catch(()=>{});
+    // #endregion
 
     // Delete existing plan if force regenerating
     if (forceRegenerate) {
@@ -138,6 +142,9 @@ export async function POST(request: Request) {
     }
 
     // Create plan items (only if there are items to insert)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:140',message:'Items check',data:{itemsLength:generated.items.length,hasItems:generated.items.length>0},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
     if (generated.items.length > 0) {
       const itemsToInsert = generated.items.map(item => ({
         weekly_plan_id: newPlan.id,
@@ -151,11 +158,18 @@ export async function POST(request: Request) {
         sort_order: item.sortOrder,
       }));
 
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:156',message:'About to insert items',data:{itemCount:itemsToInsert.length,firstItem:itemsToInsert[0],planId:newPlan.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,D'})}).catch(()=>{});
+      // #endregion
+
       const { error: itemsError } = await supabase
         .from('plan_items')
         .insert(itemsToInsert);
 
       if (itemsError) {
+        // #region agent log
+        fetch('http://127.0.0.1:7243/ingest/5194740e-0b4f-48a9-85c5-ae4f48c84092',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'route.ts:165',message:'Items insert FAILED',data:{error:itemsError.message,code:itemsError.code,details:itemsError.details,hint:itemsError.hint},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
         console.error('Error creating plan items:', itemsError);
         // Clean up the plan
         await supabase.from('weekly_plans').delete().eq('id', newPlan.id);
