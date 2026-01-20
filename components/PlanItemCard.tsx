@@ -1,8 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { PlanItem, Domain, DOMAIN_COLORS } from '@/lib/types';
+
+// Haptic feedback utility
+function triggerHaptic(type: 'success' | 'light' | 'medium' = 'success') {
+  if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+    switch (type) {
+      case 'success':
+        navigator.vibrate([10, 50, 10]);
+        break;
+      case 'light':
+        navigator.vibrate(10);
+        break;
+      case 'medium':
+        navigator.vibrate(20);
+        break;
+    }
+  }
+}
 
 interface PlanItemCardProps {
   item: PlanItem;
@@ -60,9 +77,17 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
   const [showReasoning, setShowReasoning] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [localStatus, setLocalStatus] = useState(item.status);
+  const [isSliding, setIsSliding] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const domainColor = DOMAIN_COLORS[item.domain as Domain];
+
+  // Reset sliding state when status changes externally
+  useEffect(() => {
+    setLocalStatus(item.status);
+  }, [item.status]);
 
   const handleAskEden = () => {
     const event = new CustomEvent('eden:askAboutItem', {
@@ -82,6 +107,22 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
     const previousStatus = localStatus;
     setLocalStatus(newStatus);
     setIsUpdating(true);
+
+    // Trigger haptic and animation for completion
+    if (newStatus === 'done') {
+      triggerHaptic('success');
+      setShowCelebration(true);
+      setIsSliding(true);
+      
+      // Hide celebration after animation
+      setTimeout(() => setShowCelebration(false), 600);
+      // Reset sliding after animation completes
+      setTimeout(() => setIsSliding(false), 400);
+    } else if (newStatus === 'skipped') {
+      triggerHaptic('light');
+      setIsSliding(true);
+      setTimeout(() => setIsSliding(false), 300);
+    }
 
     try {
       const response = await fetch(`/api/plan/item/${item.id}/status`, {
@@ -112,8 +153,9 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
 
   // Different styles based on status
   const cardClasses = `
-    p-4 rounded-xl 
+    relative p-4 rounded-xl 
     transition-all duration-300
+    ${isSliding ? 'transform translate-x-2 opacity-90' : ''}
     ${isComplete 
       ? 'bg-green-500/5 border border-green-500/20 hover:bg-green-500/10' 
       : isSkipped 
@@ -123,7 +165,16 @@ export function PlanItemCard({ item, isPriority }: PlanItemCardProps) {
   `;
 
   return (
-    <div className={cardClasses}>
+    <div ref={cardRef} className={cardClasses}>
+      {/* Celebration overlay */}
+      {showCelebration && (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+          <div className="absolute inset-0 bg-green-400/10 animate-pulse" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+            <span className="text-2xl animate-bounce">✓</span>
+          </div>
+        </div>
+      )}
       {/* Clickable header area - toggles reasoning */}
       <div 
         className="cursor-pointer"

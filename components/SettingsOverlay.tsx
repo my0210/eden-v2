@@ -481,6 +481,27 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
 
                 <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
+                {/* Navigation */}
+                <div className="space-y-2">
+                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                    Navigation
+                  </h3>
+                  
+                  <Link
+                    href="/protocol"
+                    onClick={() => setIsOpen(false)}
+                    className="w-full py-2.5 rounded-lg text-sm text-green-400/80 hover:text-green-400 transition-colors text-left px-3 flex items-center justify-between"
+                    style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)' }}
+                  >
+                    <span>My Protocol</span>
+                    <svg className="w-4 h-4 text-green-400/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </Link>
+                </div>
+
+                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+
                 {/* Account */}
                 <div className="space-y-2">
                   <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">

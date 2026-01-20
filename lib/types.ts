@@ -97,6 +97,30 @@ export const DOMAIN_COLORS: Record<Domain, string> = {
 };
 
 // ============================================================
+// Protocol Types (12-week plans)
+// ============================================================
+
+export interface Protocol {
+  id: string;
+  userId: string;
+  startDate: string;     // ISO date string
+  endDate: string;       // ISO date string
+  status: ProtocolStatus;
+  goalSummary: string;   // User's primary goal statement
+  weeks: ProtocolWeek[]; // 12 week outlines
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ProtocolStatus = 'active' | 'completed' | 'paused';
+
+export interface ProtocolWeek {
+  weekNumber: number;    // 1-12
+  focus: string;         // e.g., "Building consistency"
+  domains: Partial<Record<Domain, string>>; // Per-domain focus for this week
+}
+
+// ============================================================
 // Weekly Plan Types
 // ============================================================
 
@@ -108,6 +132,8 @@ export interface WeeklyPlan {
   domainIntros: Partial<Record<Domain, string>>; // Per-domain intro text
   generationContext: GenerationContext;
   items: PlanItem[];
+  protocolId?: string;   // Reference to parent protocol
+  weekNumber?: number;   // 1-12 if part of a protocol
   createdAt: string;
 }
 

@@ -1,13 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
-import { startOfWeek, format, addDays, isToday, isBefore } from 'date-fns';
+import { startOfWeek, format, addDays, isToday, isBefore, differenceInWeeks, parseISO } from 'date-fns';
 import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
 import { ChatOverlay } from '@/components/ChatOverlay';
-import { WeekHeader } from '@/components/WeekHeader';
+import { EdenHeader } from '@/components/EdenHeader';
 import { PlanGenerator } from '@/components/PlanGenerator';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
-import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain } from '@/lib/types';
+import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain, Protocol } from '@/lib/types';
+import { generateEdenMessage } from '@/lib/ai/protocolGeneration';
 
 export default async function WeekPage({
   searchParams,
@@ -36,6 +37,14 @@ export default async function WeekPage({
     .select('*, plan_items(*)')
     .eq('user_id', user.id)
     .eq('week_start_date', weekStartStr)
+    .single();
+
+  // Fetch active protocol
+  const { data: protocolData } = await supabase
+    .from('protocols')
+    .select('*')
+    .eq('user_id', user.id)
+    .eq('status', 'active')
     .single();
 
   const params = await searchParams;
@@ -86,8 +95,41 @@ export default async function WeekPage({
       sortOrder: item.sort_order as number,
       createdAt: item.created_at as string,
     })),
+    protocolId: planData.protocol_id || undefined,
+    weekNumber: planData.week_number || undefined,
     createdAt: planData.created_at,
   } : null;
+
+  // Transform protocol data
+  const protocol: Protocol | null = protocolData ? {
+    id: protocolData.id,
+    userId: protocolData.user_id,
+    startDate: protocolData.start_date,
+    endDate: protocolData.end_date,
+    status: protocolData.status,
+    goalSummary: protocolData.goal_summary,
+    weeks: protocolData.weeks || [],
+    createdAt: protocolData.created_at,
+    updatedAt: protocolData.updated_at,
+  } : null;
+
+  // Calculate current week number for protocol
+  let currentWeekNumber = 1;
+  if (protocol) {
+    const protocolStart = startOfWeek(parseISO(protocol.startDate), { weekStartsOn: 1 });
+    const weeksSinceStart = differenceInWeeks(weekStart, protocolStart);
+    currentWeekNumber = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
+  }
+
+  // Calculate adherence for Eden message
+  const totalItems = weeklyPlan?.items.length || 0;
+  const completedItems = weeklyPlan?.items.filter(i => i.status === 'done').length || 0;
+  const adherenceThisWeek = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+
+  // Generate dynamic Eden message
+  const edenMessage = protocol 
+    ? generateEdenMessage(protocol, currentWeekNumber, selectedDay, adherenceThisWeek, 0)
+    : weeklyPlan?.edenIntro || "Welcome to Eden. Let's build your protocol.";
 
   const dayItems = weeklyPlan?.items
     .filter(item => item.dayOfWeek === selectedDay)
@@ -123,16 +165,13 @@ export default async function WeekPage({
         <YouButton />
       </header>
 
-      {/* Week Header - Intro + Domain Indicator */}
-      {weeklyPlan && (
-        <div className="relative z-10">
-          <WeekHeader 
-            edenIntro={weeklyPlan.edenIntro}
-            domainIntros={weeklyPlan.domainIntros}
-            items={weeklyPlan.items as PlanItem[]}
-          />
-        </div>
-      )}
+      {/* Eden Header - Dynamic message + Protocol link */}
+      <div className="relative z-10 pt-2">
+        <EdenHeader 
+          message={edenMessage}
+          showProtocolLink={!!protocol}
+        />
+      </div>
 
       {/* Week Strip */}
       <div className="relative z-10 px-6 py-4">
