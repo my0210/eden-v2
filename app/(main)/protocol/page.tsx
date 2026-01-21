@@ -4,6 +4,7 @@ import { startOfWeek, differenceInWeeks, parseISO, addWeeks, format } from 'date
 import { ProtocolView } from '@/components/ProtocolView';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
+import { CreateProtocolButton } from '@/components/CreateProtocolButton';
 import { Protocol, UserProfile, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
 import Link from 'next/link';
 
@@ -195,22 +196,3 @@ export default async function ProtocolPage() {
   );
 }
 
-// Client component for create button
-function CreateProtocolButton() {
-  return (
-    <form action="/api/protocol/generate" method="POST">
-      <button
-        type="submit"
-        className="
-          px-6 py-3 rounded-xl
-          bg-green-500/20 border border-green-500/30
-          text-green-400 text-sm font-medium
-          hover:bg-green-500/30 hover:border-green-500/40
-          transition-all duration-300
-        "
-      >
-        Create 12-Week Protocol
-      </button>
-    </form>
-  );
-}
