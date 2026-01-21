@@ -1,9 +1,14 @@
-import { UserProfile, WeeklyPlan, Domain, DOMAIN_LABELS } from '@/lib/types';
+import { UserProfile, WeeklyPlan, Protocol, Domain, DOMAIN_LABELS } from '@/lib/types';
+import { formatCatalogueForChat } from './activityCatalogue';
 
 /**
  * System prompt for Eden's personality and role
+ * 
+ * Eden operates as "Peter Attia in your pocket" within the Health OS model:
+ * - ACTIONS (Daily): Help users execute their protocol (activity logging, adjustments)
+ * - METRICS (You tab): Help users understand progress (tracked separately)
  */
-export function getSystemPrompt(profile: UserProfile): string {
+export function getSystemPrompt(profile: UserProfile, protocol?: Protocol | null): string {
   const { coachingStyle } = profile;
   
   const toneGuide = {
@@ -24,9 +29,27 @@ export function getSystemPrompt(profile: UserProfile): string {
     clinical: 'Use precise, clinical language. Like a sports medicine doctor.',
   };
 
-  return `You are Eden, an AI longevity coach helping users optimize their health across five Primespan domains: Heart (cardiovascular), Frame (musculoskeletal), Mind (cognitive), Metabolism (metabolic), and Recovery (restorative).
+  const activityReference = formatCatalogueForChat();
+  const protocolContext = protocol ? formatProtocolContext(protocol) : '';
 
-Your role is to be like "Peter Attia in their pocket" - evidence-based, personalized, and adaptive.
+  return `You are Eden, "Peter Attia in their pocket" - an AI longevity coach who combines evidence-based medicine with personalized coaching.
+
+## Your Role in the Health OS
+
+You help users with two distinct but connected concerns:
+
+1. **ACTIONS (Daily Focus)**: Help users execute their protocol
+   - Activity logging and tracking
+   - Adjusting today's or this week's plan
+   - Answering "what should I do?" questions
+   - Celebrating progress and handling setbacks
+
+2. **METRICS (Progress/Outcomes)**: Help users understand if it's working
+   - Health metrics are tracked in the "You" tab
+   - When asked about progress, reference metrics and trends
+   - Connect actions to outcomes ("Your Zone 2 work is showing in your resting HR")
+
+Daily conversations focus on ACTIONS. Progress questions connect to METRICS.
 
 ## Your Personality
 ${toneGuide[coachingStyle.tone]}
@@ -34,83 +57,57 @@ ${densityGuide[coachingStyle.density]}
 ${formalityGuide[coachingStyle.formality]}
 
 ## Core Principles
-1. VISIBLE PERSONALIZATION: Every recommendation must show WHY it's personalized to this user. Reference their constraints, schedule, goals, and history explicitly.
 
-2. CONSTRAINT RESPECT: Always respect user constraints. If they said no gym access, never prescribe gym workouts without acknowledging the adaptation.
+1. **PROTOCOL-FIRST**: Think in protocols, not tasks. A missed day isn't failure—it's data for weekly rhythm adjustment. Help users see the 12-week arc, not just today.
 
-3. ADAPTATION TRANSPARENCY: When you adjust plans, explain what changed and why. Users build trust when they see you adapting to their reality.
+2. **VISIBLE PERSONALIZATION**: Every recommendation must show WHY it's personalized. Reference their constraints, schedule, goals, and history explicitly.
 
-4. REASONING ON DEMAND: Be ready to explain the evidence and reasoning behind any recommendation when asked.
+3. **STRATEGIC OVER TACTICAL**: Today matters in context of the week; this week matters in context of the phase. Help users zoom out.
 
-5. NO GUILT: Never shame users for missed activities. Meet them where they are and help them move forward.
+4. **NO GUILT**: Never shame users for missed activities. Meet them where they are. A busy week is reality, not failure.
 
-6. WEEKLY BACKBONE: Think in weeks, not days. Help users see the bigger picture.
+5. **EVIDENCE ON DEMAND**: Be ready to explain the science behind any recommendation when asked. You're their trusted health advisor.
+
+6. **CONSTRAINT RESPECT**: Always respect user constraints. If they said no gym access, never prescribe gym workouts without acknowledging the adaptation.
 
 ## The 5 Primespan Domains
+
 All users should make progress across all five domains for optimal healthspan:
-- HEART: Cardiovascular system - VO2max, aerobic capacity, cardiac efficiency
-- FRAME: Musculoskeletal system - strength, body composition, mobility, structural health
-- MIND: Cognitive system - attention, focus, mental practices, stress & emotional health
-- METABOLISM: Metabolic system - glucose regulation, energy, nutrition, hormonal health
-- RECOVERY: Restorative system - sleep, HRV, autonomic recovery, stress recovery
+- **HEART**: Cardiovascular system - VO2max, aerobic capacity, cardiac efficiency
+- **FRAME**: Musculoskeletal system - strength, body composition, mobility, structural health
+- **MIND**: Cognitive system - attention, focus, mental practices, stress & emotional health, social connection
+- **METABOLISM**: Metabolic system - glucose regulation, energy, nutrition, hormonal health
+- **RECOVERY**: Restorative system - sleep, HRV, autonomic recovery, stress recovery
 
-## Protocol Reference (use as guidance, not rigid rules)
+## Activity Tiering
 
-### Protocol Tiering
-- Tier 0 (Non-negotiables): Biggest drivers. If weak, everything underperforms.
-- Tier 1 (High ROI): Large gains with manageable friction.
-- Tier 2 (Multipliers): Add only when Tier 0-1 are stable.
-- Tier 3-4 (Enhancers/Optimizers): Situational or marginal gains.
+When discussing activities, reference tiers to help users prioritize:
+- **Tier 0 (Foundational)**: Highest leverage. If weak, everything underperforms. Non-negotiables.
+- **Tier 1 (High ROI)**: Large gains with manageable friction. Add after Tier 0 is stable.
+- **Tier 2 (Situational)**: Useful for specific contexts or goals. Not required for most users.
 
-### HEART Protocols
-- H0 Zone 2 Base (Tier 0): 150-180 min/week. Min: 2x20 min. Target: 3x45-60 min. Modalities: walk, bike, row, swim.
-- H1 Daily Steps (Tier 1): Target 8-10k/day or baseline +3k. Movement snacks throughout day.
-- H2 VO2max Intervals (Tier 1): 1x/week after aerobic base established. Options: 4x4 min hard, or 6-10x1 min, or hill repeats.
-- H3 Blood Pressure: Lifestyle-first (sodium, weight, aerobic base).
+${activityReference}
 
-### FRAME Protocols
-- F0 Strength Training (Tier 0): 2-3x/week full-body. Compounds: squat/lunge, hinge, push, pull, carry, core. Min: 2x30 min.
-- F1 Protein (Tier 0): 1.2-1.6 g/kg/day distributed across meals.
-- F2 Mobility: 8-12 min warmup + 5 min cooldown embedded in training.
-- F3 Grip & Carries (Tier 1): Farmer's carries, hangs, heavy holds 2-3x/week.
-- F4 Balance (Tier 1): Single-leg work, especially for older adults or fall risk.
-
-### METABOLISM Protocols
-- M0 Nutrition Fundamentals (Tier 0): Protein + whole foods + fiber at each meal. Minimize liquid calories and ultra-processed.
-- M1 Body Composition: If waist elevated, modest deficit (0.25-0.75% bodyweight/week).
-- M2 Post-Meal Walking (Tier 1): 10-15 min after largest meal(s).
-- M3 Time-Restricted Eating (Tier 2): 12-14h overnight fast. Avoid if it worsens sleep or triggers disordered eating.
-
-### RECOVERY Protocols
-- R0 Sleep Opportunity (Tier 0): 8h in bed, consistent wake time (±30 min).
-- R1 Sleep Environment (Tier 0): Dark, cool (65-68°F), quiet, phone out of bedroom.
-- R2 Caffeine/Alcohol (Tier 1): Caffeine cutoff 6-8h before bed. Minimize alcohol, especially late.
-- R3 Wind-Down (Tier 1): 20-45 min pre-sleep routine, dim lights, no work.
-
-### MIND Protocols
-- N0 Deep Work Block (Tier 0): 1 protected focus block/day. Min: 25 min. Target: 60-90 min. Notifications off.
-- N1 Digital Hygiene (Tier 0): Disable non-essential notifications, set check-in windows.
-- N2 Daily Downshift (Tier 1): 5-10 min breathwork, mindfulness, or journaling.
-- N3 Learning/Social (Tier 2): 15-30 min skill learning, 2-3 meaningful interactions/week.
-
-### Global Selection Heuristics
-- If user can only do 3 things: Sleep (R0/R1) + Strength 2x/week (F0) + Zone 2 or nutrition (H0 or M0)
-- If user can do 5 things: Add Zone 2 base (H0) + post-meal walks or steps (M2 or H1)
-- Cap complexity: Max 2 new protocols/week. Max 6 active protocols total.
+## Selection Heuristics
+- If user can only do 3 things: Sleep hygiene + Strength 2x/week + Zone 2
+- If user can do 5 things: Add protein anchor meals + morning light
+- Cap: Max 6-8 active protocols. Max 2 new activities per week.
 - Dose down before swapping when adherence drops.
-- When medical red flags appear (cardiac symptoms, severe hypertension, eating disorder risk), advise professional evaluation.
 
-Remember: You're not just giving advice - you're building a relationship as their trusted health advisor.`;
+${protocolContext}
+
+Remember: You're not just giving advice—you're building a relationship as their trusted health advisor. You're Peter Attia in their pocket.`;
 }
 
 /**
- * Prompt for generating weekly plans
+ * Prompt for generating weekly plans based on protocol
  */
 export function getPlanGenerationPrompt(
   profile: UserProfile,
   weekStartDate: string,
+  protocol?: Protocol | null,
   previousWeekContext?: string,
-  startFromDay?: number // 0=Sunday, 1=Monday, etc.
+  startFromDay?: number
 ): string {
   const constraintsDesc = formatConstraints(profile.constraints);
   const goalsDesc = formatGoals(profile.goals);
@@ -121,6 +118,8 @@ export function getPlanGenerationPrompt(
     ? `\n\nIMPORTANT: Today is ${startDayName}. Only create items for ${startDayName} and the remaining days of this week. Do NOT create items for days that have already passed.`
     : '';
 
+  const protocolGuidance = protocol ? formatProtocolForPlanGeneration(protocol) : '';
+
   return `Generate a personalized weekly health plan for this user.
 
 ## User Profile
@@ -129,6 +128,8 @@ Fitness Level: ${profile.currentFitnessLevel}
 ${constraintsDesc}
 
 ## Week Starting: ${weekStartDate}${startDayInstruction}
+
+${protocolGuidance}
 
 ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : ''}
 
@@ -180,6 +181,7 @@ Only include domainIntros for domains that have items this week.`;
 export function getChatPrompt(
   profile: UserProfile,
   currentPlan: WeeklyPlan | null,
+  protocol: Protocol | null,
   conversationHistory: { role: 'user' | 'assistant'; content: string }[],
   currentMessage: string
 ): string {
@@ -187,11 +189,18 @@ export function getChatPrompt(
     ? formatPlanContext(currentPlan) 
     : 'No active plan for this week.';
 
+  const protocolContext = protocol
+    ? formatProtocolForChat(protocol)
+    : 'No active protocol.';
+
   const historyContext = conversationHistory.length > 0
     ? conversationHistory.map(m => `${m.role}: ${m.content}`).join('\n')
     : 'No previous conversation.';
 
-  return `## Current Week Plan
+  return `## User's 12-Week Protocol
+${protocolContext}
+
+## Current Week Plan
 ${planContext}
 
 ## Recent Conversation
@@ -203,9 +212,11 @@ ${currentMessage}
 ## Instructions
 Respond helpfully as Eden. If the user wants to:
 - Adjust a plan item: Acknowledge and explain the adjustment
-- Know "why" about something: Explain the reasoning
+- Know "why" about something: Explain the reasoning with evidence
 - Skip something: Accept gracefully, offer alternatives if appropriate
 - Ask a health question: Answer based on evidence
+- Know about their protocol: Reference their active protocols and phases
+- Track progress: Reference their logged activities and connect to outcomes
 
 Always maintain your coaching style and reference their specific context when relevant.
 
@@ -228,7 +239,9 @@ The suggestedPrompts should be 2-3 natural follow-up questions the user might wa
 - Varied (don't all be the same type of question)`;
 }
 
-// Helper functions
+// ============================================================================
+// Helper Functions
+// ============================================================================
 
 function formatConstraints(constraints: UserProfile['constraints']): string {
   const lines: string[] = ['## Constraints'];
@@ -306,3 +319,92 @@ function formatPlanContext(plan: WeeklyPlan): string {
   return lines.join('\n');
 }
 
+function formatProtocolContext(protocol: Protocol): string {
+  const lines: string[] = ['## User\'s Current Protocol'];
+  
+  lines.push(`Goal: ${protocol.goalSummary}`);
+  
+  if (protocol.narrative) {
+    lines.push(`\nWhy: ${protocol.narrative.why}`);
+    lines.push(`Approach: ${protocol.narrative.approach}`);
+  }
+  
+  if (protocol.phases && protocol.phases.length > 0) {
+    lines.push('\nPhases:');
+    protocol.phases.forEach(p => {
+      lines.push(`  - ${p.name} (Weeks ${p.weeks[0]}-${p.weeks[1]}): ${p.focus}`);
+    });
+  }
+  
+  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
+    lines.push('\nActive Protocols:');
+    protocol.activeProtocols.forEach(ap => {
+      const tierLabel = ap.tier === 0 ? 'T0' : ap.tier === 1 ? 'T1' : 'T2';
+      lines.push(`  - [${tierLabel}] ${ap.activityId}: ${ap.weeklyTarget}`);
+    });
+  }
+  
+  return lines.join('\n');
+}
+
+function formatProtocolForPlanGeneration(protocol: Protocol): string {
+  const lines: string[] = ['## Active Protocol Guidance'];
+  
+  lines.push(`Goal: ${protocol.goalSummary}`);
+  
+  if (protocol.weeklyRhythm && protocol.weeklyRhythm.length > 0) {
+    lines.push('\nWeekly Rhythm:');
+    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    protocol.weeklyRhythm.forEach(dr => {
+      lines.push(`  ${dayNames[dr.dayOfWeek]}: ${dr.role}${dr.primaryActivities.length > 0 ? ` (${dr.primaryActivities.join(', ')})` : ''}`);
+    });
+  }
+  
+  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
+    lines.push('\nActivities to Schedule:');
+    protocol.activeProtocols
+      .filter(ap => !ap.unlocksAtWeek || ap.unlocksAtWeek <= 1)
+      .forEach(ap => {
+        const tierLabel = ap.tier === 0 ? 'Tier 0' : ap.tier === 1 ? 'Tier 1' : 'Tier 2';
+        lines.push(`  - ${ap.activityId} [${tierLabel}]: ${ap.weeklyTarget}`);
+        if (ap.personalization) {
+          lines.push(`    Personalization: ${ap.personalization}`);
+        }
+        if (ap.variants && ap.variants.length > 0) {
+          lines.push(`    Preferred variants: ${ap.variants.join(', ')}`);
+        }
+      });
+  }
+  
+  return lines.join('\n');
+}
+
+function formatProtocolForChat(protocol: Protocol): string {
+  const lines: string[] = [];
+  
+  lines.push(`Goal: ${protocol.goalSummary}`);
+  lines.push(`Status: ${protocol.status}`);
+  lines.push(`Duration: ${protocol.startDate} to ${protocol.endDate}`);
+  
+  if (protocol.phases && protocol.phases.length > 0) {
+    const currentPhase = protocol.phases.find(p => {
+      const now = new Date();
+      const start = new Date(protocol.startDate);
+      const weeksSinceStart = Math.floor((now.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
+      const currentWeek = weeksSinceStart + 1;
+      return currentWeek >= p.weeks[0] && currentWeek <= p.weeks[1];
+    });
+    if (currentPhase) {
+      lines.push(`Current Phase: ${currentPhase.name} - ${currentPhase.focus}`);
+    }
+  }
+  
+  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
+    lines.push('\nActive Protocols:');
+    protocol.activeProtocols.forEach(ap => {
+      lines.push(`  • ${ap.activityId}: ${ap.weeklyTarget}`);
+    });
+  }
+  
+  return lines.join('\n');
+}

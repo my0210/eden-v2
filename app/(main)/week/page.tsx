@@ -2,18 +2,20 @@ import { createClient } from '@/lib/supabase/server';
 import { startOfWeek, format, addDays, isToday, isBefore, differenceInWeeks, parseISO } from 'date-fns';
 import { WeekStrip } from '@/components/WeekStrip';
 import { DayView } from '@/components/DayView';
+import { WeeklyDomainView } from '@/components/WeeklyDomainView';
 import { ChatOverlay } from '@/components/ChatOverlay';
 import { EdenHeader } from '@/components/EdenHeader';
 import { PlanGenerator } from '@/components/PlanGenerator';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
-import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain, Protocol } from '@/lib/types';
+import { WeekViewToggle } from '@/components/WeekViewToggle';
+import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain, Protocol, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
 import { generateEdenMessage } from '@/lib/ai/protocolGeneration';
 
 export default async function WeekPage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; view?: string }>;
 }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -49,8 +51,12 @@ export default async function WeekPage({
 
   const params = await searchParams;
   const selectedDayParam = params.day;
-  let selectedDay: DayOfWeek;
+  const viewParam = params.view;
   
+  // Determine view type: 'domain' (default) or 'day'
+  const currentView: 'domain' | 'day' = viewParam === 'day' || selectedDayParam !== undefined ? 'day' : 'domain';
+  
+  let selectedDay: DayOfWeek;
   if (selectedDayParam !== undefined) {
     selectedDay = parseInt(selectedDayParam, 10) as DayOfWeek;
   } else {
@@ -100,7 +106,7 @@ export default async function WeekPage({
     createdAt: planData.created_at,
   } : null;
 
-  // Transform protocol data
+  // Transform protocol data with new Health OS fields
   const protocol: Protocol | null = protocolData ? {
     id: protocolData.id,
     userId: protocolData.user_id,
@@ -108,7 +114,11 @@ export default async function WeekPage({
     endDate: protocolData.end_date,
     status: protocolData.status,
     goalSummary: protocolData.goal_summary,
-    weeks: protocolData.weeks || [],
+    narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
+    phases: (protocolData.phases || []) as ProtocolPhase[],
+    activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
+    weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+    weeks: (protocolData.weeks || []) as ProtocolWeek[],
     createdAt: protocolData.created_at,
     updatedAt: protocolData.updated_at,
   } : null;
@@ -173,23 +183,35 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* Week Strip */}
-      <div className="relative z-10 px-6 py-4">
-        <WeekStrip 
-          weekStart={weekStart}
-          selectedDay={selectedDay}
-          completionStatus={dayCompletionStatus}
-        />
+      {/* View Toggle + Week Strip (only show strip in day view) */}
+      <div className="relative z-10 px-6 py-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <WeekViewToggle currentView={currentView} />
+        </div>
+        
+        {currentView === 'day' && (
+          <WeekStrip 
+            weekStart={weekStart}
+            selectedDay={selectedDay}
+            completionStatus={dayCompletionStatus}
+          />
+        )}
       </div>
 
-      {/* Day View - scrollable content */}
+      {/* Main Content - scrollable */}
       <div className="relative z-10 flex-1 px-6 py-4 pb-24">
-        <DayView
-          date={selectedDate}
-          items={dayItems as PlanItem[]}
-          isToday={isToday(selectedDate)}
-          isPast={isBefore(selectedDate, today) && !isToday(selectedDate)}
-        />
+        {currentView === 'domain' ? (
+          <WeeklyDomainView
+            planItems={weeklyPlan?.items as PlanItem[] || []}
+          />
+        ) : (
+          <DayView
+            date={selectedDate}
+            items={dayItems as PlanItem[]}
+            isToday={isToday(selectedDate)}
+            isPast={isBefore(selectedDate, today) && !isToday(selectedDate)}
+          />
+        )}
       </div>
 
       {/* Chat FAB - Fixed bottom right */}

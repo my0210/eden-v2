@@ -4,7 +4,7 @@ import { startOfWeek, differenceInWeeks, parseISO, addWeeks, format } from 'date
 import { ProtocolView } from '@/components/ProtocolView';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
-import { Protocol, UserProfile } from '@/lib/types';
+import { Protocol, UserProfile, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
 import Link from 'next/link';
 
 export default async function ProtocolPage() {
@@ -83,7 +83,7 @@ export default async function ProtocolPage() {
     );
   }
 
-  // Transform protocol data
+  // Transform protocol data with Health OS fields
   const protocol: Protocol = {
     id: protocolData.id,
     userId: protocolData.user_id,
@@ -91,7 +91,11 @@ export default async function ProtocolPage() {
     endDate: protocolData.end_date,
     status: protocolData.status,
     goalSummary: protocolData.goal_summary,
-    weeks: protocolData.weeks || [],
+    narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
+    phases: (protocolData.phases || []) as ProtocolPhase[],
+    activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
+    weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+    weeks: (protocolData.weeks || []) as ProtocolWeek[],
     createdAt: protocolData.created_at,
     updatedAt: protocolData.updated_at,
   };
