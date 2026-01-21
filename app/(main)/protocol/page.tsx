@@ -192,6 +192,17 @@ export default async function ProtocolPage() {
           weeklyProgress={weeklyProgress}
         />
       </div>
+
+      {/* Regenerate option */}
+      <div className="relative z-10 px-6 py-8 border-t border-white/5">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm text-foreground/50">Need a fresh start?</p>
+            <p className="text-xs text-foreground/30">Regenerate your protocol based on updated goals</p>
+          </div>
+          <CreateProtocolButton mode="regenerate" />
+        </div>
+      </div>
     </div>
   );
 }
