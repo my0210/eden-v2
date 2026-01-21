@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateJSON, Message } from '@/lib/ai/provider';
 import { getSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
-import { UserProfile, WeeklyPlan, ChatMessage } from '@/lib/types';
+import { UserProfile, WeeklyPlan, ChatMessage, Protocol, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -76,6 +76,30 @@ export async function POST(request: Request) {
       createdAt: planData.created_at,
     } : null;
 
+    // Get active protocol
+    const { data: protocolData } = await supabase
+      .from('protocols')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single();
+
+    const protocol: Protocol | null = protocolData ? {
+      id: protocolData.id,
+      userId: protocolData.user_id,
+      startDate: protocolData.start_date,
+      endDate: protocolData.end_date,
+      status: protocolData.status,
+      goalSummary: protocolData.goal_summary,
+      narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
+      phases: (protocolData.phases || []) as ProtocolPhase[],
+      activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
+      weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+      weeks: (protocolData.weeks || []) as ProtocolWeek[],
+      createdAt: protocolData.created_at,
+      updatedAt: protocolData.updated_at,
+    } : null;
+
     // Get recent conversation history
     const { data: conversationData } = await supabase
       .from('conversations')
@@ -92,8 +116,8 @@ export async function POST(request: Request) {
     }));
 
     // Build messages for LLM
-    const systemPrompt = getSystemPrompt(profile);
-    const chatPrompt = getChatPrompt(profile, currentPlan, conversationHistory, message);
+    const systemPrompt = getSystemPrompt(profile, protocol);
+    const chatPrompt = getChatPrompt(profile, currentPlan, protocol, conversationHistory, message);
 
     const messages: Message[] = [
       { role: 'system', content: systemPrompt },

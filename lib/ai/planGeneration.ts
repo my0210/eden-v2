@@ -1,6 +1,6 @@
 import { generateJSON, Message } from './provider';
 import { getSystemPrompt, getPlanGenerationPrompt } from './prompts';
-import { UserProfile, WeeklyPlan, PlanItem, Domain, DayOfWeek } from '@/lib/types';
+import { UserProfile, WeeklyPlan, PlanItem, Domain, DayOfWeek, Protocol } from '@/lib/types';
 import { v4 as uuidv4 } from 'uuid';
 
 interface GeneratedPlanItem {
@@ -32,6 +32,7 @@ interface GeneratedPlan {
 export async function generateWeeklyPlan(
   profile: UserProfile,
   weekStartDate: string,
+  protocol?: Protocol | null,
   previousWeekContext?: string,
   startFromDay?: number
 ): Promise<{
@@ -39,8 +40,8 @@ export async function generateWeeklyPlan(
   domainIntros: Partial<Record<Domain, string>>;
   items: Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[];
 }> {
-  const systemPrompt = getSystemPrompt(profile);
-  const planPrompt = getPlanGenerationPrompt(profile, weekStartDate, previousWeekContext, startFromDay);
+  const systemPrompt = getSystemPrompt(profile, protocol);
+  const planPrompt = getPlanGenerationPrompt(profile, weekStartDate, protocol, previousWeekContext, startFromDay);
 
   const messages: Message[] = [
     { role: 'system', content: systemPrompt },

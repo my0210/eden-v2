@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateWeeklyPlan } from '@/lib/ai/planGeneration';
-import { UserProfile } from '@/lib/types';
+import { UserProfile, Protocol, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
 import { getAdaptationContext, logAdaptation } from '@/lib/adaptation';
 
@@ -94,12 +94,36 @@ export async function POST(request: Request) {
         : adaptationContext;
     }
 
+    // Get active protocol
+    const { data: protocolData } = await supabase
+      .from('protocols')
+      .select('*')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .single();
+
+    const protocol: Protocol | null = protocolData ? {
+      id: protocolData.id,
+      userId: protocolData.user_id,
+      startDate: protocolData.start_date,
+      endDate: protocolData.end_date,
+      status: protocolData.status,
+      goalSummary: protocolData.goal_summary,
+      narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
+      phases: (protocolData.phases || []) as ProtocolPhase[],
+      activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
+      weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+      weeks: (protocolData.weeks || []) as ProtocolWeek[],
+      createdAt: protocolData.created_at,
+      updatedAt: protocolData.updated_at,
+    } : null;
+
     // Get current day of week to only generate items from today onwards
     const today = new Date();
     const currentDayOfWeek = today.getDay(); // 0=Sunday, 1=Monday, etc.
 
     // Generate the plan (starting from today, not the whole week)
-    const generated = await generateWeeklyPlan(profile, weekStartStr, previousWeekContext, currentDayOfWeek);
+    const generated = await generateWeeklyPlan(profile, weekStartStr, protocol, previousWeekContext, currentDayOfWeek);
 
     // Delete existing plan if force regenerating
     if (forceRegenerate) {
