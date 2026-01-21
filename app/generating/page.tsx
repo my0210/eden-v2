@@ -49,6 +49,26 @@ function GeneratingContent() {
 
   const generatePlan = async () => {
     try {
+      // First, check if we need to generate a protocol
+      if (!isRegenerate) {
+        const protocolCheck = await fetch('/api/protocol/current');
+        const protocolData = await protocolCheck.json();
+        
+        // If no active protocol, generate one first
+        if (!protocolData.protocol) {
+          const protocolResponse = await fetch('/api/protocol/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+
+          if (!protocolResponse.ok) {
+            const data = await protocolResponse.json();
+            throw new Error(data.error || 'Failed to generate protocol');
+          }
+        }
+      }
+
+      // Then generate the weekly plan
       const response = await fetch('/api/plan/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
