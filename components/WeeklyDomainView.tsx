@@ -1,19 +1,18 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { 
   Domain, 
   DOMAINS, 
   DOMAIN_LABELS, 
   DOMAIN_EMOJI, 
   DOMAIN_COLORS,
-  PlanItem,
-  PlannedActivity,
-  ActivityLog,
-  DayOfWeek,
-  DAY_LABELS 
+  RecommendedActivity,
+  ActivityLog
 } from '@/lib/types';
 import { ActivityLogger } from './ActivityLogger';
+import { getActivityById } from '@/lib/ai/activityCatalogue';
 
 // ============================================================================
 // Types
@@ -23,33 +22,13 @@ interface DomainProgress {
   logged: number;
   target: number;
   unit: string;
-  count?: { logged: number; target: number };
-}
-
-interface DomainActivity {
-  id: string;
-  name: string;
-  dayOfWeek?: DayOfWeek;
-  targetValue?: number;
-  targetUnit?: string;
-  status: 'planned' | 'logged' | 'skipped' | 'target';
-  details?: string;
-  loggedValue?: number;
 }
 
 interface WeeklyDomainViewProps {
-  // Legacy PlanItems (for backward compatibility)
-  planItems?: PlanItem[];
-  // New PlannedActivities
-  plannedActivities?: PlannedActivity[];
+  // Recommended activities from protocol
+  recommendedActivities?: RecommendedActivity[];
   // Logged activities this week
   activityLogs?: ActivityLog[];
-  // Domain progress summaries
-  domainProgress?: Record<Domain, DomainProgress>;
-  // Callback when user wants to add activity
-  onAddActivity?: (domain: Domain) => void;
-  // Callback when user taps an activity
-  onActivityTap?: (activityId: string, status: string) => void;
 }
 
 // ============================================================================
@@ -57,55 +36,65 @@ interface WeeklyDomainViewProps {
 // ============================================================================
 
 export function WeeklyDomainView({
-  planItems = [],
-  plannedActivities = [],
+  recommendedActivities = [],
   activityLogs = [],
-  domainProgress,
-  onAddActivity,
-  onActivityTap,
 }: WeeklyDomainViewProps) {
+  const router = useRouter();
   const [loggerOpen, setLoggerOpen] = useState(false);
   const [loggerDomain, setLoggerDomain] = useState<Domain | undefined>();
 
-  // Group activities by domain from plan items
-  const activitiesByDomain = groupActivitiesByDomain(planItems, plannedActivities, activityLogs);
-  const progress = domainProgress || calculateProgressFromItems(planItems);
+  // Group recommended activities by domain
+  const activitiesByDomain = groupByDomain(recommendedActivities);
+  
+  // Calculate progress for each domain
+  const domainProgress = calculateDomainProgress(recommendedActivities, activityLogs);
 
   const handleAddActivity = useCallback((domain: Domain) => {
     setLoggerDomain(domain);
     setLoggerOpen(true);
-    onAddActivity?.(domain);
-  }, [onAddActivity]);
+  }, []);
 
-  const handleLogActivity = useCallback((data: {
+  const handleLogActivity = useCallback(async (data: {
     activityId: string;
     domain: Domain;
     date: string;
-    data: Record<string, unknown>;
+    value: number;
+    unit: string;
     notes?: string;
   }) => {
-    // In a full implementation, this would call an API to save the activity log
-    console.log('Activity logged:', data);
-    // For now, just close the logger
+    try {
+      const response = await fetch('/api/activities/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+      
+      if (response.ok) {
+        router.refresh();
+      }
+    } catch (error) {
+      console.error('Failed to log activity:', error);
+    }
+    
     setLoggerOpen(false);
     setLoggerDomain(undefined);
-  }, []);
+  }, [router]);
 
   return (
     <div className="space-y-4">
-      <h2 className="text-lg font-medium text-foreground/60 uppercase tracking-wider">
+      <h2 className="text-sm font-medium text-foreground/40 uppercase tracking-wider">
         This Week
       </h2>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {DOMAINS.map(domain => (
-          <DomainSection
+          <DomainCard
             key={domain}
             domain={domain}
             activities={activitiesByDomain[domain] || []}
-            progress={progress[domain]}
+            progress={domainProgress[domain]}
+            logs={activityLogs.filter(log => log.domain === domain)}
             onAddActivity={handleAddActivity}
-            onActivityTap={onActivityTap}
           />
         ))}
       </div>
@@ -125,89 +114,134 @@ export function WeeklyDomainView({
 }
 
 // ============================================================================
-// Domain Section
+// Domain Card
 // ============================================================================
 
-interface DomainSectionProps {
+interface DomainCardProps {
   domain: Domain;
-  activities: DomainActivity[];
-  progress?: DomainProgress;
-  onAddActivity?: (domain: Domain) => void;
-  onActivityTap?: (activityId: string, status: string) => void;
+  activities: RecommendedActivity[];
+  progress: DomainProgress;
+  logs: ActivityLog[];
+  onAddActivity: (domain: Domain) => void;
 }
 
-function DomainSection({ 
+function DomainCard({ 
   domain, 
   activities, 
   progress,
-  onAddActivity,
-  onActivityTap 
-}: DomainSectionProps) {
-  const [isExpanded, setIsExpanded] = useState(true);
+  logs,
+  onAddActivity 
+}: DomainCardProps) {
   const emoji = DOMAIN_EMOJI[domain];
   const label = DOMAIN_LABELS[domain];
   const color = DOMAIN_COLORS[domain];
+  
+  const progressPercent = progress.target > 0 
+    ? Math.min((progress.logged / progress.target) * 100, 100)
+    : 0;
 
-  // Format progress display
-  const progressText = formatProgress(progress);
+  // Format progress text
+  const progressText = progress.target > 0
+    ? `${progress.logged}/${progress.target} ${progress.unit}`
+    : '';
 
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-      {/* Domain Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
-      >
+    <div 
+      className="rounded-xl overflow-hidden"
+      style={{ 
+        backgroundColor: `${color}08`,
+        borderLeft: `3px solid ${color}40`,
+      }}
+    >
+      {/* Header with Progress */}
+      <div className="px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg">{emoji}</span>
-          <span className="font-medium text-foreground/80 uppercase tracking-wide text-sm">
-            {label}
-          </span>
+          <span className="font-medium text-foreground/80">{label}</span>
         </div>
         <div className="flex items-center gap-3">
-          <span 
-            className="text-sm font-mono"
+          {progressText && (
+            <span className="text-sm font-mono" style={{ color }}>
+              {progressText}
+            </span>
+          )}
+          <button
+            onClick={() => onAddActivity(domain)}
+            className="p-1.5 rounded-lg hover:bg-white/10 transition-colors"
             style={{ color }}
           >
-            {progressText}
-          </span>
-          <svg
-            className={`w-4 h-4 text-foreground/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </div>
-      </button>
-
-      {/* Activities List */}
-      {isExpanded && (
-        <div className="px-4 pb-3 space-y-2">
-          {activities.length === 0 ? (
-            <p className="text-foreground/30 text-sm py-2">No activities planned</p>
-          ) : (
-            activities.map(activity => (
-              <ActivityRow
-                key={activity.id}
-                activity={activity}
-                color={color}
-                onTap={onActivityTap}
-              />
-            ))
-          )}
-
-          {/* Add Activity Button */}
-          <button
-            onClick={() => onAddActivity?.(domain)}
-            className="w-full py-2 text-sm text-foreground/40 hover:text-foreground/60 transition-colors flex items-center justify-center gap-1"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Add activity
           </button>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      {progress.target > 0 && (
+        <div className="px-4 pb-3">
+          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+            <div 
+              className="h-full rounded-full transition-all duration-500"
+              style={{ 
+                width: `${progressPercent}%`, 
+                backgroundColor: color 
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Recommended Activities */}
+      {activities.length > 0 && (
+        <div className="px-4 pb-3 space-y-2">
+          {activities.map(activity => {
+            const catalogueActivity = getActivityById(activity.activityId);
+            const name = catalogueActivity?.name || activity.activityId;
+            
+            return (
+              <div 
+                key={activity.activityId}
+                className="flex items-center justify-between text-sm"
+              >
+                <span className="text-foreground/50">{name}</span>
+                <span className="text-foreground/30">{activity.weeklyTarget}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Recent Logs */}
+      {logs.length > 0 && (
+        <div className="px-4 pb-3 space-y-1.5 border-t border-white/5 pt-3">
+          <span className="text-xs text-foreground/30 uppercase tracking-wider">Logged</span>
+          {logs.slice(0, 3).map(log => {
+            const catalogueActivity = getActivityById(log.activityDefinitionId);
+            const name = catalogueActivity?.name || log.activityDefinitionId;
+            
+            return (
+              <div 
+                key={log.id}
+                className="flex items-center justify-between text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-green-400">✓</span>
+                  <span className="text-foreground/60">{name}</span>
+                </div>
+                <span className="text-foreground/40">
+                  {log.value} {log.unit}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {activities.length === 0 && logs.length === 0 && (
+        <div className="px-4 pb-3">
+          <p className="text-sm text-foreground/30">No activities yet</p>
         </div>
       )}
     </div>
@@ -215,177 +249,53 @@ function DomainSection({
 }
 
 // ============================================================================
-// Activity Row
-// ============================================================================
-
-interface ActivityRowProps {
-  activity: DomainActivity;
-  color: string;
-  onTap?: (activityId: string, status: string) => void;
-}
-
-function ActivityRow({ activity, color, onTap }: ActivityRowProps) {
-  const statusIcon = getStatusIcon(activity.status);
-  const dayLabel = activity.dayOfWeek !== undefined 
-    ? DAY_LABELS[activity.dayOfWeek as DayOfWeek]
-    : 'Anytime';
-
-  return (
-    <button
-      onClick={() => onTap?.(activity.id, activity.status)}
-      className="w-full flex items-center gap-3 py-2 px-2 -mx-2 rounded-lg hover:bg-white/[0.03] transition-colors text-left group"
-    >
-      {/* Status Icon */}
-      <span 
-        className={`text-lg ${activity.status === 'logged' ? '' : 'opacity-50'}`}
-        style={{ color: activity.status === 'logged' ? color : undefined }}
-      >
-        {statusIcon}
-      </span>
-
-      {/* Activity Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className={`text-sm ${activity.status === 'logged' ? 'text-foreground/70' : 'text-foreground/50'}`}>
-            {activity.name}
-          </span>
-          {activity.targetValue && activity.targetUnit && (
-            <span className="text-xs text-foreground/30">
-              · {activity.targetValue} {activity.targetUnit}
-            </span>
-          )}
-        </div>
-        {activity.details && (
-          <p className="text-xs text-foreground/30 truncate">{activity.details}</p>
-        )}
-      </div>
-
-      {/* Day Label */}
-      <span className={`text-xs px-2 py-0.5 rounded ${
-        activity.status === 'target' 
-          ? 'text-foreground/30' 
-          : 'text-foreground/40 bg-white/[0.03]'
-      }`}>
-        {activity.status === 'target' ? '[target]' : dayLabel}
-      </span>
-
-      {/* Status Badge */}
-      <span className={`text-xs ${
-        activity.status === 'logged' 
-          ? 'text-green-400/70' 
-          : activity.status === 'skipped'
-          ? 'text-red-400/50'
-          : 'text-foreground/30'
-      }`}>
-        [{activity.status}]
-      </span>
-    </button>
-  );
-}
-
-// ============================================================================
 // Helper Functions
 // ============================================================================
 
-function getStatusIcon(status: string): string {
-  switch (status) {
-    case 'logged':
-      return '✓';
-    case 'skipped':
-      return '⊘';
-    case 'target':
-      return '○';
-    default:
-      return '○';
-  }
-}
-
-function formatProgress(progress?: DomainProgress): string {
-  if (!progress) return '';
-  
-  if (progress.count) {
-    return `${progress.count.logged}/${progress.count.target}`;
-  }
-  
-  if (progress.unit === 'min' || progress.unit === 'minutes') {
-    return `${progress.logged}/${progress.target}m`;
-  }
-  
-  return `${progress.logged}/${progress.target}${progress.unit ? progress.unit : ''}`;
-}
-
-function groupActivitiesByDomain(
-  planItems: PlanItem[],
-  plannedActivities: PlannedActivity[],
-  activityLogs: ActivityLog[]
-): Record<Domain, DomainActivity[]> {
-  const result: Record<Domain, DomainActivity[]> = {
+function groupByDomain(activities: RecommendedActivity[]): Record<Domain, RecommendedActivity[]> {
+  const result: Record<Domain, RecommendedActivity[]> = {
     heart: [],
     frame: [],
     mind: [],
     metabolism: [],
     recovery: [],
   };
-
-  // Convert PlanItems to DomainActivities (legacy support)
-  planItems.forEach(item => {
-    const domain = item.domain as Domain;
-    if (result[domain]) {
-      result[domain].push({
-        id: item.id,
-        name: item.title,
-        dayOfWeek: item.dayOfWeek,
-        targetValue: item.durationMinutes || undefined,
-        targetUnit: item.durationMinutes ? 'min' : undefined,
-        status: item.status === 'done' ? 'logged' : item.status === 'skipped' ? 'skipped' : 'planned',
-        details: item.personalizationContext,
-      });
+  
+  for (const activity of activities) {
+    if (activity.domain in result) {
+      result[activity.domain].push(activity);
     }
-  });
-
-  // Convert PlannedActivities to DomainActivities
-  plannedActivities.forEach(pa => {
-    const domain = pa.domain as Domain;
-    if (result[domain]) {
-      result[domain].push({
-        id: pa.id,
-        name: pa.activityDefinitionId, // Would be resolved to name in real implementation
-        dayOfWeek: pa.dayOfWeek,
-        targetValue: pa.targetValue,
-        targetUnit: pa.targetUnit,
-        status: pa.status as 'planned' | 'logged' | 'skipped',
-        details: pa.details,
-      });
-    }
-  });
-
+  }
+  
   return result;
 }
 
-function calculateProgressFromItems(items: PlanItem[]): Record<Domain, DomainProgress> {
+function calculateDomainProgress(
+  activities: RecommendedActivity[],
+  logs: ActivityLog[]
+): Record<Domain, DomainProgress> {
   const result: Record<Domain, DomainProgress> = {
-    heart: { logged: 0, target: 0, unit: 'min', count: { logged: 0, target: 0 } },
-    frame: { logged: 0, target: 0, unit: '', count: { logged: 0, target: 0 } },
-    mind: { logged: 0, target: 0, unit: 'min', count: { logged: 0, target: 0 } },
-    metabolism: { logged: 0, target: 0, unit: '', count: { logged: 0, target: 0 } },
-    recovery: { logged: 0, target: 0, unit: '', count: { logged: 0, target: 0 } },
+    heart: { logged: 0, target: 0, unit: 'min' },
+    frame: { logged: 0, target: 0, unit: 'sessions' },
+    mind: { logged: 0, target: 0, unit: 'min' },
+    metabolism: { logged: 0, target: 0, unit: 'days' },
+    recovery: { logged: 0, target: 0, unit: 'hrs' },
   };
 
-  items.forEach(item => {
-    const domain = item.domain as Domain;
-    if (result[domain]) {
-      result[domain].count!.target++;
-      if (item.status === 'done') {
-        result[domain].count!.logged++;
-      }
-      if (item.durationMinutes) {
-        result[domain].target += item.durationMinutes;
-        if (item.status === 'done') {
-          result[domain].logged += item.durationMinutes;
-        }
-      }
+  // Set targets from recommended activities
+  for (const activity of activities) {
+    if (activity.domain in result) {
+      result[activity.domain].target += activity.targetValue;
+      result[activity.domain].unit = activity.targetUnit;
     }
-  });
+  }
+
+  // Sum up logged values
+  for (const log of logs) {
+    if (log.domain in result) {
+      result[log.domain].logged += log.value;
+    }
+  }
 
   return result;
 }

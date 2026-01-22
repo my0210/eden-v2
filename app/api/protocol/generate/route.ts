@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     // Generate protocol
     const protocol = await generateProtocol(userProfile, protocolStart);
 
-    // Insert into database with all Health OS fields
+    // Insert into database (simplified schema)
     const { data: newProtocol, error: insertError } = await supabase
       .from('protocols')
       .insert({
@@ -86,9 +86,7 @@ export async function POST(request: Request) {
         status: protocol.status,
         goal_summary: protocol.goalSummary,
         narrative: protocol.narrative,
-        phases: protocol.phases,
-        active_protocols: protocol.activeProtocols,
-        weekly_rhythm: protocol.weeklyRhythm,
+        recommended_activities: protocol.recommendedActivities,
         weeks: protocol.weeks,
       })
       .select()
@@ -109,9 +107,7 @@ export async function POST(request: Request) {
         status: newProtocol.status,
         goalSummary: newProtocol.goal_summary,
         narrative: newProtocol.narrative,
-        phases: newProtocol.phases,
-        activeProtocols: newProtocol.active_protocols,
-        weeklyRhythm: newProtocol.weekly_rhythm,
+        recommendedActivities: newProtocol.recommended_activities,
         weeks: newProtocol.weeks,
         createdAt: newProtocol.created_at,
         updatedAt: newProtocol.updated_at,

@@ -998,28 +998,23 @@ export function getTierLabel(tier: 0 | 1 | 2): string {
 // ============================================================================
 
 /**
- * Format catalogue for protocol generation prompt (full Tier 0-1 with evidence)
+ * Format catalogue for protocol generation prompt
+ * Shows activities grouped by domain with evidence rationale
  */
 export function formatCatalogueForProtocolGeneration(): string {
-  const tier0And1 = ACTIVITY_CATALOGUE.filter(a => 
-    Object.values(a.domains).some(d => d.tier === 0 || d.tier === 1)
-  );
-
-  const lines: string[] = ['## Activity Catalogue (Tier 0-1)\n'];
+  const lines: string[] = ['## Activity Catalogue\n'];
   
   const domains: Domain[] = ['heart', 'frame', 'metabolism', 'recovery', 'mind'];
   
   for (const domain of domains) {
-    const domainActivities = tier0And1.filter(a => domain in a.domains);
+    const domainActivities = ACTIVITY_CATALOGUE.filter(a => domain in a.domains);
     if (domainActivities.length === 0) continue;
     
     lines.push(`### ${domain.toUpperCase()}\n`);
     
     for (const activity of domainActivities) {
-      const domainInfo = activity.domains[domain]!;
-      const tierLabel = domainInfo.tier === 0 ? 'T0' : 'T1';
-      lines.push(`- **${activity.name}** [${tierLabel}] (id: ${activity.id})`);
-      lines.push(`  ${activity.evidenceRationale.slice(0, 150)}...`);
+      lines.push(`- **${activity.name}** (id: ${activity.id})`);
+      lines.push(`  ${activity.evidenceRationale.slice(0, 120)}...`);
       if (activity.variants && activity.variants.length > 0) {
         lines.push(`  Variants: ${activity.variants.map(v => v.name).join(', ')}`);
       }
@@ -1031,7 +1026,7 @@ export function formatCatalogueForProtocolGeneration(): string {
 }
 
 /**
- * Format catalogue for chat prompt (abbreviated: names, tiers, and key info)
+ * Format catalogue for chat prompt (abbreviated: names grouped by domain)
  */
 export function formatCatalogueForChat(): string {
   const lines: string[] = ['## Activity Reference\n'];
@@ -1042,17 +1037,7 @@ export function formatCatalogueForChat(): string {
     const domainActivities = ACTIVITY_CATALOGUE.filter(a => domain in a.domains);
     if (domainActivities.length === 0) continue;
     
-    lines.push(`**${domain.toUpperCase()}**: `);
-    
-    const tier0 = domainActivities.filter(a => a.domains[domain]?.tier === 0);
-    const tier1 = domainActivities.filter(a => a.domains[domain]?.tier === 1);
-    
-    if (tier0.length > 0) {
-      lines.push(`T0: ${tier0.map(a => a.name).join(', ')}`);
-    }
-    if (tier1.length > 0) {
-      lines.push(`T1: ${tier1.map(a => a.name).join(', ')}`);
-    }
+    lines.push(`**${domain.toUpperCase()}**: ${domainActivities.map(a => a.name).join(', ')}`);
     lines.push('');
   }
   

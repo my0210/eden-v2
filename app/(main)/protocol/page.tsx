@@ -1,11 +1,11 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { startOfWeek, differenceInWeeks, parseISO, addWeeks, format } from 'date-fns';
+import { startOfWeek, endOfWeek, differenceInWeeks, parseISO, format } from 'date-fns';
 import { ProtocolView } from '@/components/ProtocolView';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
 import { CreateProtocolButton } from '@/components/CreateProtocolButton';
-import { Protocol, UserProfile, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
+import { Protocol, UserProfile, ProtocolNarrative, RecommendedActivity, ProtocolWeek, Domain, ActivityLog } from '@/lib/types';
 import Link from 'next/link';
 
 export default async function ProtocolPage() {
@@ -51,7 +51,6 @@ export default async function ProtocolPage() {
     // No active protocol - show create prompt
     return (
       <div className="min-h-screen flex flex-col relative">
-        {/* Header */}
         <header className="relative z-10 px-6 py-4 flex items-center justify-between">
           <SettingsButton 
             isAdmin={userProfile?.isAdmin} 
@@ -84,7 +83,7 @@ export default async function ProtocolPage() {
     );
   }
 
-  // Transform protocol data with Health OS fields
+  // Transform protocol data (simplified schema)
   const protocol: Protocol = {
     id: protocolData.id,
     userId: protocolData.user_id,
@@ -93,9 +92,7 @@ export default async function ProtocolPage() {
     status: protocolData.status,
     goalSummary: protocolData.goal_summary,
     narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
-    phases: (protocolData.phases || []) as ProtocolPhase[],
-    activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
-    weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+    recommendedActivities: (protocolData.recommended_activities || []) as RecommendedActivity[],
     weeks: (protocolData.weeks || []) as ProtocolWeek[],
     createdAt: protocolData.created_at,
     updatedAt: protocolData.updated_at,
@@ -108,37 +105,35 @@ export default async function ProtocolPage() {
   const weeksSinceStart = differenceInWeeks(weekStart, protocolStart);
   const currentWeekNumber = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
 
-  // Fetch weekly progress for all weeks
-  const weeklyProgress: Record<number, { total: number; completed: number }> = {};
+  // Fetch activity logs for current week
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEndDate = endOfWeek(today, { weekStartsOn: 1 });
+  const weekEndStr = format(weekEndDate, 'yyyy-MM-dd');
   
-  for (let i = 1; i <= 12; i++) {
-    const weekDate = addWeeks(protocolStart, i - 1);
-    const weekDateStr = format(weekDate, 'yyyy-MM-dd');
-    
-    const { data: weekPlan } = await supabase
-      .from('weekly_plans')
-      .select('id')
-      .eq('user_id', user.id)
-      .eq('week_start_date', weekDateStr)
-      .single();
+  const { data: logsData } = await supabase
+    .from('activity_logs')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('date', weekStartStr)
+    .lte('date', weekEndStr);
 
-    if (weekPlan) {
-      const { data: items } = await supabase
-        .from('plan_items')
-        .select('status')
-        .eq('weekly_plan_id', weekPlan.id);
-
-      const total = items?.length || 0;
-      const completed = items?.filter(item => item.status === 'done').length || 0;
-      weeklyProgress[i] = { total, completed };
-    } else {
-      weeklyProgress[i] = { total: 0, completed: 0 };
-    }
-  }
+  // Calculate domain progress
+  const domainProgress = calculateDomainProgress(
+    protocol.recommendedActivities,
+    (logsData || []).map(log => ({
+      id: log.id,
+      userId: log.user_id,
+      activityDefinitionId: log.activity_definition_id,
+      domain: log.domain as Domain,
+      value: log.value || 0,
+      unit: log.unit || 'min',
+      date: log.date,
+      createdAt: log.created_at,
+    }))
+  );
 
   return (
     <div className="min-h-screen flex flex-col relative pb-24">
-      {/* Ambient gradient orb */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-[800px] h-[800px]">
           <div 
@@ -150,7 +145,6 @@ export default async function ProtocolPage() {
         </div>
       </div>
 
-      {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
         <SettingsButton 
           isAdmin={userProfile?.isAdmin} 
@@ -163,7 +157,6 @@ export default async function ProtocolPage() {
         <YouButton />
       </header>
 
-      {/* Back to week link */}
       <div className="relative z-10 px-6 pb-2">
         <Link 
           href="/week"
@@ -176,7 +169,6 @@ export default async function ProtocolPage() {
         </Link>
       </div>
 
-      {/* Page title */}
       <div className="relative z-10 px-6 pb-4">
         <h1 className="text-lg font-light text-foreground/80">My Protocol</h1>
         <p className="text-xs text-foreground/40">
@@ -184,16 +176,14 @@ export default async function ProtocolPage() {
         </p>
       </div>
 
-      {/* Protocol View */}
       <div className="relative z-10 flex-1">
         <ProtocolView 
           protocol={protocol}
           currentWeekNumber={currentWeekNumber}
-          weeklyProgress={weeklyProgress}
+          domainProgress={domainProgress}
         />
       </div>
 
-      {/* Regenerate option */}
       <div className="relative z-10 px-6 py-8 border-t border-white/5">
         <div className="flex items-center justify-between">
           <div>
@@ -207,3 +197,30 @@ export default async function ProtocolPage() {
   );
 }
 
+function calculateDomainProgress(
+  activities: RecommendedActivity[],
+  logs: ActivityLog[]
+): Record<Domain, { logged: number; target: number; unit: string }> {
+  const result: Record<Domain, { logged: number; target: number; unit: string }> = {
+    heart: { logged: 0, target: 0, unit: 'min' },
+    frame: { logged: 0, target: 0, unit: 'sessions' },
+    mind: { logged: 0, target: 0, unit: 'min' },
+    metabolism: { logged: 0, target: 0, unit: 'days' },
+    recovery: { logged: 0, target: 0, unit: 'hrs' },
+  };
+
+  for (const activity of activities) {
+    if (activity.domain in result) {
+      result[activity.domain].target += activity.targetValue;
+      result[activity.domain].unit = activity.targetUnit;
+    }
+  }
+
+  for (const log of logs) {
+    if (log.domain in result) {
+      result[log.domain].logged += log.value;
+    }
+  }
+
+  return result;
+}

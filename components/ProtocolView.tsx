@@ -4,14 +4,14 @@ import { useState } from 'react';
 import { 
   Protocol, 
   ProtocolWeek, 
-  ProtocolPhase,
-  ActiveProtocol,
+  RecommendedActivity,
   Domain, 
+  DOMAINS,
   DOMAIN_COLORS, 
   DOMAIN_LABELS,
   DOMAIN_EMOJI 
 } from '@/lib/types';
-import { getActivityById, getTierLabel } from '@/lib/ai/activityCatalogue';
+import { getActivityById } from '@/lib/ai/activityCatalogue';
 
 // ============================================================================
 // Types
@@ -20,7 +20,6 @@ import { getActivityById, getTierLabel } from '@/lib/ai/activityCatalogue';
 interface ProtocolViewProps {
   protocol: Protocol;
   currentWeekNumber: number;
-  weeklyProgress?: Record<number, { total: number; completed: number }>;
   domainProgress?: Record<Domain, { logged: number; target: number; unit: string }>;
 }
 
@@ -31,26 +30,16 @@ interface ProtocolViewProps {
 export function ProtocolView({ 
   protocol, 
   currentWeekNumber, 
-  weeklyProgress = {},
   domainProgress 
 }: ProtocolViewProps) {
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
-  const [expandedTier, setExpandedTier] = useState<0 | 1 | 2 | null>(0);
 
   const selectedWeekData = selectedWeek !== null 
     ? protocol.weeks.find(w => w.weekNumber === selectedWeek) 
     : null;
 
-  // Get current phase if available
-  const currentPhase = protocol.phases?.find(p => 
-    currentWeekNumber >= p.weeks[0] && currentWeekNumber <= p.weeks[1]
-  );
-
-  // Group active protocols by tier
-  const tier0Protocols = protocol.activeProtocols?.filter(p => p.tier === 0) || [];
-  const tier1Protocols = protocol.activeProtocols?.filter(p => p.tier === 1) || [];
-  const tier2Protocols = protocol.activeProtocols?.filter(p => p.tier === 2 && (!p.unlocksAtWeek || p.unlocksAtWeek <= currentWeekNumber)) || [];
-  const lockedProtocols = protocol.activeProtocols?.filter(p => p.unlocksAtWeek && p.unlocksAtWeek > currentWeekNumber) || [];
+  // Group recommended activities by domain
+  const activitiesByDomain = groupActivitiesByDomain(protocol.recommendedActivities || []);
 
   return (
     <div className="space-y-8 pb-8">
@@ -71,59 +60,27 @@ export function ProtocolView({
         </section>
       )}
 
-      {/* Phase Timeline */}
-      {protocol.phases && protocol.phases.length > 0 && (
-        <section className="px-6">
-          <PhaseTimeline 
-            phases={protocol.phases} 
-            currentWeekNumber={currentWeekNumber}
-          />
-        </section>
-      )}
-
-      {/* Active Protocols */}
+      {/* Recommended Activities by Domain */}
       <section className="px-6 space-y-4">
         <h2 className="text-xs text-foreground/40 uppercase tracking-wider">
-          Your Active Protocols
+          Recommended Activities
         </h2>
 
-        {/* Tier 0 - Non-negotiables */}
-        {tier0Protocols.length > 0 && (
-          <TierSection
-            tier={0}
-            protocols={tier0Protocols}
-            domainProgress={domainProgress}
-            isExpanded={expandedTier === 0}
-            onToggle={() => setExpandedTier(expandedTier === 0 ? null : 0)}
-          />
-        )}
-
-        {/* Tier 1 - High ROI */}
-        {tier1Protocols.length > 0 && (
-          <TierSection
-            tier={1}
-            protocols={tier1Protocols}
-            domainProgress={domainProgress}
-            isExpanded={expandedTier === 1}
-            onToggle={() => setExpandedTier(expandedTier === 1 ? null : 1)}
-          />
-        )}
-
-        {/* Tier 2 - Situational */}
-        {tier2Protocols.length > 0 && (
-          <TierSection
-            tier={2}
-            protocols={tier2Protocols}
-            domainProgress={domainProgress}
-            isExpanded={expandedTier === 2}
-            onToggle={() => setExpandedTier(expandedTier === 2 ? null : 2)}
-          />
-        )}
-
-        {/* Coming Later */}
-        {lockedProtocols.length > 0 && (
-          <LockedProtocolsSection protocols={lockedProtocols} />
-        )}
+        <div className="space-y-3">
+          {DOMAINS.map(domain => {
+            const activities = activitiesByDomain[domain] || [];
+            if (activities.length === 0) return null;
+            
+            return (
+              <DomainActivities
+                key={domain}
+                domain={domain}
+                activities={activities}
+                progress={domainProgress?.[domain]}
+              />
+            );
+          })}
+        </div>
       </section>
 
       {/* 12-Week Overview */}
@@ -135,7 +92,6 @@ export function ProtocolView({
         <WeekGrid 
           weeks={protocol.weeks}
           currentWeekNumber={currentWeekNumber}
-          weeklyProgress={weeklyProgress}
           selectedWeek={selectedWeek}
           onSelectWeek={setSelectedWeek}
         />
@@ -151,6 +107,28 @@ export function ProtocolView({
       </section>
     </div>
   );
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+function groupActivitiesByDomain(activities: RecommendedActivity[]): Record<Domain, RecommendedActivity[]> {
+  const grouped: Record<Domain, RecommendedActivity[]> = {
+    heart: [],
+    frame: [],
+    mind: [],
+    metabolism: [],
+    recovery: [],
+  };
+  
+  for (const activity of activities) {
+    if (activity.domain in grouped) {
+      grouped[activity.domain].push(activity);
+    }
+  }
+  
+  return grouped;
 }
 
 // ============================================================================
@@ -213,238 +191,85 @@ function NarrativeSection({ narrative }: NarrativeSectionProps) {
 }
 
 // ============================================================================
-// Phase Timeline
+// Domain Activities Section
 // ============================================================================
 
-interface PhaseTimelineProps {
-  phases: ProtocolPhase[];
-  currentWeekNumber: number;
-}
-
-function PhaseTimeline({ phases, currentWeekNumber }: PhaseTimelineProps) {
-  return (
-    <div className="space-y-3">
-      <h2 className="text-xs text-foreground/40 uppercase tracking-wider">12-Week Journey</h2>
-      
-      <div className="flex gap-2">
-        {phases.map((phase, index) => {
-          const isActive = currentWeekNumber >= phase.weeks[0] && currentWeekNumber <= phase.weeks[1];
-          const isPast = currentWeekNumber > phase.weeks[1];
-          const weeksInPhase = phase.weeks[1] - phase.weeks[0] + 1;
-          const currentWeekInPhase = isActive ? currentWeekNumber - phase.weeks[0] + 1 : 0;
-          const progressPercent = isPast ? 100 : isActive ? (currentWeekInPhase / weeksInPhase) * 100 : 0;
-
-          return (
-            <div 
-              key={phase.name}
-              className={`flex-1 rounded-xl p-3 transition-all ${
-                isActive 
-                  ? 'bg-green-500/10 ring-1 ring-green-500/30' 
-                  : 'bg-white/[0.03]'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-2">
-                <span className={`text-sm font-medium ${isActive ? 'text-green-400' : 'text-foreground/50'}`}>
-                  {phase.name}
-                </span>
-                {index < phases.length - 1 && (
-                  <span className="text-foreground/20">→</span>
-                )}
-              </div>
-              <p className="text-xs text-foreground/40 mb-2">
-                Weeks {phase.weeks[0]}-{phase.weeks[1]}
-              </p>
-              
-              {/* Progress bar */}
-              <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-                <div 
-                  className="h-full rounded-full bg-green-500/50 transition-all duration-500"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-
-              {isActive && (
-                <p className="text-xs text-foreground/40 mt-2 italic">{phase.focus}</p>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ============================================================================
-// Tier Section
-// ============================================================================
-
-interface TierSectionProps {
-  tier: 0 | 1 | 2;
-  protocols: ActiveProtocol[];
-  domainProgress?: Record<Domain, { logged: number; target: number; unit: string }>;
-  isExpanded: boolean;
-  onToggle: () => void;
-}
-
-function TierSection({ tier, protocols, domainProgress, isExpanded, onToggle }: TierSectionProps) {
-  const tierLabel = getTierLabel(tier);
-  const tierDescriptions: Record<number, string> = {
-    0: 'Non-negotiables',
-    1: 'High ROI',
-    2: 'Situational',
-  };
-
-  return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-      {/* Tier Header */}
-      <button
-        onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-white/[0.02] transition-colors"
-      >
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-medium px-2 py-0.5 rounded ${
-            tier === 0 ? 'bg-green-500/20 text-green-400' :
-            tier === 1 ? 'bg-blue-500/20 text-blue-400' :
-            'bg-purple-500/20 text-purple-400'
-          }`}>
-            T{tier}
-          </span>
-          <span className="text-sm text-foreground/60">
-            {tierLabel} · {tierDescriptions[tier]}
-          </span>
-        </div>
-        <svg
-          className={`w-4 h-4 text-foreground/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
-      </button>
-
-      {/* Protocol Cards */}
-      {isExpanded && (
-        <div className="px-4 pb-4 space-y-3 animate-in fade-in slide-in-from-top-2 duration-200">
-          {protocols.map(protocol => (
-            <ActiveProtocolCard 
-              key={protocol.activityId}
-              protocol={protocol}
-              progress={domainProgress?.[protocol.domain]}
-            />
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ============================================================================
-// Active Protocol Card
-// ============================================================================
-
-interface ActiveProtocolCardProps {
-  protocol: ActiveProtocol;
+interface DomainActivitiesProps {
+  domain: Domain;
+  activities: RecommendedActivity[];
   progress?: { logged: number; target: number; unit: string };
 }
 
-function ActiveProtocolCard({ protocol, progress }: ActiveProtocolCardProps) {
-  const activity = getActivityById(protocol.activityId);
-  const activityName = activity?.name || protocol.activityId;
-  const emoji = DOMAIN_EMOJI[protocol.domain];
-  const color = DOMAIN_COLORS[protocol.domain];
-
-  const progressPercent = progress 
-    ? Math.min((progress.logged / progress.target) * 100, 100)
-    : 0;
+function DomainActivities({ domain, activities, progress }: DomainActivitiesProps) {
+  const emoji = DOMAIN_EMOJI[domain];
+  const label = DOMAIN_LABELS[domain];
+  const color = DOMAIN_COLORS[domain];
 
   return (
     <div 
-      className="rounded-lg p-3 space-y-2"
+      className="rounded-xl p-4 space-y-3"
       style={{ 
         backgroundColor: `${color}08`,
         borderLeft: `3px solid ${color}40`,
       }}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2">
+      {/* Domain Header */}
+      <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="text-lg">{emoji}</span>
-          <span className="font-medium text-foreground/80">{activityName}</span>
+          <span className="font-medium text-foreground/80">{label}</span>
         </div>
-        <span className="text-xs text-foreground/40">{protocol.weeklyTarget}</span>
+        {progress && (
+          <span className="text-sm" style={{ color }}>
+            {progress.logged}/{progress.target} {progress.unit}
+          </span>
+        )}
       </div>
 
-      {/* Personalization */}
-      <p className="text-xs text-foreground/50 leading-relaxed">
-        {protocol.personalization}
-      </p>
-
-      {/* Progress */}
-      {progress && (
-        <div className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-foreground/40">This week</span>
-            <span style={{ color }}>
-              {progress.logged}/{progress.target}{progress.unit}
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
-            <div 
-              className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progressPercent}%`, backgroundColor: color }}
-            />
-          </div>
+      {/* Progress Bar */}
+      {progress && progress.target > 0 && (
+        <div className="h-1.5 rounded-full bg-white/5 overflow-hidden">
+          <div 
+            className="h-full rounded-full transition-all duration-500"
+            style={{ 
+              width: `${Math.min((progress.logged / progress.target) * 100, 100)}%`, 
+              backgroundColor: color 
+            }}
+          />
         </div>
       )}
 
-      {/* Variants */}
-      {protocol.variants && protocol.variants.length > 0 && (
-        <div className="flex flex-wrap gap-1 pt-1">
-          {protocol.variants.map(v => (
-            <span 
-              key={v}
-              className="text-xs px-2 py-0.5 rounded bg-white/5 text-foreground/40"
-            >
-              {v}
-            </span>
-          ))}
-        </div>
-      )}
+      {/* Activity List */}
+      <div className="space-y-2">
+        {activities.map(activity => (
+          <ActivityCard key={activity.activityId} activity={activity} />
+        ))}
+      </div>
     </div>
   );
 }
 
 // ============================================================================
-// Locked Protocols Section
+// Activity Card
 // ============================================================================
 
-interface LockedProtocolsSectionProps {
-  protocols: ActiveProtocol[];
+interface ActivityCardProps {
+  activity: RecommendedActivity;
 }
 
-function LockedProtocolsSection({ protocols }: LockedProtocolsSectionProps) {
+function ActivityCard({ activity }: ActivityCardProps) {
+  const catalogueActivity = getActivityById(activity.activityId);
+  const name = catalogueActivity?.name || activity.activityId;
+
   return (
-    <div className="rounded-xl border border-white/5 bg-white/[0.02] overflow-hidden">
-      <div className="px-4 py-3">
-        <span className="text-sm text-foreground/40">Coming Later</span>
+    <div className="bg-white/[0.03] rounded-lg p-3 space-y-1">
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-foreground/70">{name}</span>
+        <span className="text-xs text-foreground/40">{activity.weeklyTarget}</span>
       </div>
-      <div className="px-4 pb-4 space-y-2">
-        {protocols.map(protocol => {
-          const activity = getActivityById(protocol.activityId);
-          const activityName = activity?.name || protocol.activityId;
-          
-          return (
-            <div 
-              key={protocol.activityId}
-              className="flex items-center justify-between py-2 opacity-50"
-            >
-              <span className="text-sm text-foreground/50">{activityName}</span>
-              <span className="text-xs text-foreground/30">Unlocks Week {protocol.unlocksAtWeek}</span>
-            </div>
-          );
-        })}
-      </div>
+      <p className="text-xs text-foreground/50 leading-relaxed">
+        {activity.personalization}
+      </p>
     </div>
   );
 }
@@ -456,29 +281,18 @@ function LockedProtocolsSection({ protocols }: LockedProtocolsSectionProps) {
 interface WeekGridProps {
   weeks: ProtocolWeek[];
   currentWeekNumber: number;
-  weeklyProgress: Record<number, { total: number; completed: number }>;
   selectedWeek: number | null;
   onSelectWeek: (week: number | null) => void;
 }
 
-function WeekGrid({ weeks, currentWeekNumber, weeklyProgress, selectedWeek, onSelectWeek }: WeekGridProps) {
+function WeekGrid({ weeks, currentWeekNumber, selectedWeek, onSelectWeek }: WeekGridProps) {
   return (
     <div className="grid grid-cols-6 gap-2">
       {weeks.map((week) => {
-        const progress = weeklyProgress[week.weekNumber] || { total: 0, completed: 0 };
         const isCurrent = week.weekNumber === currentWeekNumber;
         const isPast = week.weekNumber < currentWeekNumber;
         const isSelected = selectedWeek === week.weekNumber;
-        const percentage = progress.total > 0 
-          ? Math.round((progress.completed / progress.total) * 100) 
-          : 0;
-
-        // Intensity color
-        const intensityColor = week.intensityLevel === 'deload' 
-          ? 'bg-blue-500/20' 
-          : week.intensityLevel === 'high'
-          ? 'bg-red-500/20'
-          : '';
+        const isDeload = week.theme?.toLowerCase().includes('deload');
 
         return (
           <button
@@ -490,7 +304,9 @@ function WeekGrid({ weeks, currentWeekNumber, weeklyProgress, selectedWeek, onSe
                 ? 'bg-white/15 ring-1 ring-white/30' 
                 : isCurrent 
                   ? 'bg-green-500/10 ring-1 ring-green-500/30'
-                  : `bg-white/[0.03] hover:bg-white/[0.06] ${intensityColor}`
+                  : isDeload
+                    ? 'bg-blue-500/10 hover:bg-blue-500/15'
+                    : 'bg-white/[0.03] hover:bg-white/[0.06]'
               }
             `}
           >
@@ -500,18 +316,6 @@ function WeekGrid({ weeks, currentWeekNumber, weeklyProgress, selectedWeek, onSe
             `}>
               {week.weekNumber}
             </div>
-
-            {/* Progress dot */}
-            {(isPast || isCurrent) && (
-              <div className="absolute bottom-1 left-1/2 -translate-x-1/2">
-                <div 
-                  className={`w-1 h-1 rounded-full ${
-                    percentage === 100 ? 'bg-green-400' : 
-                    percentage > 0 ? 'bg-white/40' : 'bg-white/10'
-                  }`}
-                />
-              </div>
-            )}
 
             {/* Current indicator */}
             {isCurrent && (
@@ -536,6 +340,7 @@ interface WeekDetailProps {
 
 function WeekDetail({ week, currentWeekNumber, onClose }: WeekDetailProps) {
   const isFuture = week.weekNumber > currentWeekNumber;
+  const isDeload = week.theme?.toLowerCase().includes('deload');
 
   return (
     <div 
@@ -552,13 +357,15 @@ function WeekDetail({ week, currentWeekNumber, onClose }: WeekDetailProps) {
         <div>
           <h3 className="text-base font-medium text-foreground/80">
             Week {week.weekNumber}
-            {week.intensityLevel === 'deload' && (
+            {isDeload && (
               <span className="ml-2 text-xs px-2 py-0.5 rounded bg-blue-500/20 text-blue-400">
                 Deload
               </span>
             )}
           </h3>
-          <p className="text-sm text-foreground/50">{week.theme || week.focus}</p>
+          {week.theme && (
+            <p className="text-sm text-foreground/50">{week.theme}</p>
+          )}
         </div>
         <button
           onClick={onClose}
@@ -570,53 +377,11 @@ function WeekDetail({ week, currentWeekNumber, onClose }: WeekDetailProps) {
         </button>
       </div>
 
-      {/* Progression Notes */}
-      {week.progressionNotes && (
-        <p className="text-sm text-foreground/60 italic">
-          {week.progressionNotes}
-        </p>
-      )}
-
-      {/* Domain Emphasis */}
-      {week.domainEmphasis && week.domainEmphasis.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {week.domainEmphasis.map(domain => (
-            <span 
-              key={domain}
-              className="text-xs px-2 py-1 rounded-full flex items-center gap-1"
-              style={{ backgroundColor: `${DOMAIN_COLORS[domain]}15`, color: DOMAIN_COLORS[domain] }}
-            >
-              {DOMAIN_EMOJI[domain]} {DOMAIN_LABELS[domain]}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Legacy domain focuses */}
-      {week.domains && Object.keys(week.domains).length > 0 && (
-        <div className="space-y-2 pt-2 border-t border-white/5">
-          {Object.entries(week.domains).map(([domain, focus]) => (
-            <div key={domain} className="flex items-start gap-2 text-sm">
-              <div 
-                className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0"
-                style={{ backgroundColor: DOMAIN_COLORS[domain as Domain] }}
-              />
-              <div>
-                <span className="text-foreground/50">{DOMAIN_LABELS[domain as Domain]}:</span>{' '}
-                <span className="text-foreground/70">{focus}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* Future week notice */}
       {isFuture && (
-        <div className="pt-2 border-t border-white/5">
-          <p className="text-xs text-foreground/40 italic">
-            Activities will be scheduled when this week begins.
-          </p>
-        </div>
+        <p className="text-xs text-foreground/40 italic">
+          Log activities when this week begins.
+        </p>
       )}
     </div>
   );

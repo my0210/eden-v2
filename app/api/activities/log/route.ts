@@ -13,27 +13,27 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { 
-      activityDefinitionId, 
-      plannedActivityId,
+      activityId,
       domain, 
       activityType,
       date, 
-      data, 
+      value,
+      unit,
       notes 
     } = body as {
-      activityDefinitionId: string;
-      plannedActivityId?: string;
+      activityId: string;
       domain: Domain;
       activityType?: string;
       date: string;
-      data: Record<string, unknown>;
+      value: number;
+      unit: string;
       notes?: string;
     };
 
     // Validate required fields
-    if (!activityDefinitionId || !domain || !date || !data) {
+    if (!activityId || !domain || !date || value === undefined || !unit) {
       return NextResponse.json(
-        { error: 'Missing required fields: activityDefinitionId, domain, date, data' },
+        { error: 'Missing required fields: activityId, domain, date, value, unit' },
         { status: 400 }
       );
     }
@@ -43,12 +43,12 @@ export async function POST(request: NextRequest) {
       .from('activity_logs')
       .insert({
         user_id: user.id,
-        activity_definition_id: activityDefinitionId,
-        planned_activity_id: plannedActivityId || null,
+        activity_definition_id: activityId,
         domain,
         activity_type: activityType || null,
         date,
-        data,
+        value,
+        unit,
         notes: notes || null,
       })
       .select()
@@ -59,21 +59,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: logError.message }, { status: 500 });
     }
 
-    // If this was a planned activity, update its status
-    if (plannedActivityId) {
-      const { error: updateError } = await supabase
-        .from('planned_activities')
-        .update({ status: 'logged', updated_at: new Date().toISOString() })
-        .eq('id', plannedActivityId)
-        .eq('user_id', user.id);
-
-      if (updateError) {
-        console.error('Error updating planned activity status:', updateError);
-        // Don't fail the request, the log was still created
+    return NextResponse.json({ 
+      success: true, 
+      data: {
+        id: logEntry.id,
+        userId: logEntry.user_id,
+        activityDefinitionId: logEntry.activity_definition_id,
+        domain: logEntry.domain,
+        activityType: logEntry.activity_type,
+        date: logEntry.date,
+        value: logEntry.value,
+        unit: logEntry.unit,
+        notes: logEntry.notes,
+        createdAt: logEntry.created_at,
       }
-    }
-
-    return NextResponse.json({ success: true, data: logEntry });
+    });
   } catch (error) {
     console.error('Error in activity log API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -122,7 +122,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data: logs });
+    // Transform to camelCase
+    const transformedLogs = (logs || []).map(log => ({
+      id: log.id,
+      userId: log.user_id,
+      activityDefinitionId: log.activity_definition_id,
+      domain: log.domain,
+      activityType: log.activity_type,
+      date: log.date,
+      value: log.value,
+      unit: log.unit,
+      notes: log.notes,
+      createdAt: log.created_at,
+    }));
+
+    return NextResponse.json({ success: true, data: transformedLogs });
   } catch (error) {
     console.error('Error in activity log API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

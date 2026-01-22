@@ -1,22 +1,22 @@
 import { createClient } from '@/lib/supabase/server';
-import { startOfWeek, format, addDays, isToday, isBefore, differenceInWeeks, parseISO } from 'date-fns';
-import { WeekStrip } from '@/components/WeekStrip';
-import { DayView } from '@/components/DayView';
+import { startOfWeek, endOfWeek, format, parseISO, differenceInWeeks } from 'date-fns';
 import { WeeklyDomainView } from '@/components/WeeklyDomainView';
 import { ChatOverlay } from '@/components/ChatOverlay';
 import { EdenHeader } from '@/components/EdenHeader';
-import { PlanGenerator } from '@/components/PlanGenerator';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
-import { WeekViewToggle } from '@/components/WeekViewToggle';
-import { UserProfile, WeeklyPlan, PlanItem, DayOfWeek, Domain, Protocol, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
+import { 
+  UserProfile, 
+  Domain, 
+  Protocol, 
+  ProtocolNarrative, 
+  RecommendedActivity,
+  ProtocolWeek,
+  ActivityLog
+} from '@/lib/types';
 import { generateEdenMessage } from '@/lib/ai/protocolGeneration';
 
-export default async function WeekPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ day?: string; view?: string }>;
-}) {
+export default async function WeekPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -26,19 +26,15 @@ export default async function WeekPage({
 
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
 
+  // Fetch user profile
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('*')
     .eq('id', user.id)
-    .single();
-
-  const { data: planData } = await supabase
-    .from('weekly_plans')
-    .select('*, plan_items(*)')
-    .eq('user_id', user.id)
-    .eq('week_start_date', weekStartStr)
     .single();
 
   // Fetch active protocol
@@ -49,20 +45,14 @@ export default async function WeekPage({
     .eq('status', 'active')
     .single();
 
-  const params = await searchParams;
-  const selectedDayParam = params.day;
-  const viewParam = params.view;
-  
-  // Determine view type: 'domain' (default) or 'day'
-  const currentView: 'domain' | 'day' = viewParam === 'day' || selectedDayParam !== undefined ? 'day' : 'domain';
-  
-  let selectedDay: DayOfWeek;
-  if (selectedDayParam !== undefined) {
-    selectedDay = parseInt(selectedDayParam, 10) as DayOfWeek;
-  } else {
-    const todayDow = today.getDay();
-    selectedDay = todayDow as DayOfWeek;
-  }
+  // Fetch activity logs for this week
+  const { data: logsData } = await supabase
+    .from('activity_logs')
+    .select('*')
+    .eq('user_id', user.id)
+    .gte('date', weekStartStr)
+    .lte('date', weekEndStr)
+    .order('created_at', { ascending: false });
 
   const userProfile: UserProfile | null = profile ? {
     id: profile.id,
@@ -80,33 +70,7 @@ export default async function WeekPage({
     updatedAt: profile.updated_at,
   } : null;
 
-  const weeklyPlan: WeeklyPlan | null = planData ? {
-    id: planData.id,
-    userId: planData.user_id,
-    weekStartDate: planData.week_start_date,
-    edenIntro: planData.eden_intro,
-    domainIntros: (planData.domain_intros || {}) as Partial<Record<Domain, string>>,
-    generationContext: planData.generation_context,
-    items: (planData.plan_items || []).map((item: Record<string, unknown>) => ({
-      id: item.id as string,
-      weeklyPlanId: item.weekly_plan_id as string,
-      domain: item.domain as string,
-      dayOfWeek: item.day_of_week as number,
-      title: item.title as string,
-      durationMinutes: item.duration_minutes as number | null,
-      personalizationContext: item.personalization_context as string,
-      reasoning: item.reasoning as string,
-      status: item.status as string,
-      completedAt: item.completed_at as string | null,
-      sortOrder: item.sort_order as number,
-      createdAt: item.created_at as string,
-    })),
-    protocolId: planData.protocol_id || undefined,
-    weekNumber: planData.week_number || undefined,
-    createdAt: planData.created_at,
-  } : null;
-
-  // Transform protocol data with new Health OS fields
+  // Transform protocol data
   const protocol: Protocol | null = protocolData ? {
     id: protocolData.id,
     userId: protocolData.user_id,
@@ -115,13 +79,25 @@ export default async function WeekPage({
     status: protocolData.status,
     goalSummary: protocolData.goal_summary,
     narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
-    phases: (protocolData.phases || []) as ProtocolPhase[],
-    activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
-    weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+    recommendedActivities: (protocolData.recommended_activities || []) as RecommendedActivity[],
     weeks: (protocolData.weeks || []) as ProtocolWeek[],
     createdAt: protocolData.created_at,
     updatedAt: protocolData.updated_at,
   } : null;
+
+  // Transform activity logs
+  const activityLogs: ActivityLog[] = (logsData || []).map(log => ({
+    id: log.id,
+    userId: log.user_id,
+    activityDefinitionId: log.activity_definition_id,
+    domain: log.domain as Domain,
+    activityType: log.activity_type,
+    value: log.value,
+    unit: log.unit,
+    date: log.date,
+    notes: log.notes,
+    createdAt: log.created_at,
+  }));
 
   // Calculate current week number for protocol
   let currentWeekNumber = 1;
@@ -131,22 +107,13 @@ export default async function WeekPage({
     currentWeekNumber = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
   }
 
-  // Calculate adherence for Eden message
-  const totalItems = weeklyPlan?.items.length || 0;
-  const completedItems = weeklyPlan?.items.filter(i => i.status === 'done').length || 0;
-  const adherenceThisWeek = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+  // Calculate adherence (percentage of target achieved)
+  const adherencePercent = calculateAdherence(protocol?.recommendedActivities || [], activityLogs);
 
   // Generate dynamic Eden message
   const edenMessage = protocol 
-    ? generateEdenMessage(protocol, currentWeekNumber, selectedDay, adherenceThisWeek, 0)
-    : weeklyPlan?.edenIntro || "Welcome to Eden. Let's build your protocol.";
-
-  const dayItems = weeklyPlan?.items
-    .filter(item => item.dayOfWeek === selectedDay)
-    .sort((a, b) => a.sortOrder - b.sortOrder) || [];
-
-  const dayCompletionStatus = calculateDayCompletion(weeklyPlan?.items || [], weekStart);
-  const selectedDate = addDays(weekStart, selectedDay === 0 ? 6 : selectedDay - 1);
+    ? generateEdenMessage(protocol, currentWeekNumber, adherencePercent, 0)
+    : "Welcome to Eden. Create your protocol to get started.";
 
   return (
     <div className="min-h-screen flex flex-col relative pb-24">
@@ -183,38 +150,19 @@ export default async function WeekPage({
         />
       </div>
 
-      {/* View Toggle + Week Strip (only show strip in day view) */}
-      <div className="relative z-10 px-6 py-4 space-y-4">
-        <div className="flex items-center justify-between">
-          <WeekViewToggle currentView={currentView} />
-        </div>
-        
-        {currentView === 'day' && (
-          <WeekStrip 
-            weekStart={weekStart}
-            selectedDay={selectedDay}
-            completionStatus={dayCompletionStatus}
-          />
-        )}
-      </div>
-
-      {/* Main Content - scrollable */}
-      <div className="relative z-10 flex-1 px-6 py-4 pb-24">
-        {currentView === 'domain' ? (
+      {/* Main Content */}
+      <div className="relative z-10 flex-1 px-6 py-6">
+        {protocol ? (
           <WeeklyDomainView
-            planItems={weeklyPlan?.items as PlanItem[] || []}
+            recommendedActivities={protocol.recommendedActivities}
+            activityLogs={activityLogs}
           />
         ) : (
-          <DayView
-            date={selectedDate}
-            items={dayItems as PlanItem[]}
-            isToday={isToday(selectedDate)}
-            isPast={isBefore(selectedDate, today) && !isToday(selectedDate)}
-          />
+          <EmptyState />
         )}
       </div>
 
-      {/* Chat FAB - Fixed bottom right */}
+      {/* Chat FAB */}
       <div className="fixed bottom-6 right-6 z-50 safe-area-bottom">
         <ChatOverlay 
           trigger={
@@ -241,49 +189,55 @@ export default async function WeekPage({
           }
         />
       </div>
-
-      {/* Auto-generate plan if none exists */}
-      <PlanGenerator hasPlan={!!weeklyPlan} weekStartDate={weekStartStr} />
     </div>
   );
 }
 
-interface DayCompletion {
-  total: number;
-  completed: number;
-  percentage: number;
+// Empty state when no protocol exists
+function EmptyState() {
+  return (
+    <div className="flex flex-col items-center justify-center py-16 text-center">
+      <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center mb-4">
+        <svg className="w-8 h-8 text-green-400/50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h2 className="text-lg font-medium text-foreground/70 mb-2">No Protocol Yet</h2>
+      <p className="text-sm text-foreground/40 mb-6 max-w-xs">
+        Create your personalized 12-week protocol to start tracking activities.
+      </p>
+      <a
+        href="/protocol"
+        className="px-6 py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-all"
+      >
+        Create Protocol
+      </a>
+    </div>
+  );
 }
 
-function calculateDayCompletion(
-  items: PlanItem[],
-  weekStart: Date
-): Record<DayOfWeek, DayCompletion> {
-  const result: Record<DayOfWeek, DayCompletion> = {
-    0: { total: 0, completed: 0, percentage: 0 },
-    1: { total: 0, completed: 0, percentage: 0 },
-    2: { total: 0, completed: 0, percentage: 0 },
-    3: { total: 0, completed: 0, percentage: 0 },
-    4: { total: 0, completed: 0, percentage: 0 },
-    5: { total: 0, completed: 0, percentage: 0 },
-    6: { total: 0, completed: 0, percentage: 0 },
-  };
-
-  items.forEach(item => {
-    const day = item.dayOfWeek as DayOfWeek;
-    result[day].total++;
-    if (item.status === 'done') {
-      result[day].completed++;
-    }
-  });
-
-  Object.keys(result).forEach(key => {
-    const day = parseInt(key) as DayOfWeek;
-    if (result[day].total > 0) {
-      result[day].percentage = Math.round(
-        (result[day].completed / result[day].total) * 100
-      );
-    }
-  });
-
-  return result;
+// Calculate overall adherence percentage
+function calculateAdherence(
+  activities: RecommendedActivity[],
+  logs: ActivityLog[]
+): number {
+  if (activities.length === 0) return 0;
+  
+  let totalTarget = 0;
+  let totalLogged = 0;
+  
+  // Sum targets by domain
+  const targetsByDomain: Record<string, number> = {};
+  for (const activity of activities) {
+    targetsByDomain[activity.domain] = (targetsByDomain[activity.domain] || 0) + activity.targetValue;
+    totalTarget += activity.targetValue;
+  }
+  
+  // Sum logged by domain
+  for (const log of logs) {
+    totalLogged += log.value;
+  }
+  
+  if (totalTarget === 0) return 0;
+  return Math.min(Math.round((totalLogged / totalTarget) * 100), 100);
 }

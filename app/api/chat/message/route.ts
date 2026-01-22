@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateJSON, Message } from '@/lib/ai/provider';
 import { getSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
-import { UserProfile, WeeklyPlan, ChatMessage, Protocol, ProtocolNarrative, ProtocolPhase, ActiveProtocol, DayRhythm, ProtocolWeek } from '@/lib/types';
+import { UserProfile, WeeklyPlan, ChatMessage, Protocol, ProtocolNarrative, RecommendedActivity, ProtocolWeek } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -92,9 +92,7 @@ export async function POST(request: Request) {
       status: protocolData.status,
       goalSummary: protocolData.goal_summary,
       narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
-      phases: (protocolData.phases || []) as ProtocolPhase[],
-      activeProtocols: (protocolData.active_protocols || []) as ActiveProtocol[],
-      weeklyRhythm: (protocolData.weekly_rhythm || []) as DayRhythm[],
+      recommendedActivities: (protocolData.recommended_activities || []) as RecommendedActivity[],
       weeks: (protocolData.weeks || []) as ProtocolWeek[],
       createdAt: protocolData.created_at,
       updatedAt: protocolData.updated_at,

@@ -3,12 +3,9 @@ import {
   UserProfile, 
   Protocol, 
   ProtocolNarrative,
-  ProtocolPhase,
-  ActiveProtocol,
-  DayRhythm,
+  RecommendedActivity,
   ProtocolWeek,
-  Domain,
-  DayOfWeek 
+  Domain
 } from '@/lib/types';
 import { formatCatalogueForProtocolGeneration } from './activityCatalogue';
 import { addWeeks, format } from 'date-fns';
@@ -20,28 +17,17 @@ import { addWeeks, format } from 'date-fns';
 interface GeneratedProtocol {
   goalSummary: string;
   narrative: ProtocolNarrative;
-  phases?: ProtocolPhase[];
-  activeProtocols: {
+  recommendedActivities: {
     activityId: string;
     domain: Domain;
-    tier: 0 | 1 | 2;
     weeklyTarget: string;
+    targetValue: number;
+    targetUnit: 'min' | 'sessions' | 'days' | 'hours';
     personalization: string;
-    variants?: string[];
-    unlocksAtWeek?: number;
-  }[];
-  weeklyRhythm: {
-    dayOfWeek: DayOfWeek;
-    role: 'training' | 'active_recovery' | 'rest' | 'flex';
-    primaryActivities: string[];
-    notes?: string;
   }[];
   weeks: {
     weekNumber: number;
-    theme: string;
-    intensityLevel: 'low' | 'moderate' | 'high' | 'deload';
-    domainEmphasis?: Domain[];
-    progressionNotes?: string;
+    theme?: string;
   }[];
 }
 
@@ -51,6 +37,7 @@ interface GeneratedProtocol {
 
 /**
  * Generate a 12-week protocol for a user
+ * Simplified: just goals, narrative, recommended activities, and week themes
  */
 export async function generateProtocol(
   profile: UserProfile,
@@ -68,20 +55,16 @@ export async function generateProtocol(
     const result = await generateJSON<GeneratedProtocol>(messages, {
       model: 'thinking',
       temperature: 0.7,
-      maxTokens: 12000,
+      maxTokens: 8000,
     });
 
     const endDate = addWeeks(startDate, 12);
 
-    // Transform weeks to include legacy fields for backward compatibility
+    // Transform weeks
     const weeks: ProtocolWeek[] = result.weeks.map(w => ({
       weekNumber: w.weekNumber,
       theme: w.theme,
-      intensityLevel: w.intensityLevel,
-      domainEmphasis: w.domainEmphasis,
-      progressionNotes: w.progressionNotes,
-      // Legacy compatibility
-      focus: w.theme,
+      focus: w.theme, // Legacy compatibility
     }));
 
     return {
@@ -90,9 +73,7 @@ export async function generateProtocol(
       status: 'active',
       goalSummary: result.goalSummary,
       narrative: result.narrative,
-      phases: result.phases,
-      activeProtocols: result.activeProtocols as ActiveProtocol[],
-      weeklyRhythm: result.weeklyRhythm as DayRhythm[],
+      recommendedActivities: result.recommendedActivities as RecommendedActivity[],
       weeks,
     };
   } catch (error: unknown) {
@@ -109,57 +90,47 @@ export async function generateProtocol(
 function getProtocolSystemPrompt(): string {
   const activityCatalogue = formatCatalogueForProtocolGeneration();
   
-  return `You are Eden, "Peter Attia in their pocket" - an AI longevity physician designing personalized 12-week intervention protocols.
+  return `You are Eden, "Peter Attia in their pocket" - an AI longevity physician designing personalized health protocols.
 
 ## Your Role
 
-You're not just creating a workout plan. You're designing a strategic, evidence-based protocol that will transform someone's healthspan over 12 weeks. Think like a longevity physician who knows this person's constraints, goals, and reality.
+Design a strategic, evidence-based 12-week protocol that will transform someone's healthspan. Focus on the FEW activities that will have the BIGGEST impact for this specific person.
 
 ## Protocol Philosophy
 
-1. TIER 0 FIRST: Start with foundational activities. Only add Tier 1-2 when Tier 0 is stable.
-   - If someone can only do 3 things: Sleep hygiene + Strength 2x/week + Zone 2
-   - If they can do 5 things: Add protein anchor meals + morning light
+1. LESS IS MORE: Select 5-7 activities maximum. Better to do fewer things consistently than many things poorly.
 
-2. CONSTRAINT-DRIVEN SELECTION: Choose activity variants that fit their reality.
-   - No gym? Select home/bodyweight variants
-   - Knee pain? Select low-impact cardio variants
+2. CONSTRAINT-DRIVEN: Choose activities that fit their reality.
+   - No gym? Select home/bodyweight activities
    - Limited time? Prioritize highest-leverage activities
+   - Injuries? Select appropriate alternatives
 
-3. STRATEGIC NARRATIVE: Every protocol tells a story.
-   - WHY this protocol for this person (connect to their goals)
-   - APPROACH: Your high-level strategy
-   - EXPECTED OUTCOMES: What week 12 looks like
+3. EVIDENCE-BASED: Every recommended activity should have clear longevity evidence.
 
-4. WEEKLY RHYTHM: Define day roles before assigning activities.
-   - Training days: Primary strength or cardio focus
-   - Active recovery days: Light movement, mobility
-   - Rest days: True rest, recovery focus
-   - Flex days: User chooses based on energy
-
-5. PROGRESSIVE ADAPTATION: Build in deloads, expect imperfect adherence.
-   - Week 1: Very achievable (build confidence)
-   - Week 4 or 8: Deload/recovery week
-   - Week 12: Culmination, not just another week
-
-## Selection Heuristics
-
-- Cap: 6-8 active protocols maximum
-- Max 2 new activities introduced per week
-- Every domain should have at least one Tier 0 or Tier 1 activity
-- Recovery domain is often under-prescribed - don't neglect sleep
+4. PERSONALIZED: The "why" for each activity should reference their specific goals and constraints.
 
 ## The 5 Primespan Domains
 
-- HEART: Cardiovascular - Zone 2, VO2max, daily movement
+- HEART: Cardiovascular health - Zone 2, VO2max, daily movement
 - FRAME: Musculoskeletal - Strength, mobility, body composition
-- MIND: Cognitive - Focus, stress management, mental practices, social connection
-- METABOLISM: Metabolic - Nutrition, glucose, energy
-- RECOVERY: Restorative - Sleep, HRV, rest
+- MIND: Cognitive health - Focus, stress management, mental practices
+- METABOLISM: Metabolic health - Nutrition, glucose regulation
+- RECOVERY: Restorative - Sleep quality and quantity
+
+## Activity Selection Guidelines
+
+- At least one activity for Heart, Frame, and Recovery (these are foundational)
+- Mind and Metabolism can be addressed based on user goals
+- Set realistic weekly targets based on their capacity
+- Use targetValue and targetUnit for measurable goals:
+  - Cardio: minutes per week (e.g., targetValue: 150, targetUnit: "min")
+  - Strength: sessions per week (e.g., targetValue: 2, targetUnit: "sessions")
+  - Sleep: hours per night (e.g., targetValue: 7, targetUnit: "hours")
+  - Daily practices: days per week (e.g., targetValue: 7, targetUnit: "days")
 
 ${activityCatalogue}
 
-Remember: You're designing a PROTOCOL, not a task list. Each activity should have clear evidence rationale and be personalized to this specific person.`;
+Remember: You're designing a PROTOCOL - a strategic intervention plan, not a task list.`;
 }
 
 // ============================================================================
@@ -169,77 +140,46 @@ Remember: You're designing a PROTOCOL, not a task list. Each activity should hav
 function getProtocolUserPrompt(profile: UserProfile): string {
   const goalsDesc = formatGoals(profile.goals);
   const constraintsDesc = formatConstraints(profile.constraints);
-  const constraintTags = extractConstraintTags(profile.constraints);
 
   return `Create a 12-week protocol for this user.
 
 ## User Profile
+
 ${goalsDesc}
 
 Fitness Level: ${profile.currentFitnessLevel}
 
 ${constraintsDesc}
 
-Constraint Tags for Activity Selection: ${constraintTags.join(', ') || 'none'}
-
-## Requirements
-
-Generate a complete protocol with the following structure:
+## Generate a Protocol with:
 
 ### 1. goalSummary
 A concise 1-2 sentence statement of what this protocol will achieve. Write in second person.
-Example: "Build sustainable fitness habits while losing 5kg and improving your sleep quality."
+Example: "Build sustainable fitness habits while improving your cardiovascular health and sleep quality."
 
 ### 2. narrative
 Strategic narrative with three parts:
 - why: Why THIS protocol for THIS person (reference their specific goals and constraints)
-- approach: Your high-level strategy (e.g., "We'll build an aerobic base first, then add intensity")
-- expectedOutcomes: What success looks like at week 12 (be specific and achievable)
+- approach: Your high-level strategy in 1-2 sentences
+- expectedOutcomes: What success looks like at week 12 (specific and achievable)
 
-### 3. phases (optional)
-Only include if it helps the user understand progression. Array of:
-- name: Phase name (e.g., "Foundation", "Build", "Peak")
-- weeks: [startWeek, endWeek] (e.g., [1, 4])
-- focus: What this phase accomplishes
+### 3. recommendedActivities
+Select 5-7 activities from the catalogue. For each:
+- activityId: ID from catalogue (e.g., "zone2_cardio", "strength_training")
+- domain: "heart" | "frame" | "mind" | "metabolism" | "recovery"
+- weeklyTarget: Human-readable target (e.g., "150 min/week", "2-3 sessions/week")
+- targetValue: Numeric value for tracking (e.g., 150)
+- targetUnit: "min" | "sessions" | "days" | "hours"
+- personalization: Why THIS activity for THIS user (1-2 sentences referencing their goals/constraints)
 
-### 4. activeProtocols
-Select 5-8 activities from the catalogue. For each:
-- activityId: ID from catalogue (e.g., "heart_zone2", "frame_strength_fullbody")
-- domain: Primary domain for this protocol
-- tier: 0, 1, or 2
-- weeklyTarget: Specific target (e.g., "3x 45min", "2-3x/week", "7 nights 7+ hours")
-- personalization: Why THIS activity for THIS user (reference their constraints/goals)
-- variants: Array of selected variants if applicable (e.g., ["Walk (incline)", "Cycle"])
-- unlocksAtWeek: null for week 1, or week number when this unlocks (for progression)
-
-Selection rules:
-- At least one Tier 0 activity for Heart, Frame, and Recovery
-- Select variants based on user's constraint tags
-- Don't exceed 8 active protocols total
-
-### 5. weeklyRhythm
-Define the 7-day template. For each day (0=Sunday through 6=Saturday):
-- dayOfWeek: 0-6
-- role: "training" | "active_recovery" | "rest" | "flex"
-- primaryActivities: Array of activity IDs assigned to this day
-- notes: Optional context (e.g., "Upper body focus")
-
-Rules:
-- Include at least 1 rest day (typically Sunday)
-- Respect user's workout day capacity (max ${profile.constraints.capacity.maxWorkoutDays} days)
-- Consider blocked times and preferred workout times
-
-### 6. weeks
-12 weeks with progressive structure. For each:
+### 4. weeks
+12 weeks with optional themes. For each:
 - weekNumber: 1-12
-- theme: Brief description (e.g., "Building the foundation")
-- intensityLevel: "low" | "moderate" | "high" | "deload"
-- domainEmphasis: Array of domains getting focus this week (optional)
-- progressionNotes: What changes from previous week (optional)
+- theme: Optional brief description (e.g., "Building the foundation", "Deload week")
 
 Week guidelines:
-- Week 1: intensityLevel "low" - build confidence
-- Week 4 or 8: intensityLevel "deload" - recovery week
+- Week 1: Easy start to build confidence
+- Week 4 or 8: Consider a lighter "deload" week
 - Week 12: Should feel like a culmination
 
 ## Response Format (JSON)
@@ -251,39 +191,20 @@ Week guidelines:
     "approach": "string", 
     "expectedOutcomes": "string"
   },
-  "phases": [
+  "recommendedActivities": [
     {
-      "name": "string",
-      "weeks": [1, 4],
-      "focus": "string"
-    }
-  ],
-  "activeProtocols": [
-    {
-      "activityId": "string",
-      "domain": "heart|frame|mind|metabolism|recovery",
-      "tier": 0,
-      "weeklyTarget": "string",
-      "personalization": "string",
-      "variants": ["string"],
-      "unlocksAtWeek": null
-    }
-  ],
-  "weeklyRhythm": [
-    {
-      "dayOfWeek": 0,
-      "role": "rest",
-      "primaryActivities": [],
-      "notes": "string"
+      "activityId": "zone2_cardio",
+      "domain": "heart",
+      "weeklyTarget": "150 min/week",
+      "targetValue": 150,
+      "targetUnit": "min",
+      "personalization": "string"
     }
   ],
   "weeks": [
     {
       "weekNumber": 1,
-      "theme": "string",
-      "intensityLevel": "low",
-      "domainEmphasis": ["heart", "recovery"],
-      "progressionNotes": "string"
+      "theme": "Building the foundation"
     }
   ]
 }`;
@@ -342,50 +263,6 @@ function formatConstraints(constraints: UserProfile['constraints']): string {
   return lines.join('\n');
 }
 
-/**
- * Extract constraint tags for activity variant selection
- */
-function extractConstraintTags(constraints: UserProfile['constraints']): string[] {
-  const tags: string[] = [];
-  
-  if (!constraints.equipment.gymAccess) {
-    tags.push('no_gym');
-    tags.push('no_barbell');
-  }
-  
-  if (!constraints.equipment.outdoorAccess) {
-    tags.push('no_outdoor');
-  }
-  
-  // Check for common injury patterns
-  const injuries = constraints.limitations.injuries.map(i => i.toLowerCase());
-  if (injuries.some(i => i.includes('knee'))) {
-    tags.push('knee_pain');
-    tags.push('low_impact');
-  }
-  if (injuries.some(i => i.includes('back') || i.includes('spine'))) {
-    tags.push('low_back_sensitivity');
-  }
-  if (injuries.some(i => i.includes('shoulder'))) {
-    tags.push('shoulder_sensitivity');
-  }
-  
-  // Check capacity
-  if (constraints.capacity.maxDailyHealthMinutes < 30) {
-    tags.push('time_limited');
-  }
-  
-  // Check equipment
-  if (constraints.equipment.homeEquipment.some(e => e.toLowerCase().includes('kettlebell'))) {
-    tags.push('has_kettlebell');
-  }
-  if (constraints.equipment.homeEquipment.some(e => e.toLowerCase().includes('band'))) {
-    tags.push('has_bands');
-  }
-
-  return tags;
-}
-
 // ============================================================================
 // Eden Message Generation
 // ============================================================================
@@ -396,49 +273,39 @@ function extractConstraintTags(constraints: UserProfile['constraints']): string[
 export function generateEdenMessage(
   protocol: Protocol,
   currentWeekNumber: number,
-  dayOfWeek: number,
-  adherenceThisWeek: number, // 0-100
+  adherencePercent: number, // 0-100
   daysSinceLastOpen: number
 ): string {
   const week = protocol.weeks.find(w => w.weekNumber === currentWeekNumber);
-  const weekTheme = week?.theme || week?.focus || 'Building momentum';
+  const weekTheme = week?.theme || week?.focus || '';
   const goal = protocol.goalSummary;
   
-  // Get current phase if available
-  const currentPhase = protocol.phases?.find(p => 
-    currentWeekNumber >= p.weeks[0] && currentWeekNumber <= p.weeks[1]
-  );
-  const phaseName = currentPhase?.name;
-
   // Welcome back after absence
   if (daysSinceLastOpen >= 2) {
-    return `Week ${currentWeekNumber}${phaseName ? ` · ${phaseName}` : ''} · Welcome back. Let's pick up where you left off toward ${truncateGoal(goal)}.`;
+    return `Week ${currentWeekNumber} · Welcome back. Let's pick up where you left off.`;
   }
 
-  // Rest day based on weekly rhythm
-  const todayRhythm = protocol.weeklyRhythm?.find(r => r.dayOfWeek === dayOfWeek);
-  if (todayRhythm?.role === 'rest') {
-    return `Week ${currentWeekNumber} · Rest day. Recovery is part of the protocol.`;
-  }
-
-  // Deload week
-  if (week?.intensityLevel === 'deload') {
-    return `Week ${currentWeekNumber} · Deload week. Lighter intensity to let your body adapt and recover.`;
-  }
-
-  // Low adherence encouragement
-  if (adherenceThisWeek < 30 && dayOfWeek >= 3) {
-    return `Week ${currentWeekNumber} · A few activities left. Small wins still count toward ${truncateGoal(goal)}.`;
+  // Deload week (check theme)
+  if (weekTheme.toLowerCase().includes('deload') || weekTheme.toLowerCase().includes('recovery')) {
+    return `Week ${currentWeekNumber} · ${weekTheme}. Lighter week to let your body adapt.`;
   }
 
   // High adherence celebration
-  if (adherenceThisWeek >= 80) {
-    return `Week ${currentWeekNumber} · ${weekTheme}. Strong week so far—keep building momentum.`;
+  if (adherencePercent >= 80) {
+    return `Week ${currentWeekNumber} · Strong week so far. Keep building momentum.`;
   }
 
-  // Default: week theme + goal context
-  const phaseContext = phaseName ? ` · ${phaseName}` : '';
-  return `Week ${currentWeekNumber}${phaseContext} · ${weekTheme}.`;
+  // Low adherence encouragement
+  if (adherencePercent < 30) {
+    return `Week ${currentWeekNumber} · Every activity counts. What can you do today?`;
+  }
+
+  // Default: week number + theme if available
+  if (weekTheme) {
+    return `Week ${currentWeekNumber} · ${weekTheme}`;
+  }
+  
+  return `Week ${currentWeekNumber} of 12 · ${truncateGoal(goal)}`;
 }
 
 /**
@@ -451,30 +318,31 @@ export function generateDomainProgressMessage(
   unit: string
 ): string {
   const percentage = target > 0 ? (logged / target) * 100 : 0;
+  const unitLabel = unit === 'min' ? 'min' : unit;
   
   if (percentage >= 100) {
-    return `Target hit! ${logged}${unit} of ${target}${unit} this week.`;
+    return `Target hit! ${logged}/${target}${unitLabel}`;
   }
   
   if (percentage >= 75) {
-    return `Almost there. ${logged}${unit} of ${target}${unit}.`;
+    return `Almost there. ${logged}/${target}${unitLabel}`;
   }
   
   if (percentage >= 50) {
-    return `Halfway. ${logged}${unit} of ${target}${unit}.`;
+    return `Halfway. ${logged}/${target}${unitLabel}`;
   }
   
   if (percentage > 0) {
-    return `${logged}${unit} of ${target}${unit}. Let's build on that.`;
+    return `${logged}/${target}${unitLabel}`;
   }
   
-  return `${target}${unit} target this week.`;
+  return `${target}${unitLabel} this week`;
 }
 
 function truncateGoal(goal: string): string {
-  if (goal.length <= 50) return goal.toLowerCase();
+  if (goal.length <= 50) return goal;
   
   const shortened = goal.substring(0, 50);
   const lastSpace = shortened.lastIndexOf(' ');
-  return shortened.substring(0, lastSpace).toLowerCase() + '...';
+  return shortened.substring(0, lastSpace) + '...';
 }

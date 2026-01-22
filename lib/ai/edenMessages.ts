@@ -2,8 +2,8 @@
  * Eden Message Generation
  * 
  * Generates contextual, personalized messages based on:
- * - Protocol context (current phase, week focus)
- * - Activity progress (what's been logged vs planned)
+ * - Protocol context (current week, theme)
+ * - Activity progress (what's been logged vs target)
  * - User patterns (consistency, gaps)
  */
 
@@ -18,7 +18,6 @@ interface DomainProgress {
   logged: number;
   target: number;
   unit: string;
-  count: { logged: number; target: number };
 }
 
 interface MessageContext {
@@ -54,7 +53,7 @@ export function generateWeeklyMessage(context: MessageContext): string {
 
   // Rest day (Sunday)
   if (dayOfWeek === 0) {
-    return generateRestDayMessage(progressSummary, protocol, currentWeekNumber);
+    return generateRestDayMessage(progressSummary, currentWeekNumber);
   }
 
   // Mid-week check-in (Wednesday/Thursday)
@@ -77,16 +76,15 @@ export function generateWeeklyMessage(context: MessageContext): string {
 
 function generateWelcomeBackMessage(protocol: Protocol | undefined, weekNumber: number): string {
   if (protocol) {
-    const phase = protocol.phases?.find(p => weekNumber >= p.weeks[0] && weekNumber <= p.weeks[1]);
-    const phaseName = phase?.name || '';
-    return `Week ${weekNumber}${phaseName ? ` · ${phaseName}` : ''} · Welcome back. Let's pick up where you left off.`;
+    const week = protocol.weeks.find(w => w.weekNumber === weekNumber);
+    const theme = week?.theme || '';
+    return `Week ${weekNumber}${theme ? ` · ${theme}` : ''} · Welcome back. Let's pick up where you left off.`;
   }
   return `Welcome back. Ready to continue building your health?`;
 }
 
 function generateRestDayMessage(
   summary: ProgressSummary, 
-  protocol: Protocol | undefined,
   weekNumber: number
 ): string {
   if (summary.overallPercent >= 80) {
@@ -154,14 +152,15 @@ function generateStartOfWeekMessage(
   if (protocol) {
     const week = protocol.weeks.find(w => w.weekNumber === weekNumber);
     const theme = week?.theme || week?.focus || '';
-    const phase = protocol.phases?.find(p => weekNumber >= p.weeks[0] && weekNumber <= p.weeks[1]);
     
-    if (week?.intensityLevel === 'deload') {
+    // Check if it's a deload week by looking at theme
+    const isDeload = theme.toLowerCase().includes('deload') || theme.toLowerCase().includes('recovery');
+    if (isDeload) {
       return `Week ${weekNumber} · Deload week. Lighter intensity to let your body adapt.`;
     }
 
     if (theme) {
-      return `Week ${weekNumber}${phase ? ` · ${phase.name}` : ''} · ${theme}.`;
+      return `Week ${weekNumber} · ${theme}.`;
     }
   }
 
@@ -194,11 +193,11 @@ function calculateProgressSummary(domainProgress: Record<Domain, DomainProgress>
   const domains = Object.values(domainProgress);
   
   for (const dp of domains) {
-    totalLogged += dp.count.logged;
-    totalTarget += dp.count.target;
+    totalLogged += dp.logged;
+    totalTarget += dp.target;
     
-    const percent = dp.count.target > 0 
-      ? (dp.count.logged / dp.count.target) * 100 
+    const percent = dp.target > 0 
+      ? (dp.logged / dp.target) * 100 
       : 0;
     
     if (percent >= 70) {
@@ -234,17 +233,17 @@ function findProgressGaps(domainProgress: Record<Domain, DomainProgress>): Domai
 
   for (const [domain, dp] of Object.entries(domainProgress)) {
     const d = domain as Domain;
-    const percent = dp.count.target > 0 
-      ? (dp.count.logged / dp.count.target) * 100 
+    const percent = dp.target > 0 
+      ? (dp.logged / dp.target) * 100 
       : 100;
     
-    if (percent < 50 && dp.count.target > 0) {
+    if (percent < 50 && dp.target > 0) {
       gaps.push({
         domain: d,
         emoji: DOMAIN_EMOJI[d],
         label: DOMAIN_LABELS[d],
-        logged: dp.count.logged,
-        target: dp.count.target,
+        logged: dp.logged,
+        target: dp.target,
         percent,
         unit: dp.unit,
       });
@@ -260,17 +259,17 @@ function findProgressWins(domainProgress: Record<Domain, DomainProgress>): Domai
 
   for (const [domain, dp] of Object.entries(domainProgress)) {
     const d = domain as Domain;
-    const percent = dp.count.target > 0 
-      ? (dp.count.logged / dp.count.target) * 100 
+    const percent = dp.target > 0 
+      ? (dp.logged / dp.target) * 100 
       : 0;
     
-    if (percent >= 70 && dp.count.logged > 0) {
+    if (percent >= 70 && dp.logged > 0) {
       wins.push({
         domain: d,
         emoji: DOMAIN_EMOJI[d],
         label: DOMAIN_LABELS[d],
-        logged: dp.count.logged,
-        target: dp.count.target,
+        logged: dp.logged,
+        target: dp.target,
         percent,
         unit: dp.unit,
       });
@@ -314,8 +313,9 @@ export function generateDomainMessage(
   }
 
   if (percent > 0) {
-    return `${emoji} Off to a start. ${progress.target - progress.count.logged} more to go.`;
+    const remaining = progress.target - progress.logged;
+    return `${emoji} Off to a start. ${remaining} ${progress.unit} to go.`;
   }
 
-  return `${emoji} ${progress.count.target} activities planned this week.`;
+  return `${emoji} ${progress.target} ${progress.unit} target this week.`;
 }

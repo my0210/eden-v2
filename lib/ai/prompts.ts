@@ -329,18 +329,10 @@ function formatProtocolContext(protocol: Protocol): string {
     lines.push(`Approach: ${protocol.narrative.approach}`);
   }
   
-  if (protocol.phases && protocol.phases.length > 0) {
-    lines.push('\nPhases:');
-    protocol.phases.forEach(p => {
-      lines.push(`  - ${p.name} (Weeks ${p.weeks[0]}-${p.weeks[1]}): ${p.focus}`);
-    });
-  }
-  
-  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
-    lines.push('\nActive Protocols:');
-    protocol.activeProtocols.forEach(ap => {
-      const tierLabel = ap.tier === 0 ? 'T0' : ap.tier === 1 ? 'T1' : 'T2';
-      lines.push(`  - [${tierLabel}] ${ap.activityId}: ${ap.weeklyTarget}`);
+  if (protocol.recommendedActivities && protocol.recommendedActivities.length > 0) {
+    lines.push('\nRecommended Activities:');
+    protocol.recommendedActivities.forEach(ra => {
+      lines.push(`  - ${ra.activityId}: ${ra.weeklyTarget}`);
     });
   }
   
@@ -352,28 +344,14 @@ function formatProtocolForPlanGeneration(protocol: Protocol): string {
   
   lines.push(`Goal: ${protocol.goalSummary}`);
   
-  if (protocol.weeklyRhythm && protocol.weeklyRhythm.length > 0) {
-    lines.push('\nWeekly Rhythm:');
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    protocol.weeklyRhythm.forEach(dr => {
-      lines.push(`  ${dayNames[dr.dayOfWeek]}: ${dr.role}${dr.primaryActivities.length > 0 ? ` (${dr.primaryActivities.join(', ')})` : ''}`);
+  if (protocol.recommendedActivities && protocol.recommendedActivities.length > 0) {
+    lines.push('\nActivities to Track:');
+    protocol.recommendedActivities.forEach(ra => {
+      lines.push(`  - ${ra.activityId} (${ra.domain}): ${ra.weeklyTarget}`);
+      if (ra.personalization) {
+        lines.push(`    Personalization: ${ra.personalization}`);
+      }
     });
-  }
-  
-  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
-    lines.push('\nActivities to Schedule:');
-    protocol.activeProtocols
-      .filter(ap => !ap.unlocksAtWeek || ap.unlocksAtWeek <= 1)
-      .forEach(ap => {
-        const tierLabel = ap.tier === 0 ? 'Tier 0' : ap.tier === 1 ? 'Tier 1' : 'Tier 2';
-        lines.push(`  - ${ap.activityId} [${tierLabel}]: ${ap.weeklyTarget}`);
-        if (ap.personalization) {
-          lines.push(`    Personalization: ${ap.personalization}`);
-        }
-        if (ap.variants && ap.variants.length > 0) {
-          lines.push(`    Preferred variants: ${ap.variants.join(', ')}`);
-        }
-      });
   }
   
   return lines.join('\n');
@@ -386,23 +364,20 @@ function formatProtocolForChat(protocol: Protocol): string {
   lines.push(`Status: ${protocol.status}`);
   lines.push(`Duration: ${protocol.startDate} to ${protocol.endDate}`);
   
-  if (protocol.phases && protocol.phases.length > 0) {
-    const currentPhase = protocol.phases.find(p => {
-      const now = new Date();
-      const start = new Date(protocol.startDate);
-      const weeksSinceStart = Math.floor((now.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
-      const currentWeek = weeksSinceStart + 1;
-      return currentWeek >= p.weeks[0] && currentWeek <= p.weeks[1];
-    });
-    if (currentPhase) {
-      lines.push(`Current Phase: ${currentPhase.name} - ${currentPhase.focus}`);
-    }
+  // Get current week
+  const now = new Date();
+  const start = new Date(protocol.startDate);
+  const weeksSinceStart = Math.floor((now.getTime() - start.getTime()) / (7 * 24 * 60 * 60 * 1000));
+  const currentWeek = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
+  const week = protocol.weeks.find(w => w.weekNumber === currentWeek);
+  if (week?.theme) {
+    lines.push(`Current Week: ${currentWeek} - ${week.theme}`);
   }
   
-  if (protocol.activeProtocols && protocol.activeProtocols.length > 0) {
-    lines.push('\nActive Protocols:');
-    protocol.activeProtocols.forEach(ap => {
-      lines.push(`  • ${ap.activityId}: ${ap.weeklyTarget}`);
+  if (protocol.recommendedActivities && protocol.recommendedActivities.length > 0) {
+    lines.push('\nRecommended Activities:');
+    protocol.recommendedActivities.forEach(ra => {
+      lines.push(`  • ${ra.activityId}: ${ra.weeklyTarget}`);
     });
   }
   

@@ -104,22 +104,8 @@ export const DOMAIN_EMOJI: Record<Domain, string> = {
   mind: '🧠',
 };
 
-export const DAY_ROLE_LABELS: Record<DayRole, string> = {
-  training: 'Training',
-  active_recovery: 'Active Recovery',
-  rest: 'Rest',
-  flex: 'Flex',
-};
-
-export const DAY_ROLE_EMOJI: Record<DayRole, string> = {
-  training: '🏋️',
-  active_recovery: '🚶',
-  rest: '😴',
-  flex: '✨',
-};
-
 // ============================================================
-// Protocol Types (12-week plans)
+// Protocol Types (12-week plans) - Simplified
 // ============================================================
 
 export interface Protocol {
@@ -133,16 +119,10 @@ export interface Protocol {
   // Strategic narrative
   narrative: ProtocolNarrative;
   
-  // Weekly rhythm template
-  weeklyRhythm: DayRhythm[];
+  // Recommended activities from the catalogue
+  recommendedActivities: RecommendedActivity[];
   
-  // Optional phases (only if helps user understand progression)
-  phases?: ProtocolPhase[];
-  
-  // Active protocols from the activity catalogue
-  activeProtocols: ActiveProtocol[];
-  
-  // 12 week outlines
+  // 12 week outlines (simplified)
   weeks: ProtocolWeek[];
   
   createdAt: string;
@@ -153,76 +133,75 @@ export type ProtocolStatus = 'active' | 'completed' | 'paused';
 
 export interface ProtocolNarrative {
   why: string;               // Why this protocol for this person
-  approach: string;          // High-level strategy (e.g., "base-build-peak")
+  approach: string;          // High-level strategy
   expectedOutcomes: string;  // What success looks like at week 12
 }
 
-export interface ProtocolPhase {
-  name: string;              // "Foundation", "Build", "Peak"
-  weeks: [number, number];   // [1, 4]
-  focus: string;             // What this phase accomplishes
-}
-
-export interface ActiveProtocol {
-  activityId: string;        // From catalogue: "heart_zone2", "frame_squat"
+/**
+ * A recommended activity from the catalogue with weekly target
+ * Simpler than the old ActiveProtocol - no tiers, no unlock logic
+ */
+export interface RecommendedActivity {
+  activityId: string;           // Links to catalogue (e.g., "zone2_cardio")
   domain: Domain;
-  tier: 0 | 1 | 2;
-  weeklyTarget: string;      // "3x 45min", "7 nights"
-  personalization: string;   // Why this activity for this user
-  variants?: string[];       // Selected variants based on constraints (e.g., ["Walk (incline)", "Cycle"])
-  unlocksAtWeek?: number;    // null = active from week 1
-}
-
-export type DayRole = 'training' | 'active_recovery' | 'rest' | 'flex';
-
-export interface DayRhythm {
-  dayOfWeek: DayOfWeek;
-  role: DayRole;
-  primaryActivities: string[]; // activity IDs
-  notes?: string;
+  weeklyTarget: string;         // Human-readable: "150 min" or "3 sessions"
+  targetValue: number;          // Numeric value: 150
+  targetUnit: 'min' | 'sessions' | 'days' | 'hours';
+  personalization: string;      // "Given your goal to improve VO2 max..."
 }
 
 export interface ProtocolWeek {
   weekNumber: number;    // 1-12
-  theme: string;         // e.g., "Building the foundation"
-  intensityLevel: 'low' | 'moderate' | 'high' | 'deload';
-  domainEmphasis?: Domain[]; // Primary focus domains this week
-  progressionNotes?: string; // What changes from previous week
-  // Legacy field for backward compatibility
-  focus?: string;
-  domains?: Partial<Record<Domain, string>>;
+  theme?: string;        // Optional: e.g., "Deload week"
+  focus?: string;        // Legacy compatibility
 }
 
 // ============================================================
-// Activity Types (Planned & Logged)
+// Legacy Protocol Types (deprecated, kept for backward compatibility)
 // ============================================================
 
-export interface PlannedActivity {
-  id: string;
-  userId: string;
-  weekStartDate: string;
-  activityDefinitionId: string;
+/** @deprecated Use RecommendedActivity instead */
+export interface ActiveProtocol {
+  activityId: string;
   domain: Domain;
-  dayOfWeek?: DayOfWeek;       // null = "anytime this week"
-  targetValue: number;         // 45 (minutes), 1 (session)
-  targetUnit: string;
-  details?: string;            // "Focus on upper body today"
-  status: PlannedActivityStatus;
-  createdAt: string;
-  updatedAt: string;
+  tier: 0 | 1 | 2;
+  weeklyTarget: string;
+  personalization: string;
+  variants?: string[];
+  unlocksAtWeek?: number;
 }
 
-export type PlannedActivityStatus = 'planned' | 'logged' | 'skipped';
+/** @deprecated No longer used */
+export interface ProtocolPhase {
+  name: string;
+  weeks: [number, number];
+  focus: string;
+}
+
+/** @deprecated No longer used */
+export type DayRole = 'training' | 'active_recovery' | 'rest' | 'flex';
+
+/** @deprecated No longer used */
+export interface DayRhythm {
+  dayOfWeek: DayOfWeek;
+  role: DayRole;
+  primaryActivities: string[];
+  notes?: string;
+}
+
+// ============================================================
+// Activity Log Types
+// ============================================================
 
 export interface ActivityLog {
   id: string;
   userId: string;
   activityDefinitionId: string;
-  plannedActivityId?: string;  // Links to planned if completing a planned item
   domain: Domain;
-  activityType?: string;       // Subtype like "Walk", "Bike"
+  activityType?: string;       // Variant/subtype like "Walk", "Bike"
+  value: number;               // Duration in minutes or count
+  unit: string;                // "min", "sessions", etc.
   date: string;                // ISO date
-  data: Record<string, unknown>; // Flexible logging data based on activity
   notes?: string;
   createdAt: string;
 }
