@@ -107,12 +107,9 @@ export default async function WeekPage() {
     currentWeekNumber = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
   }
 
-  // Calculate adherence (percentage of target achieved)
-  const adherencePercent = calculateAdherence(protocol?.recommendedActivities || [], activityLogs);
-
-  // Generate dynamic Eden message
+  // Generate dynamic Eden message with coaching style
   const edenMessage = protocol 
-    ? generateEdenMessage(protocol, currentWeekNumber, adherencePercent, 0)
+    ? generateEdenMessage(protocol, currentWeekNumber, 0, userProfile?.coachingStyle)
     : "Welcome to Eden. Create your protocol to get started.";
 
   return (
@@ -216,28 +213,3 @@ function EmptyState() {
   );
 }
 
-// Calculate overall adherence percentage
-function calculateAdherence(
-  activities: RecommendedActivity[],
-  logs: ActivityLog[]
-): number {
-  if (activities.length === 0) return 0;
-  
-  let totalTarget = 0;
-  let totalLogged = 0;
-  
-  // Sum targets by domain
-  const targetsByDomain: Record<string, number> = {};
-  for (const activity of activities) {
-    targetsByDomain[activity.domain] = (targetsByDomain[activity.domain] || 0) + activity.targetValue;
-    totalTarget += activity.targetValue;
-  }
-  
-  // Sum logged by domain
-  for (const log of logs) {
-    totalLogged += log.value;
-  }
-  
-  if (totalTarget === 0) return 0;
-  return Math.min(Math.round((totalLogged / totalTarget) * 100), 100);
-}

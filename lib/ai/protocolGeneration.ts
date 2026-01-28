@@ -5,7 +5,8 @@ import {
   ProtocolNarrative,
   RecommendedActivity,
   ProtocolWeek,
-  Domain
+  Domain,
+  CoachingStyle
 } from '@/lib/types';
 import { formatCatalogueForProtocolGeneration } from './activityCatalogue';
 import { addWeeks, format } from 'date-fns';
@@ -268,44 +269,179 @@ function formatConstraints(constraints: UserProfile['constraints']): string {
 // ============================================================================
 
 /**
- * Generate a dynamic Eden message based on context
+ * Default coaching style if none provided
+ */
+const DEFAULT_COACHING_STYLE: CoachingStyle = {
+  tone: 'neutral',
+  density: 'balanced',
+  formality: 'professional',
+};
+
+/**
+ * Generate a dynamic Eden message based on context and coaching style
+ * Returns a multi-line message with week context and actionable guidance
  */
 export function generateEdenMessage(
   protocol: Protocol,
   currentWeekNumber: number,
-  adherencePercent: number, // 0-100
-  daysSinceLastOpen: number
+  daysSinceLastOpen: number,
+  coachingStyle: CoachingStyle = DEFAULT_COACHING_STYLE
 ): string {
   const week = protocol.weeks.find(w => w.weekNumber === currentWeekNumber);
   const weekTheme = week?.theme || week?.focus || '';
   const goal = protocol.goalSummary;
+  const { tone, density } = coachingStyle;
+  
+  // Build the message based on context
+  const contextLine = buildContextLine(currentWeekNumber, weekTheme, goal, tone);
+  const guidanceLine = buildGuidanceLine(currentWeekNumber, weekTheme, daysSinceLastOpen, tone);
+  
+  // For minimal density, return just the context line
+  if (density === 'minimal') {
+    return contextLine;
+  }
+  
+  // For balanced/detailed, return both lines
+  return `${contextLine}\n${guidanceLine}`;
+}
+
+/**
+ * Build the first line: week context + theme
+ */
+function buildContextLine(
+  weekNumber: number,
+  theme: string,
+  goal: string,
+  tone: CoachingStyle['tone']
+): string {
+  const weekLabel = `Week ${weekNumber}`;
+  
+  // If we have a theme, use it
+  if (theme) {
+    switch (tone) {
+      case 'supportive':
+        return `${weekLabel} is about ${theme.toLowerCase()}. You've got this.`;
+      case 'tough':
+        return `${weekLabel}: ${theme}.`;
+      default:
+        return `${weekLabel} focuses on ${theme.toLowerCase()}.`;
+    }
+  }
+  
+  // No theme - use goal summary
+  const shortGoal = truncateGoal(goal);
+  switch (tone) {
+    case 'supportive':
+      return `${weekLabel} of 12. Keep working toward: ${shortGoal}`;
+    case 'tough':
+      return `${weekLabel} of 12. Goal: ${shortGoal}`;
+    default:
+      return `${weekLabel} of 12. Your focus: ${shortGoal}`;
+  }
+}
+
+/**
+ * Build the second line: actionable guidance or motivational prompt
+ */
+function buildGuidanceLine(
+  weekNumber: number,
+  theme: string,
+  daysSinceLastOpen: number,
+  tone: CoachingStyle['tone']
+): string {
+  const themeLower = theme.toLowerCase();
   
   // Welcome back after absence
   if (daysSinceLastOpen >= 2) {
-    return `Week ${currentWeekNumber} · Welcome back. Let's pick up where you left off.`;
-  }
-
-  // Deload week (check theme)
-  if (weekTheme.toLowerCase().includes('deload') || weekTheme.toLowerCase().includes('recovery')) {
-    return `Week ${currentWeekNumber} · ${weekTheme}. Lighter week to let your body adapt.`;
-  }
-
-  // High adherence celebration
-  if (adherencePercent >= 80) {
-    return `Week ${currentWeekNumber} · Strong week so far. Keep building momentum.`;
-  }
-
-  // Low adherence encouragement
-  if (adherencePercent < 30) {
-    return `Week ${currentWeekNumber} · Every activity counts. What can you do today?`;
-  }
-
-  // Default: week number + theme if available
-  if (weekTheme) {
-    return `Week ${currentWeekNumber} · ${weekTheme}`;
+    switch (tone) {
+      case 'supportive':
+        return "Welcome back! Let's pick up where you left off. Every step counts.";
+      case 'tough':
+        return "You're back. No excuses now. Let's go.";
+      default:
+        return "Welcome back. Resume your protocol where you left off.";
+    }
   }
   
-  return `Week ${currentWeekNumber} of 12 · ${truncateGoal(goal)}`;
+  // Deload/recovery week messaging
+  if (themeLower.includes('deload') || themeLower.includes('recovery') || themeLower.includes('rest')) {
+    switch (tone) {
+      case 'supportive':
+        return "This is your time to recharge. Light movement, quality rest. Your body will thank you.";
+      case 'tough':
+        return "Recovery is part of the process. Don't skip it.";
+      default:
+        return "Lighter week to let your body adapt. Active recovery is still progress.";
+    }
+  }
+  
+  // First week messaging
+  if (weekNumber === 1) {
+    switch (tone) {
+      case 'supportive':
+        return "This week is about building your foundation. Start where you are, not where you think you should be.";
+      case 'tough':
+        return "Day one. Build the habit. Show up.";
+      default:
+        return "Establish your baseline this week. Consistency matters more than intensity.";
+    }
+  }
+  
+  // Final week messaging
+  if (weekNumber === 12) {
+    switch (tone) {
+      case 'supportive':
+        return "You've built something real. This week, see how far you've come.";
+      case 'tough':
+        return "Final week. Finish strong. No letting up.";
+      default:
+        return "Final week of your protocol. Reflect on your progress and maintain your gains.";
+    }
+  }
+  
+  // Mid-protocol messaging based on theme keywords
+  if (themeLower.includes('consistency') || themeLower.includes('habit')) {
+    switch (tone) {
+      case 'supportive':
+        return "Small steps compound into big results. What will you do today?";
+      case 'tough':
+        return "Same schedule. No exceptions. Show up.";
+      default:
+        return "Maintain your established routine. Consistency is the goal this week.";
+    }
+  }
+  
+  if (themeLower.includes('intensity') || themeLower.includes('push') || themeLower.includes('progress')) {
+    switch (tone) {
+      case 'supportive':
+        return "Time to stretch a little. You're stronger than you were. Trust the process.";
+      case 'tough':
+        return "Push harder. You've adapted. Time to grow.";
+      default:
+        return "Increase intensity slightly. Your body has adapted and is ready for more.";
+    }
+  }
+  
+  if (themeLower.includes('foundation') || themeLower.includes('build')) {
+    switch (tone) {
+      case 'supportive':
+        return "Every session this week is a brick in your foundation. Keep building.";
+      case 'tough':
+        return "Lay the groundwork. No shortcuts.";
+      default:
+        return "Focus on form and establishing patterns. Foundation first.";
+    }
+  }
+  
+  // Default guidance based on tone
+  switch (tone) {
+    case 'supportive':
+      return "Keep showing up. Your future self will thank you for the work you put in today.";
+    case 'tough':
+      return "Execute the plan. No negotiation.";
+    default:
+      return "Follow your protocol. Each activity moves you closer to your goals.";
+  }
 }
 
 /**

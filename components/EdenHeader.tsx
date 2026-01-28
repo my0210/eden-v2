@@ -8,6 +8,11 @@ interface EdenHeaderProps {
 }
 
 export function EdenHeader({ message, showProtocolLink = true }: EdenHeaderProps) {
+  // Split message into lines (context line + guidance line)
+  const lines = message.split('\n').filter(line => line.trim());
+  const contextLine = lines[0] || '';
+  const guidanceLine = lines[1] || '';
+
   return (
     <div className="px-6 space-y-2">
       {/* Dynamic Eden Message */}
@@ -20,9 +25,19 @@ export function EdenHeader({ message, showProtocolLink = true }: EdenHeaderProps
           borderStyle: 'solid',
         }}
       >
-        <p className="text-sm text-foreground/70 leading-relaxed">
-          {message}
-        </p>
+        <div className="space-y-2">
+          {/* Context line - week info and theme */}
+          <p className="text-sm text-foreground/80 font-medium leading-relaxed">
+            {contextLine}
+          </p>
+          
+          {/* Guidance line - actionable/motivational */}
+          {guidanceLine && (
+            <p className="text-sm text-foreground/60 leading-relaxed">
+              {guidanceLine}
+            </p>
+          )}
+        </div>
       </div>
       
       {/* Protocol Link */}
