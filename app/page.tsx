@@ -57,7 +57,7 @@ export default async function LandingPage() {
 
         {/* Single line */}
         <p className="text-foreground-muted text-lg md:text-xl mb-12 animate-fade-in-up-delayed">
-          Your longevity, personalized
+          Stay in your prime.
         </p>
 
         {/* CTA */}
@@ -77,10 +77,6 @@ export default async function LandingPage() {
         </Link>
       </div>
 
-      {/* Minimal footer */}
-      <footer className="absolute bottom-8 text-foreground-subtle text-xs tracking-wider animate-fade-in">
-        AI-powered health coaching
-      </footer>
     </main>
   );
 }
