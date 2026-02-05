@@ -14,7 +14,7 @@ interface GeneratedPlanItem {
 }
 
 interface GeneratedPlan {
-  edenIntro: string;
+  huumanIntro: string;
   domainIntros: {
     heart?: string;
     frame?: string;
@@ -36,7 +36,7 @@ export async function generateWeeklyPlan(
   previousWeekContext?: string,
   startFromDay?: number
 ): Promise<{
-  edenIntro: string;
+  huumanIntro: string;
   domainIntros: Partial<Record<Domain, string>>;
   items: Omit<PlanItem, 'id' | 'weeklyPlanId' | 'createdAt'>[];
 }> {
@@ -79,7 +79,7 @@ export async function generateWeeklyPlan(
     }
 
     return {
-      edenIntro: result.edenIntro,
+      huumanIntro: result.huumanIntro,
       domainIntros: result.domainIntros || {},
       items,
     };
@@ -89,7 +89,7 @@ export async function generateWeeklyPlan(
     
     // Return a fallback plan structure with error info
     return {
-      edenIntro: `I'm having trouble generating your personalized plan right now (${err.message}). Here's a basic structure to get you started. We'll refine it as I learn more about you.`,
+      huumanIntro: `I'm having trouble generating your personalized plan right now (${err.message}). Here's a basic structure to get you started. We'll refine it as I learn more about you.`,
       domainIntros: {},
       items: getDefaultPlanItems(startFromDay),
     };

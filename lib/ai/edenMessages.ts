@@ -1,5 +1,5 @@
 /**
- * Eden Message Generation
+ * Huuman Message Generation
  * 
  * Generates contextual, personalized messages based on:
  * - Protocol context (current week, theme)

@@ -81,7 +81,7 @@ export default function GeneratingPage() {
       {/* Content */}
       <div className="relative z-10 text-center max-w-md">
         <h1 className="text-4xl font-light tracking-tight mb-8 text-foreground/80">
-          eden
+          huuman
         </h1>
 
         {error ? (

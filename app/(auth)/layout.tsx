@@ -19,7 +19,7 @@ export default function AuthLayout({
       
       {/* Wordmark */}
       <div className="relative z-10 mb-12">
-        <h1 className="text-3xl font-light tracking-tight text-foreground/80">eden</h1>
+        <h1 className="text-3xl font-light tracking-tight text-foreground/80">huuman</h1>
       </div>
       
       <div className="relative z-10 w-full max-w-sm">

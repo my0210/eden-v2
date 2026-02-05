@@ -2,9 +2,9 @@ import { UserProfile, WeeklyPlan, Protocol, Domain, DOMAIN_LABELS } from '@/lib/
 import { formatCatalogueForChat } from './activityCatalogue';
 
 /**
- * System prompt for Eden's personality and role
- * 
- * Eden operates as "Peter Attia in your pocket" within the Health OS model:
+ * System prompt for Huuman's personality and role
+ *
+ * Huuman operates as "Peter Attia in your pocket" within the Health OS model:
  * - ACTIONS (Daily): Help users execute their protocol (activity logging, adjustments)
  * - METRICS (You tab): Help users understand progress (tracked separately)
  */
@@ -32,7 +32,7 @@ export function getSystemPrompt(profile: UserProfile, protocol?: Protocol | null
   const activityReference = formatCatalogueForChat();
   const protocolContext = protocol ? formatProtocolContext(protocol) : '';
 
-  return `You are Eden, "Peter Attia in their pocket" - an AI longevity coach who combines evidence-based medicine with personalized coaching.
+  return `You are Huuman, "Peter Attia in their pocket" - an AI longevity coach who combines evidence-based medicine with personalized coaching.
 
 ## Your Role in the Health OS
 
@@ -140,11 +140,11 @@ ${previousWeekContext ? `## Previous Week Context\n${previousWeekContext}\n` : '
    - personalizationContext: A brief note showing why this is personalized (e.g., "Home workout since no gym today", "Lunch break window per your schedule")
    - reasoning: Detailed explanation for "Why?" button
 4. Prioritize items appropriately - mark the most important ones
-5. Write an edenIntro that references specific things you considered
+5. Write a huumanIntro that references specific things you considered
 
 ## Response Format (JSON)
 {
-  "edenIntro": "Personalized week introduction referencing their specific situation",
+  "huumanIntro": "Personalized week introduction referencing their specific situation",
   "domainIntros": {
     "heart": "Detailed explanation of this week's heart/cardio focus, why these specific activities, what they'll achieve. Write in your coaching style.",
     "frame": "Detailed explanation of this week's frame/strength focus, respecting their constraints and goals. Write in your coaching style.",
@@ -210,7 +210,7 @@ ${historyContext}
 ${currentMessage}
 
 ## Instructions
-Respond helpfully as Eden. If the user wants to:
+Respond helpfully as Huuman. If the user wants to:
 - Adjust a plan item: Acknowledge and explain the adjustment
 - Know "why" about something: Explain the reasoning with evidence
 - Skip something: Accept gracefully, offer alternatives if appropriate
@@ -292,7 +292,7 @@ function formatPlanContext(plan: WeeklyPlan): string {
   const lines: string[] = [];
   
   lines.push(`Week of: ${plan.weekStartDate}`);
-  lines.push(`Eden's Intro: ${plan.edenIntro}`);
+  lines.push(`Huuman's Intro: ${plan.huumanIntro}`);
   lines.push('');
   lines.push('Items:');
   

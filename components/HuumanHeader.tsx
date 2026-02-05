@@ -2,12 +2,12 @@
 
 import Link from 'next/link';
 
-interface EdenHeaderProps {
+interface HuumanHeaderProps {
   message: string;
   showProtocolLink?: boolean;
 }
 
-export function EdenHeader({ message, showProtocolLink = true }: EdenHeaderProps) {
+export function HuumanHeader({ message, showProtocolLink = true }: HuumanHeaderProps) {
   // Split message into lines (context line + guidance line)
   const lines = message.split('\n').filter(line => line.trim());
   const contextLine = lines[0] || '';
@@ -15,7 +15,7 @@ export function EdenHeader({ message, showProtocolLink = true }: EdenHeaderProps
 
   return (
     <div className="px-6 space-y-2">
-      {/* Dynamic Eden Message */}
+      {/* Dynamic Huuman Message */}
       <div 
         className="rounded-xl p-4 transition-all duration-300"
         style={{ 

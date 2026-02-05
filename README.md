@@ -1,10 +1,10 @@
-# Eden v2 - AI Longevity Coach
+# Huuman - Be In Your Prime
 
-**Eden is Peter Attia in your pocket** - evidence-based longevity protocols, personalized for you, delivered as a weekly plan with AI that adapts to your reality.
+**Huuman helps you be in your prime** - a weekly protocol for the five behaviors most tied to healthspan, with simple logging to build a record you're proud of.
 
 ## Vision
 
-Users don't need more health information. They need fewer decisions. Eden decides what matters most, explains why, and adapts when life happens.
+Users don't need more health information. They need fewer decisions. Huuman focuses on the Core Five pillars and helps you stay consistent.
 
 ## The 5 Primespan Domains
 
@@ -37,8 +37,8 @@ All users are coached across all 5 domains:
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/my0210/eden-v2.git
-cd eden-v2
+git clone https://github.com/my0210/huuman.git
+cd huuman
 ```
 
 2. Install dependencies:
@@ -72,7 +72,7 @@ Open [http://localhost:3000](http://localhost:3000).
 ## Project Structure
 
 ```
-eden-v2/
+huuman/
 ├── app/
 │   ├── (auth)/           # Login, signup pages
 │   ├── (main)/           # Main app (week view)

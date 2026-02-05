@@ -583,7 +583,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                     {/* Rating */}
                     <div>
                       <label className="text-sm text-white/60 mb-3 block">
-                        How&apos;s your experience with Eden?
+                        How&apos;s your experience with Huuman?
                       </label>
                       <div className="flex justify-between gap-2">
                         {RATING_EMOJIS.map(({ value, emoji, label }) => (

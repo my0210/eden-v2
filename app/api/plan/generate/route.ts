@@ -138,7 +138,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         week_start_date: weekStartStr,
-        eden_intro: generated.edenIntro,
+        huuman_intro: generated.huumanIntro,
         domain_intros: generated.domainIntros,
         generation_context: {
           profile: {
@@ -199,7 +199,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       success: true,
       planId: newPlan.id,
-      edenIntro: generated.edenIntro,
+      huumanIntro: generated.huumanIntro,
       itemCount: generated.items.length,
     });
   } catch (error) {

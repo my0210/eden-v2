@@ -53,9 +53,9 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
       }, 400);
     };
 
-    window.addEventListener('eden:askAboutItem', handleAskAboutItem as EventListener);
+    window.addEventListener('huuman:askAboutItem', handleAskAboutItem as EventListener);
     return () => {
-      window.removeEventListener('eden:askAboutItem', handleAskAboutItem as EventListener);
+      window.removeEventListener('huuman:askAboutItem', handleAskAboutItem as EventListener);
     };
   }, []);
 
@@ -166,7 +166,7 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
           {/* Header with close button */}
           <div className="flex items-center justify-between px-4 pb-2">
             <Drawer.Title className="text-white/90 text-lg font-medium">
-              Eden
+              Huuman
             </Drawer.Title>
             <Drawer.Close asChild>
               <button
@@ -188,7 +188,7 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
           <div className="flex-1 overflow-y-auto px-4 py-4">
             {messages.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full text-center">
-                <p className="text-white/30 text-sm">Ask Eden anything</p>
+                <p className="text-white/30 text-sm">Ask Huuman anything</p>
               </div>
             ) : (
               <div className="space-y-4">
@@ -234,7 +234,7 @@ export function ChatOverlay({ trigger }: ChatOverlayProps) {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Ask Eden..."
+                placeholder="Ask Huuman..."
                 disabled={isLoading}
                 rows={1}
                 className="w-full px-4 py-3 pr-12 rounded-2xl text-white placeholder:text-white/30 resize-none overflow-hidden focus:outline-none focus:ring-2 focus:ring-white/20 disabled:opacity-50"

@@ -71,7 +71,7 @@ export function ChatInput({ userId, onSend }: ChatInputProps) {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask Eden..."
+          placeholder="Ask Huuman..."
           disabled={isSending}
           rows={1}
           className="

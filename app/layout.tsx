@@ -13,13 +13,13 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'Eden - AI Longevity Coach',
+  title: 'Huuman - Be In Your Prime',
   description: 'Your personalized AI health coach for optimal longevity across Heart, Frame, Mind, Metabolism, and Recovery.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Eden',
+    title: 'Huuman',
   },
 };
 

@@ -1,4 +1,4 @@
-// Core Five Protocol definitions for Eden v3
+// Core Five Protocol definitions for Huuman v3
 
 export type Pillar = 'cardio' | 'strength' | 'sleep' | 'clean_eating' | 'mindfulness';
 

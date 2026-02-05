@@ -59,7 +59,7 @@ export default async function ProtocolPage() {
             lipidsUnit={userProfile?.lipidsUnit}
             coachingStyle={userProfile?.coachingStyle}
           />
-          <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+          <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
           <YouButton />
         </header>
 

@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { PlanItem, Domain, DOMAINS, DOMAIN_COLORS, DOMAIN_LABELS } from '@/lib/types';
 
 interface WeekHeaderProps {
-  edenIntro: string;
+  huumanIntro: string;
   domainIntros: Partial<Record<Domain, string>>;
   items: PlanItem[];
 }
@@ -57,7 +57,7 @@ function DomainIcon({ domain, color, size = 14 }: { domain: Domain; color: strin
   }
 }
 
-export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) {
+export function WeekHeader({ huumanIntro, domainIntros, items }: WeekHeaderProps) {
   const [selectedDomain, setSelectedDomain] = useState<Domain | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [needsExpand, setNeedsExpand] = useState(false);
@@ -69,7 +69,7 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
       const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
       setNeedsExpand(isOverflowing);
     }
-  }, [selectedDomain, edenIntro, domainIntros]);
+  }, [selectedDomain, huumanIntro, domainIntros]);
 
   // Reset expanded state when domain changes
   useEffect(() => {
@@ -89,7 +89,7 @@ export function WeekHeader({ edenIntro, domainIntros, items }: WeekHeaderProps) 
   // Get current intro text
   const currentIntro = selectedDomain 
     ? domainIntros[selectedDomain] || `No specific focus for ${DOMAIN_LABELS[selectedDomain]} this week.`
-    : edenIntro;
+    : huumanIntro;
 
   // Get current header
   const currentHeader = selectedDomain 

@@ -105,7 +105,7 @@ export default function OnboardingPage() {
 
       {/* Header */}
       <header className="relative z-10 px-6 py-6 flex items-center justify-between">
-        <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+        <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
         <div className="flex items-center gap-3">
           <span className="text-sm text-foreground/40">{currentStep}/{TOTAL_STEPS}</span>
           <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
@@ -261,7 +261,7 @@ function CurrentStateStep({ answers, updateAnswers }: StepProps) {
     <div className="space-y-8 animate-fade-in-up">
       <div>
         <h1 className="text-2xl font-light mb-2">Current activity level</h1>
-        <p className="text-foreground/40 text-sm">Be honest — this helps Eden start you right</p>
+        <p className="text-foreground/40 text-sm">Be honest — this helps Huuman start you right</p>
       </div>
 
       <div className="space-y-3">
@@ -375,7 +375,7 @@ function EquipmentStep({ answers, updateAnswers }: StepProps) {
     <div className="space-y-8 animate-fade-in-up">
       <div>
         <h1 className="text-2xl font-light mb-2">Your equipment</h1>
-        <p className="text-foreground/40 text-sm">Eden adapts to what you have</p>
+        <p className="text-foreground/40 text-sm">Huuman adapts to what you have</p>
       </div>
 
       <div className="flex gap-3">
@@ -434,7 +434,7 @@ function CapacityStep({ answers, updateAnswers }: StepProps) {
     <div className="space-y-8 animate-fade-in-up">
       <div>
         <h1 className="text-2xl font-light mb-2">Your capacity</h1>
-        <p className="text-foreground/40 text-sm">Be realistic — Eden won't overwhelm you</p>
+        <p className="text-foreground/40 text-sm">Be realistic — Huuman won't overwhelm you</p>
       </div>
 
       <div className="space-y-6">
@@ -500,7 +500,7 @@ function CoachingStyleStep({ answers, updateAnswers }: StepProps) {
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div>
-        <h1 className="text-2xl font-light mb-2">How should Eden coach you?</h1>
+        <h1 className="text-2xl font-light mb-2">How should Huuman coach you?</h1>
         <p className="text-foreground/40 text-sm">Customize your experience</p>
       </div>
 

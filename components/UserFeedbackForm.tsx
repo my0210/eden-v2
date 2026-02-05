@@ -80,7 +80,7 @@ export function UserFeedbackForm({ onSuccess, onClose }: UserFeedbackFormProps) 
     >
       {/* Header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-white/90 text-sm font-medium">How&apos;s Eden?</h3>
+        <h3 className="text-white/90 text-sm font-medium">How&apos;s Huuman?</h3>
         {onClose && (
           <button
             onClick={onClose}

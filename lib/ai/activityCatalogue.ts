@@ -1,5 +1,5 @@
 /**
- * Eden Master Activity Catalogue
+ * Huuman Master Activity Catalogue
  * 
  * Contains ~50 activities across 5 Primespan domains with:
  * - Cross-domain impact with tier per domain

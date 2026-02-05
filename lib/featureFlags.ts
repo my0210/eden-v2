@@ -1,4 +1,4 @@
-// Feature flags for Eden v3
+// Feature flags for Huuman v3
 // When V3_FOCUSED is true, the app hides non-essential features and shows the Core Five experience
 
 // Hardcoded to true for v3 launch - change to false to restore v2 features

@@ -91,7 +91,7 @@ export async function generateProtocol(
 function getProtocolSystemPrompt(): string {
   const activityCatalogue = formatCatalogueForProtocolGeneration();
   
-  return `You are Eden, "Peter Attia in their pocket" - an AI longevity physician designing personalized health protocols.
+  return `You are Huuman, "Peter Attia in their pocket" - an AI longevity physician designing personalized health protocols.
 
 ## Your Role
 
@@ -265,7 +265,7 @@ function formatConstraints(constraints: UserProfile['constraints']): string {
 }
 
 // ============================================================================
-// Eden Message Generation
+// Huuman Message Generation
 // ============================================================================
 
 /**
@@ -278,10 +278,10 @@ const DEFAULT_COACHING_STYLE: CoachingStyle = {
 };
 
 /**
- * Generate a dynamic Eden message based on context and coaching style
+ * Generate a dynamic Huuman message based on context and coaching style
  * Returns a multi-line message with week context and actionable guidance
  */
-export function generateEdenMessage(
+export function generateHuumanMessage(
   protocol: Protocol,
   currentWeekNumber: number,
   daysSinceLastOpen: number,
@@ -445,7 +445,7 @@ function buildGuidanceLine(
 }
 
 /**
- * Generate Eden message for a specific domain's progress
+ * Generate Huuman message for a specific domain's progress
  */
 export function generateDomainProgressMessage(
   domain: Domain,

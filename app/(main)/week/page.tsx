@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase/server';
 import { startOfWeek, endOfWeek, format, parseISO, differenceInWeeks } from 'date-fns';
 import { WeeklyDomainView } from '@/components/WeeklyDomainView';
 import { ChatOverlay } from '@/components/ChatOverlay';
-import { EdenHeader } from '@/components/EdenHeader';
+import { HuumanHeader } from '@/components/HuumanHeader';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
 import { 
@@ -14,7 +14,7 @@ import {
   ProtocolWeek,
   ActivityLog
 } from '@/lib/types';
-import { generateEdenMessage } from '@/lib/ai/protocolGeneration';
+import { generateHuumanMessage } from '@/lib/ai/protocolGeneration';
 import { V3_FOCUSED } from '@/lib/featureFlags';
 import { CoreFiveView } from '@/components/v3/CoreFiveView';
 
@@ -109,10 +109,10 @@ export default async function WeekPage() {
     currentWeekNumber = Math.min(Math.max(weeksSinceStart + 1, 1), 12);
   }
 
-  // Generate dynamic Eden message with coaching style
-  const edenMessage = protocol 
-    ? generateEdenMessage(protocol, currentWeekNumber, 0, userProfile?.coachingStyle)
-    : "Welcome to Eden. Create your protocol to get started.";
+  // Generate dynamic Huuman message with coaching style
+  const huumanMessage = protocol 
+    ? generateHuumanMessage(protocol, currentWeekNumber, 0, userProfile?.coachingStyle)
+    : "Welcome to Huuman. Create your protocol to get started.";
 
   // V3 Focused Mode: Show Core Five Protocol view
   if (V3_FOCUSED) {
@@ -139,7 +139,7 @@ export default async function WeekPage() {
             lipidsUnit={userProfile?.lipidsUnit}
             coachingStyle={userProfile?.coachingStyle}
           />
-          <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+          <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
           <div className="w-10" /> {/* Spacer for balance */}
         </header>
 
@@ -175,14 +175,14 @@ export default async function WeekPage() {
           lipidsUnit={userProfile?.lipidsUnit}
           coachingStyle={userProfile?.coachingStyle}
         />
-        <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+        <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
         <YouButton />
       </header>
 
-      {/* Eden Header - Dynamic message + Protocol link */}
+      {/* Huuman Header - Dynamic message + Protocol link */}
       <div className="relative z-10 pt-2">
-        <EdenHeader 
-          message={edenMessage}
+        <HuumanHeader 
+          message={huumanMessage}
           showProtocolLink={!!protocol}
         />
       </div>

@@ -1,4 +1,4 @@
-// Eden v2 Core Types
+// Huuman Core Types
 
 // ============================================================
 // User & Profile Types
@@ -214,7 +214,7 @@ export interface WeeklyPlan {
   id: string;
   userId: string;
   weekStartDate: string; // ISO date string (Monday)
-  edenIntro: string;     // Personalized week introduction
+  huumanIntro: string;     // Personalized week introduction
   domainIntros: Partial<Record<Domain, string>>; // Per-domain intro text
   generationContext: GenerationContext;
   items: PlanItem[];

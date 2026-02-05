@@ -52,7 +52,7 @@ export default async function LandingPage() {
       <div className="relative z-10 flex flex-col items-center px-6 max-w-lg text-center">
         {/* Wordmark */}
         <h1 className="text-5xl md:text-6xl font-light tracking-tight mb-6 animate-fade-in-up">
-          eden
+          huuman
         </h1>
 
         {/* Single line */}
