@@ -1,12 +1,18 @@
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
+import { V3_FOCUSED } from '@/lib/featureFlags';
 
 export default async function LandingPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
+    // V3 mode: skip onboarding check, go straight to week view
+    if (V3_FOCUSED) {
+      redirect('/week');
+    }
+
     const { data: profile } = await supabase
       .from('user_profiles')
       .select('onboarding_completed')
