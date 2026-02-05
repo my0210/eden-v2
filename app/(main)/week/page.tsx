@@ -15,6 +15,8 @@ import {
   ActivityLog
 } from '@/lib/types';
 import { generateEdenMessage } from '@/lib/ai/protocolGeneration';
+import { V3_FOCUSED } from '@/lib/featureFlags';
+import { CoreFiveView } from '@/components/v3/CoreFiveView';
 
 export default async function WeekPage() {
   const supabase = await createClient();
@@ -112,6 +114,44 @@ export default async function WeekPage() {
     ? generateEdenMessage(protocol, currentWeekNumber, 0, userProfile?.coachingStyle)
     : "Welcome to Eden. Create your protocol to get started.";
 
+  // V3 Focused Mode: Show Core Five Protocol view
+  if (V3_FOCUSED) {
+    return (
+      <div className="min-h-screen flex flex-col relative">
+        {/* Ambient gradient orb */}
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
+          <div className="relative w-[800px] h-[800px]">
+            <div 
+              className="absolute inset-0 rounded-full opacity-10 blur-[150px]"
+              style={{
+                background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Header */}
+        <header className="relative z-10 px-6 py-4 flex items-center justify-between">
+          <SettingsButton 
+            isAdmin={userProfile?.isAdmin} 
+            unitSystem={userProfile?.unitSystem}
+            glucoseUnit={userProfile?.glucoseUnit}
+            lipidsUnit={userProfile?.lipidsUnit}
+            coachingStyle={userProfile?.coachingStyle}
+          />
+          <span className="text-xl font-light tracking-tight text-foreground/60">eden</span>
+          <div className="w-10" /> {/* Spacer for balance */}
+        </header>
+
+        {/* Core Five View */}
+        <div className="relative z-10 flex-1">
+          <CoreFiveView userId={user.id} />
+        </div>
+      </div>
+    );
+  }
+
+  // V2 Mode: Show original view with protocol, chat, You tab
   return (
     <div className="min-h-screen flex flex-col relative pb-24">
       {/* Ambient gradient orb */}
