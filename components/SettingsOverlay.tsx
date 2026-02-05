@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { UnitSystem, GlucoseUnit, LipidsUnit } from '@/lib/types';
+import { V3_FOCUSED } from '@/lib/featureFlags';
 
 interface CoachingStyle {
   tone: 'supportive' | 'neutral' | 'tough';
@@ -383,50 +384,54 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
             {view === 'settings' ? (
               /* Settings View */
               <div className="space-y-5">
-                {/* Coaching Style */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                      Coaching Style
-                    </h3>
-                    {saved && (
-                      <span className="text-xs text-green-400/80 animate-pulse">
-                        Saved
-                      </span>
-                    )}
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <div>
-                      <label className="text-xs text-white/50 mb-1.5 block">Tone</label>
-                      <SegmentedControl 
-                        options={TONE_OPTIONS} 
-                        value={coachingStyle.tone}
-                        onChange={(v) => handleStyleChange('tone', v as CoachingStyle['tone'])}
-                      />
+                {/* Coaching Style - hidden in v3 */}
+                {!V3_FOCUSED && (
+                  <>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                          Coaching Style
+                        </h3>
+                        {saved && (
+                          <span className="text-xs text-green-400/80 animate-pulse">
+                            Saved
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <div>
+                          <label className="text-xs text-white/50 mb-1.5 block">Tone</label>
+                          <SegmentedControl 
+                            options={TONE_OPTIONS} 
+                            value={coachingStyle.tone}
+                            onChange={(v) => handleStyleChange('tone', v as CoachingStyle['tone'])}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-white/50 mb-1.5 block">Detail</label>
+                          <SegmentedControl 
+                            options={DENSITY_OPTIONS} 
+                            value={coachingStyle.density}
+                            onChange={(v) => handleStyleChange('density', v as CoachingStyle['density'])}
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="text-xs text-white/50 mb-1.5 block">Voice</label>
+                          <SegmentedControl 
+                            options={FORMALITY_OPTIONS} 
+                            value={coachingStyle.formality}
+                            onChange={(v) => handleStyleChange('formality', v as CoachingStyle['formality'])}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    
-                    <div>
-                      <label className="text-xs text-white/50 mb-1.5 block">Detail</label>
-                      <SegmentedControl 
-                        options={DENSITY_OPTIONS} 
-                        value={coachingStyle.density}
-                        onChange={(v) => handleStyleChange('density', v as CoachingStyle['density'])}
-                      />
-                    </div>
-                    
-                    <div>
-                      <label className="text-xs text-white/50 mb-1.5 block">Voice</label>
-                      <SegmentedControl 
-                        options={FORMALITY_OPTIONS} 
-                        value={coachingStyle.formality}
-                        onChange={(v) => handleStyleChange('formality', v as CoachingStyle['formality'])}
-                      />
-                    </div>
-                  </div>
-                </div>
 
-                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                    <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                  </>
+                )}
 
                 {/* Unit System */}
                 <div className="space-y-3">
@@ -447,51 +452,55 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                   />
                 </div>
 
-                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                {/* Lab Units - hidden in v3 */}
+                {!V3_FOCUSED && (
+                  <>
+                    <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-                {/* Lab Units */}
-                <div className="space-y-3">
-                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                    Lab Units
-                  </h3>
-                  <div>
-                    <label className="text-xs text-white/50 mb-1.5 block">Glucose</label>
-                    <SegmentedControl
-                      options={GLUCOSE_UNIT_OPTIONS}
-                      value={glucoseUnit}
-                      onChange={(v) => handleGlucoseUnitChange(v as GlucoseUnit)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-white/50 mb-1.5 block">Lipids</label>
-                    <SegmentedControl
-                      options={LIPIDS_UNIT_OPTIONS}
-                      value={lipidsUnit}
-                      onChange={(v) => handleLipidsUnitChange(v as LipidsUnit)}
-                    />
-                  </div>
-                </div>
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                        Lab Units
+                      </h3>
+                      <div>
+                        <label className="text-xs text-white/50 mb-1.5 block">Glucose</label>
+                        <SegmentedControl
+                          options={GLUCOSE_UNIT_OPTIONS}
+                          value={glucoseUnit}
+                          onChange={(v) => handleGlucoseUnitChange(v as GlucoseUnit)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-xs text-white/50 mb-1.5 block">Lipids</label>
+                        <SegmentedControl
+                          options={LIPIDS_UNIT_OPTIONS}
+                          value={lipidsUnit}
+                          onChange={(v) => handleLipidsUnitChange(v as LipidsUnit)}
+                        />
+                      </div>
+                    </div>
 
-                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                    <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-                {/* Navigation */}
-                <div className="space-y-2">
-                  <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                    Navigation
-                  </h3>
-                  
-                  <Link
-                    href="/protocol"
-                    onClick={() => setIsOpen(false)}
-                    className="w-full py-2.5 rounded-lg text-sm text-green-400/80 hover:text-green-400 transition-colors text-left px-3 flex items-center justify-between"
-                    style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)' }}
-                  >
-                    <span>My Protocol</span>
-                    <svg className="w-4 h-4 text-green-400/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </Link>
-                </div>
+                    {/* Navigation */}
+                    <div className="space-y-2">
+                      <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                        Navigation
+                      </h3>
+                      
+                      <Link
+                        href="/protocol"
+                        onClick={() => setIsOpen(false)}
+                        className="w-full py-2.5 rounded-lg text-sm text-green-400/80 hover:text-green-400 transition-colors text-left px-3 flex items-center justify-between"
+                        style={{ backgroundColor: 'rgba(34, 197, 94, 0.08)' }}
+                      >
+                        <span>My Protocol</span>
+                        <svg className="w-4 h-4 text-green-400/30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                      </Link>
+                    </div>
+                  </>
+                )}
 
                 <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
@@ -548,7 +557,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                 {/* Account Management */}
                 <div className="space-y-2 pb-4">
                   <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                    Account
+                    Data
                   </h3>
                   
                   <button
@@ -557,7 +566,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                     className="w-full py-2.5 rounded-lg text-sm text-orange-400/80 hover:text-orange-400 transition-colors text-left px-3 disabled:opacity-50"
                     style={{ backgroundColor: 'rgba(255, 165, 0, 0.08)' }}
                   >
-                    {loading === 'reset' ? 'Resetting...' : 'Reset Coaching & Onboarding'}
+                    {loading === 'reset' ? 'Resetting...' : 'Reset All Data'}
                   </button>
 
                   <button
