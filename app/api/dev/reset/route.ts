@@ -14,6 +14,9 @@ export async function POST() {
   }
 
   // Delete all user data (order matters due to foreign keys)
+  // V3 Core Five logs
+  await supabase.from('core_five_logs').delete().eq('user_id', user.id);
+  
   // Health OS tables
   await supabase.from('activity_logs').delete().eq('user_id', user.id);
   await supabase.from('planned_activities').delete().eq('user_id', user.id);
