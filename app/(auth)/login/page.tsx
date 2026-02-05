@@ -6,18 +6,18 @@ import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [step, setStep] = useState<'email' | 'otp'>('email');
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
   const router = useRouter();
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const codeInputRef = useRef<HTMLInputElement>(null);
 
-  // Focus first OTP input when entering OTP step
+  // Focus code input when entering OTP step
   useEffect(() => {
     if (step === 'otp') {
-      inputRefs.current[0]?.focus();
+      codeInputRef.current?.focus();
     }
   }, [step]);
 
@@ -47,21 +47,24 @@ export default function LoginPage() {
     }
   };
 
-  const handleVerifyOtp = async (code: string) => {
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!code.trim()) return;
+    
     setError(null);
     setLoading(true);
 
     try {
       const { error } = await supabase.auth.verifyOtp({
         email,
-        token: code,
+        token: code.trim(),
         type: 'email',
       });
 
       if (error) {
         setError('Invalid code. Please try again.');
-        setOtp(['', '', '', '', '', '']);
-        inputRefs.current[0]?.focus();
+        setCode('');
+        codeInputRef.current?.focus();
         return;
       }
 
@@ -71,47 +74,6 @@ export default function LoginPage() {
       setError('An unexpected error occurred');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleOtpChange = (index: number, value: string) => {
-    // Only allow digits
-    if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // Auto-advance to next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when complete
-    if (value && index === 5) {
-      const code = newOtp.join('');
-      if (code.length === 6) {
-        handleVerifyOtp(code);
-      }
-    }
-  };
-
-  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
-    // Handle backspace
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handleOtpPaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').trim();
-    
-    // Only process if it looks like a 6-digit code
-    if (/^\d{6}$/.test(pastedData)) {
-      const newOtp = pastedData.split('');
-      setOtp(newOtp);
-      handleVerifyOtp(pastedData);
     }
   };
 
@@ -134,43 +96,51 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* OTP Input */}
-        <div className="flex justify-center gap-2 mb-8" onPaste={handleOtpPaste}>
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => { inputRefs.current[index] = el; }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleOtpChange(index, e.target.value)}
-              onKeyDown={(e) => handleOtpKeyDown(index, e)}
-              disabled={loading}
-              className="
-                w-12 h-14
-                bg-white/5 
-                border border-white/10 
-                rounded-xl
-                text-foreground text-center text-xl font-medium
-                focus:outline-none focus:border-white/30 focus:bg-white/10
-                disabled:opacity-50
-                transition-all
-              "
-            />
-          ))}
-        </div>
-
-        {loading && (
-          <div className="flex justify-center mb-6">
-            <div className="w-5 h-5 border-2 border-white/20 border-t-white/60 rounded-full animate-spin" />
-          </div>
-        )}
+        <form onSubmit={handleVerifyOtp} className="space-y-4 mb-8">
+          {/* Single code input - easy to paste */}
+          <input
+            ref={codeInputRef}
+            type="text"
+            inputMode="numeric"
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+            disabled={loading}
+            placeholder="Paste code here"
+            className="
+              w-full px-4 py-4
+              bg-white/5 
+              border border-white/10 
+              rounded-xl
+              text-foreground text-center text-2xl font-medium tracking-[0.3em]
+              placeholder:text-foreground/20 placeholder:text-base placeholder:tracking-normal
+              focus:outline-none focus:border-white/30 focus:bg-white/10
+              disabled:opacity-50
+              transition-all
+            "
+            autoComplete="one-time-code"
+          />
+          
+          <button
+            type="submit"
+            disabled={loading || !code.trim()}
+            className="
+              w-full px-6 py-4 rounded-xl
+              bg-white/10 
+              border border-white/10
+              text-foreground/80 font-medium
+              hover:bg-white/15 hover:border-white/20
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-all duration-300
+            "
+          >
+            {loading ? 'Verifying...' : 'Continue'}
+          </button>
+        </form>
 
         <div className="flex flex-col items-center gap-3">
           <button
             onClick={() => {
-              setOtp(['', '', '', '', '', '']);
+              setCode('');
               handleSendOtp({ preventDefault: () => {} } as React.FormEvent);
             }}
             disabled={loading}
@@ -181,7 +151,7 @@ export default function LoginPage() {
           <button
             onClick={() => {
               setStep('email');
-              setOtp(['', '', '', '', '', '']);
+              setCode('');
               setError(null);
             }}
             className="text-sm text-foreground/30 hover:text-foreground/50 transition-colors"
@@ -243,7 +213,7 @@ export default function LoginPage() {
       </form>
 
       <p className="mt-8 text-center text-foreground/30 text-xs">
-        We&apos;ll send you a 6-digit code
+        We&apos;ll send you a code
       </p>
     </div>
   );
