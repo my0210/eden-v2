@@ -1,7 +1,8 @@
 // Feature flags for Eden v3
 // When V3_FOCUSED is true, the app hides non-essential features and shows the Core Five experience
 
-export const V3_FOCUSED = process.env.NEXT_PUBLIC_V3_FOCUSED === 'true';
+// Hardcoded to true for v3 launch - change to false to restore v2 features
+export const V3_FOCUSED = true;
 
 // Features hidden when V3_FOCUSED is true:
 // - You tab (YouButton, YouOverlay, metrics components)
