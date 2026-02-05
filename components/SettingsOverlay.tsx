@@ -234,14 +234,17 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
   };
 
   const handleResetCoaching = async () => {
-    if (!confirm('Reset coaching data? You will go through onboarding again but keep your account.')) return;
+    const confirmMsg = V3_FOCUSED 
+      ? 'Reset all your logged data? This cannot be undone.'
+      : 'Reset coaching data? You will go through onboarding again but keep your account.';
+    if (!confirm(confirmMsg)) return;
     
     setLoading('reset');
     try {
       const res = await fetch('/api/dev/reset', { method: 'POST' });
       if (res.ok) {
         setIsOpen(false);
-        router.push('/onboarding');
+        router.push(V3_FOCUSED ? '/week' : '/onboarding');
         router.refresh();
       }
     } finally {
@@ -433,24 +436,26 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                   </>
                 )}
 
-                {/* Unit System */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
-                      Units
-                    </h3>
-                    {saved && (
-                      <span className="text-xs text-green-400/80 animate-pulse">
-                        Saved
-                      </span>
-                    )}
+                {/* Unit System - hidden in v3 */}
+                {!V3_FOCUSED && (
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-medium text-white/40 uppercase tracking-wider">
+                        Units
+                      </h3>
+                      {saved && (
+                        <span className="text-xs text-green-400/80 animate-pulse">
+                          Saved
+                        </span>
+                      )}
+                    </div>
+                    <SegmentedControl
+                      options={UNIT_SYSTEM_OPTIONS}
+                      value={unitSystem}
+                      onChange={(v) => handleUnitSystemChange(v as UnitSystem)}
+                    />
                   </div>
-                  <SegmentedControl
-                    options={UNIT_SYSTEM_OPTIONS}
-                    value={unitSystem}
-                    onChange={(v) => handleUnitSystemChange(v as UnitSystem)}
-                  />
-                </div>
+                )}
 
                 {/* Lab Units - hidden in v3 */}
                 {!V3_FOCUSED && (
