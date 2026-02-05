@@ -21,6 +21,7 @@ interface WeekSummary {
   weekStart: string;
   coverage: number;
   pillars: Record<Pillar, { current: number; met: boolean }>;
+  hasData: boolean; // true if any logs exist for this week
 }
 
 export function WeekRecord({ userId, onClose }: WeekRecordProps) {
@@ -57,13 +58,18 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
                 weekStart: weekStartStr,
                 coverage: getPrimeCoverage(logs),
                 pillars,
+                hasData: logs.length > 0,
               };
             })
         );
       }
 
       const results = await Promise.all(weekPromises);
-      setWeeks(results);
+      // Filter: always show current week, only show past weeks with data
+      const filteredResults = results.filter((week, index) => 
+        index === 0 || week.hasData
+      );
+      setWeeks(filteredResults);
       setLoading(false);
     }
 
@@ -133,7 +139,9 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
                   <p className="text-sm text-foreground/50 mb-1">Perfect Weeks</p>
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-semibold">{perfectWeeks}</span>
-                    <span className="text-sm text-foreground/40">/ 12</span>
+                    {weeks.length > 1 && (
+                      <span className="text-sm text-foreground/40">/ {weeks.length}</span>
+                    )}
                   </div>
                   <p className="text-xs text-foreground/30 mt-1">All 5 pillars</p>
                 </div>
@@ -141,7 +149,9 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
 
               {/* Week-by-week breakdown */}
               <div className="space-y-3">
-                <h3 className="text-sm font-medium text-foreground/60 mb-2">Last 12 Weeks</h3>
+                <h3 className="text-sm font-medium text-foreground/60 mb-2">
+                  {weeks.length === 1 ? 'This Week' : `Last ${weeks.length} Weeks`}
+                </h3>
                 {weeks.map((week, index) => {
                   const weekDate = parseISO(week.weekStart);
                   const isCurrentWeek = index === 0;
