@@ -86,7 +86,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         </p>
       </div>
 
-      {/* Prime Coverage Banner */}
+      {/* Progress Banner */}
       <div 
         className="mb-6 p-4 rounded-2xl"
         style={{
@@ -100,7 +100,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       >
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm text-foreground/50 mb-1">Prime Coverage</p>
+            <p className="text-sm text-foreground/50 mb-1">Progress</p>
             <div className="flex items-baseline gap-1">
               <span 
                 className="text-3xl font-semibold tabular-nums"

@@ -67,7 +67,7 @@ export const PILLAR_CONFIGS: Record<Pillar, PillarConfig> = {
   },
 };
 
-export const PILLARS: Pillar[] = ['cardio', 'strength', 'sleep', 'clean_eating', 'mindfulness'];
+export const PILLARS: Pillar[] = ['cardio', 'strength', 'clean_eating', 'mindfulness', 'sleep'];
 
 // Log detail types for each pillar
 export interface CardioDetails {
@@ -124,7 +124,7 @@ export function isPillarMet(logs: CoreFiveLog[], pillar: Pillar): boolean {
   return progress >= PILLAR_CONFIGS[pillar].weeklyTarget;
 }
 
-// Calculate Prime coverage (number of pillars met)
+// Calculate progress (number of pillars met)
 export function getPrimeCoverage(logs: CoreFiveLog[]): number {
   return PILLARS.filter(pillar => isPillarMet(logs, pillar)).length;
 }

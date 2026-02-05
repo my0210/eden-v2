@@ -135,7 +135,7 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
                     <span className="text-2xl font-semibold">{perfectWeeks}</span>
                     <span className="text-sm text-foreground/40">/ 12</span>
                   </div>
-                  <p className="text-xs text-foreground/30 mt-1">5/5 coverage</p>
+                  <p className="text-xs text-foreground/30 mt-1">All 5 pillars</p>
                 </div>
               </div>
 
