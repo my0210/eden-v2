@@ -1,10 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { startOfWeek, format, endOfWeek } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { startOfWeek, format, endOfWeek, addWeeks } from 'date-fns';
 import { CoreFiveCard } from './CoreFiveCard';
 import { QuickLogModal } from './QuickLogModal';
-import { WeekRecord } from './WeekRecord';
+import { TrendView } from './TrendView';
+import { PillarDetailDrawer } from './PillarDetailDrawer';
+import { V3Onboarding } from './V3Onboarding';
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -23,15 +25,36 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
+  const [detailPillar, setDetailPillar] = useState<Pillar | null>(null);
   const [showRecord, setShowRecord] = useState(false);
+  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, etc.
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(today, { weekStartsOn: 1 });
-  const weekStartStr = getWeekStart(today);
-
-  // Fetch logs for current week
+  // Check onboarding status on mount
   useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const onboarded = localStorage.getItem('huuman_v3_onboarded');
+      if (!onboarded) {
+        setShowOnboarding(true);
+      }
+    }
+  }, []);
+
+  const isCurrentWeek = weekOffset === 0;
+
+  // Compute week dates from offset
+  const { weekStart, weekEnd, weekStartStr } = useMemo(() => {
+    const today = new Date();
+    const base = addWeeks(today, weekOffset);
+    const ws = startOfWeek(base, { weekStartsOn: 1 });
+    const we = endOfWeek(base, { weekStartsOn: 1 });
+    const wsStr = getWeekStart(base);
+    return { weekStart: ws, weekEnd: we, weekStartStr: wsStr };
+  }, [weekOffset]);
+
+  // Fetch logs for the selected week
+  useEffect(() => {
+    setLoading(true);
     async function fetchLogs() {
       try {
         const res = await fetch(`/api/v3/log?week_start=${weekStartStr}`);
@@ -53,7 +76,25 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     setSelectedPillar(null);
   };
 
+  const handleLogDeleted = (logId: string) => {
+    setLogs(prev => prev.filter(l => l.id !== logId));
+  };
+
+  const handleLogUpdated = (updatedLog: CoreFiveLog) => {
+    setLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
+  };
+
+  const handleOnboardingComplete = () => {
+    localStorage.setItem('huuman_v3_onboarded', 'true');
+    setShowOnboarding(false);
+  };
+
   const primeCoverage = getPrimeCoverage(logs);
+
+  // Onboarding gate
+  if (showOnboarding) {
+    return <V3Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   if (loading) {
     return (
@@ -65,12 +106,37 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   return (
     <div className="px-6 py-4">
-      {/* Week Header */}
+      {/* Week Header with Navigation */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
-          <h1 className="text-lg font-medium text-foreground/80">
-            This Week
-          </h1>
+          <div className="flex items-center gap-2">
+            {/* Back arrow */}
+            <button
+              onClick={() => setWeekOffset(prev => Math.max(prev - 1, -12))}
+              disabled={weekOffset <= -12}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 19.5L8.25 12l7.5-7.5" />
+              </svg>
+            </button>
+
+            <h1 className="text-lg font-medium text-foreground/80">
+              {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
+            </h1>
+
+            {/* Forward arrow */}
+            <button
+              onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
+              disabled={isCurrentWeek}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+              </svg>
+            </button>
+          </div>
+
           <button 
             onClick={() => setShowRecord(true)}
             className="text-sm text-foreground/50 hover:text-foreground/70 transition-colors flex items-center gap-1"
@@ -145,6 +211,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             config={PILLAR_CONFIGS[pillar]}
             current={getPillarProgress(logs, pillar)}
             onLogClick={() => setSelectedPillar(pillar)}
+            onCardClick={() => setDetailPillar(pillar)}
+            readOnly={!isCurrentWeek}
           />
         ))}
       </div>
@@ -160,9 +228,27 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         />
       )}
 
-      {/* Week Record Modal */}
+      {/* Pillar Detail Drawer */}
+      {detailPillar && (
+        <PillarDetailDrawer
+          pillar={detailPillar}
+          config={PILLAR_CONFIGS[detailPillar]}
+          logs={logs.filter(l => l.pillar === detailPillar)}
+          weekStart={weekStartStr}
+          readOnly={!isCurrentWeek}
+          onClose={() => setDetailPillar(null)}
+          onDelete={handleLogDeleted}
+          onUpdate={handleLogUpdated}
+          onLogNew={() => {
+            setDetailPillar(null);
+            setSelectedPillar(detailPillar);
+          }}
+        />
+      )}
+
+      {/* Trend View (replaces old WeekRecord) */}
       {showRecord && (
-        <WeekRecord
+        <TrendView
           userId={userId}
           onClose={() => setShowRecord(false)}
         />

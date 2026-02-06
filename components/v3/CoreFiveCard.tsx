@@ -6,6 +6,8 @@ interface CoreFiveCardProps {
   config: PillarConfig;
   current: number;
   onLogClick: () => void;
+  onCardClick?: () => void;
+  readOnly?: boolean;
 }
 
 // Icon props type
@@ -55,7 +57,7 @@ function BrainIcon({ className, style }: IconProps) {
   );
 }
 
-const iconComponents: Record<string, React.ComponentType<IconProps>> = {
+export const iconComponents: Record<string, React.ComponentType<IconProps>> = {
   heart: HeartIcon,
   dumbbell: DumbbellIcon,
   moon: MoonIcon,
@@ -63,7 +65,7 @@ const iconComponents: Record<string, React.ComponentType<IconProps>> = {
   brain: BrainIcon,
 };
 
-export function CoreFiveCard({ config, current, onLogClick }: CoreFiveCardProps) {
+export function CoreFiveCard({ config, current, onLogClick, onCardClick, readOnly }: CoreFiveCardProps) {
   const { name, weeklyTarget, unit, description, color, icon } = config;
   const progress = Math.min((current / weeklyTarget) * 100, 100);
   const isMet = current >= weeklyTarget;
@@ -72,13 +74,14 @@ export function CoreFiveCard({ config, current, onLogClick }: CoreFiveCardProps)
 
   return (
     <div
-      className="relative overflow-hidden rounded-2xl p-4 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+      className={`relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${onCardClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
       style={{
         backgroundColor: `${color}10`,
         borderColor: `${color}30`,
         borderWidth: '1px',
         borderStyle: 'solid',
       }}
+      onClick={onCardClick}
     >
       {/* Completed checkmark overlay */}
       {isMet && (
@@ -107,7 +110,7 @@ export function CoreFiveCard({ config, current, onLogClick }: CoreFiveCardProps)
       </div>
 
       {/* Progress */}
-      <div className="mb-3">
+      <div className={readOnly ? '' : 'mb-3'}>
         <div className="flex items-baseline justify-between mb-1.5">
           <span 
             className="text-2xl font-semibold tabular-nums"
@@ -136,17 +139,22 @@ export function CoreFiveCard({ config, current, onLogClick }: CoreFiveCardProps)
         </div>
       </div>
 
-      {/* Log button */}
-      <button
-        onClick={onLogClick}
-        className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:brightness-90"
-        style={{
-          backgroundColor: `${color}20`,
-          color: color,
-        }}
-      >
-        + Log {name}
-      </button>
+      {/* Log button - hidden in readOnly mode */}
+      {!readOnly && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onLogClick();
+          }}
+          className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:brightness-90"
+          style={{
+            backgroundColor: `${color}20`,
+            color: color,
+          }}
+        >
+          + Log {name}
+        </button>
+      )}
     </div>
   );
 }

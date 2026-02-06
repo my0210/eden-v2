@@ -102,6 +102,62 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({ log });
 }
 
+// PATCH: Update an existing log entry (value and/or details)
+export async function PATCH(request: NextRequest) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { id, value, details } = body;
+
+  if (!id) {
+    return NextResponse.json({ error: 'Log ID is required' }, { status: 400 });
+  }
+
+  // Build update object with only provided fields
+  const updates: Record<string, unknown> = {};
+  if (typeof value === 'number' && value >= 0) {
+    updates.value = value;
+  }
+  if (details !== undefined) {
+    updates.details = details || null;
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from('core_five_logs')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating log:', error);
+    return NextResponse.json({ error: 'Failed to update log' }, { status: 500 });
+  }
+
+  const log: CoreFiveLog = {
+    id: data.id,
+    userId: data.user_id,
+    pillar: data.pillar as Pillar,
+    value: data.value,
+    details: data.details,
+    loggedAt: data.logged_at,
+    weekStart: data.week_start,
+    createdAt: data.created_at,
+  };
+
+  return NextResponse.json({ log });
+}
+
 // DELETE: Delete a log entry
 export async function DELETE(request: NextRequest) {
   const supabase = await createClient();
