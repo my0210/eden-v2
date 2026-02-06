@@ -46,7 +46,7 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
     fetchHistory();
   }, [userId]);
 
-  // Build week summaries from logs
+  // Build week summaries for all 12 weeks
   const weeks = useMemo(() => {
     const today = new Date();
     const result: WeekSummary[] = [];
@@ -79,8 +79,11 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
     return result;
   }, [allLogs]);
 
-  // Only show weeks with data (plus current week always)
+  // Visible weeks for the week-by-week list (only with data + current)
   const visibleWeeks = weeks.filter((w, i) => i === 0 || w.hasData);
+
+  // Heatmap: always 12 columns, oldest → newest (left to right)
+  const heatmapWeeks = [...weeks].reverse();
 
   // Stats
   const calculateStreak = () => {
@@ -108,9 +111,6 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
 
   const streak = calculateStreak();
   const bestStreak = calculateBestStreak();
-
-  // Heatmap: only weeks with data (+ current week), oldest → newest left to right
-  const heatmapWeeks = [...visibleWeeks].reverse();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -161,10 +161,74 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                 </div>
               </div>
 
-              {/* Coverage Heatmap — hidden until 3+ weeks of data */}
-              {heatmapWeeks.length >= 3 && <div className="mb-8">
+              {/* Week-by-week breakdown (moved up) */}
+              <div className="mb-8">
                 <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
-                  Heatmap
+                  {visibleWeeks.length === 1 ? 'This Week' : 'Week by Week'}
+                </h3>
+                <div className="space-y-2">
+                  {visibleWeeks.map((week, index) => {
+                    const weekDate = parseISO(week.weekStart);
+                    const isCurrentWeek = index === 0;
+                    
+                    return (
+                      <div 
+                        key={week.weekStart}
+                        className={`p-3 rounded-xl transition-all ${
+                          isCurrentWeek 
+                            ? 'bg-green-500/10 border border-green-500/20' 
+                            : 'bg-foreground/3 border border-foreground/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm text-foreground/70">
+                              {format(weekDate, 'MMM d')}
+                            </span>
+                            {isCurrentWeek && (
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                                This week
+                              </span>
+                            )}
+                          </div>
+                          <span 
+                            className={`text-sm font-medium ${
+                              week.coverage >= 4 ? 'text-green-400' : 'text-foreground/50'
+                            }`}
+                          >
+                            {week.coverage}/5
+                          </span>
+                        </div>
+                        
+                        {/* Pillar bars */}
+                        <div className="flex gap-1.5">
+                          {PILLARS.map(pillar => {
+                            const { met } = week.pillars[pillar];
+                            const config = PILLAR_CONFIGS[pillar];
+                            return (
+                              <div
+                                key={pillar}
+                                className="flex-1 h-1.5 rounded-full transition-all"
+                                style={{
+                                  backgroundColor: met 
+                                    ? config.color 
+                                    : `${config.color}20`,
+                                }}
+                                title={`${config.name}: ${week.pillars[pillar].current}/${config.weeklyTarget} ${config.unit}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Coverage Heatmap — always 12 weeks */}
+              <div className="mb-8">
+                <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
+                  12 Weeks
                 </h3>
                 <div className="overflow-x-auto -mx-2 px-2">
                   <div className="min-w-[320px]">
@@ -245,126 +309,10 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                     </div>
                   </div>
                 </div>
-              </div>}
-
-              {/* Per-Pillar Sparklines — hidden until 3+ weeks of data */}
-              {heatmapWeeks.length >= 3 && <div className="mb-8">
-                <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
-                  Pillar Trends
-                </h3>
-                <div className="space-y-3">
-                  {PILLARS.map(pillar => {
-                    const config = PILLAR_CONFIGS[pillar];
-                    // Get percentages for visible weeks (oldest to newest)
-                    const pcts = heatmapWeeks.map(w => w.pillars[pillar].pct);
-                    const weeksHit = heatmapWeeks.filter(w => w.pillars[pillar].met && w.hasData).length;
-                    const totalWithData = heatmapWeeks.filter(w => w.hasData).length;
-
-                    return (
-                      <div key={pillar} className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 w-24 flex-shrink-0">
-                          <div 
-                            className="w-2 h-2 rounded-full flex-shrink-0"
-                            style={{ backgroundColor: config.color }}
-                          />
-                          <span className="text-xs text-foreground/60 truncate">{config.name}</span>
-                        </div>
-
-                        {/* Mini bar chart */}
-                        <div className="flex-1 flex items-end gap-px h-6">
-                          {pcts.map((pct, i) => (
-                            <div 
-                              key={i} 
-                              className="flex-1 rounded-t-sm transition-all"
-                              style={{ 
-                                height: `${Math.max(pct * 0.95, heatmapWeeks[i].hasData ? 5 : 0)}%`,
-                                backgroundColor: !heatmapWeeks[i].hasData 
-                                  ? 'transparent'
-                                  : pct >= 100 
-                                    ? config.color 
-                                    : `${config.color}50`,
-                                minHeight: heatmapWeeks[i].hasData ? '2px' : '0',
-                              }}
-                            />
-                          ))}
-                        </div>
-
-                        {/* Hit count */}
-                        <span className="text-xs text-foreground/30 w-10 text-right tabular-nums flex-shrink-0">
-                          {weeksHit}/{totalWithData}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>}
-
-              {/* Week-by-week breakdown */}
-              <div>
-                <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
-                  {visibleWeeks.length === 1 ? 'This Week' : 'Week by Week'}
-                </h3>
-                <div className="space-y-2">
-                  {visibleWeeks.map((week, index) => {
-                    const weekDate = parseISO(week.weekStart);
-                    const isCurrentWeek = index === 0;
-                    
-                    return (
-                      <div 
-                        key={week.weekStart}
-                        className={`p-3 rounded-xl transition-all ${
-                          isCurrentWeek 
-                            ? 'bg-green-500/10 border border-green-500/20' 
-                            : 'bg-foreground/3 border border-foreground/5'
-                        }`}
-                      >
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-foreground/70">
-                              {format(weekDate, 'MMM d')}
-                            </span>
-                            {isCurrentWeek && (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                                This week
-                              </span>
-                            )}
-                          </div>
-                          <span 
-                            className={`text-sm font-medium ${
-                              week.coverage >= 4 ? 'text-green-400' : 'text-foreground/50'
-                            }`}
-                          >
-                            {week.coverage}/5
-                          </span>
-                        </div>
-                        
-                        {/* Pillar bars with values */}
-                        <div className="flex gap-1.5">
-                          {PILLARS.map(pillar => {
-                            const { met } = week.pillars[pillar];
-                            const config = PILLAR_CONFIGS[pillar];
-                            return (
-                              <div
-                                key={pillar}
-                                className="flex-1 h-1.5 rounded-full transition-all"
-                                style={{
-                                  backgroundColor: met 
-                                    ? config.color 
-                                    : `${config.color}20`,
-                                }}
-                                title={`${config.name}: ${week.pillars[pillar].current}/${config.weeklyTarget} ${config.unit}`}
-                              />
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
 
               {/* Legend */}
-              <div className="mt-6 pt-4 border-t border-foreground/5">
+              <div className="pt-4 border-t border-foreground/5">
                 <p className="text-xs text-foreground/40 mb-2">Pillars</p>
                 <div className="flex flex-wrap gap-3">
                   {PILLARS.map(pillar => {
