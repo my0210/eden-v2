@@ -13,17 +13,20 @@ import {
 interface StreakHeroProps {
   logs: CoreFiveLog[];
   streak: number;
+  skipTransition?: boolean;
 }
 
 // SVG ring that fills proportionally
 function PillarRing({ 
   pillar, 
   pct, 
-  met 
+  met,
+  skipTransition, 
 }: { 
   pillar: Pillar; 
   pct: number; 
   met: boolean;
+  skipTransition?: boolean;
 }) {
   const config = PILLAR_CONFIGS[pillar];
   const size = 40;
@@ -59,7 +62,7 @@ function PillarRing({
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             opacity={met ? 1 : 0.6}
-            className="transition-all duration-700 ease-out"
+            className={skipTransition ? '' : 'transition-all duration-700 ease-out'}
           />
         </svg>
         {/* Center: checkmark when met, percentage when partial */}
@@ -127,7 +130,7 @@ function getBannerStyle(coverage: number) {
   };
 }
 
-export function StreakHero({ logs, streak }: StreakHeroProps) {
+export function StreakHero({ logs, streak, skipTransition }: StreakHeroProps) {
   const primeCoverage = getPrimeCoverage(logs);
   const bannerStyle = getBannerStyle(primeCoverage);
 
@@ -145,7 +148,7 @@ export function StreakHero({ logs, streak }: StreakHeroProps) {
 
   return (
     <div 
-      className="mb-6 p-5 rounded-2xl transition-all duration-[1500ms] ease-out"
+      className={`mb-6 p-5 rounded-2xl ${skipTransition ? '' : 'transition-all duration-[1500ms] ease-out'}`}
       style={bannerStyle}
     >
       {/* Streak count - quiet, only when > 0 */}
@@ -166,6 +169,7 @@ export function StreakHero({ logs, streak }: StreakHeroProps) {
             pillar={pillar}
             pct={pct}
             met={met}
+            skipTransition={skipTransition}
           />
         ))}
       </div>

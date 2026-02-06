@@ -51,6 +51,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [justCompletedPillar, setJustCompletedPillar] = useState<Pillar | null>(null);
   const prevCoverageRef = useRef<number>(0);
 
+  // Skip transitions when switching weeks (snap instantly)
+  const [skipTransition, setSkipTransition] = useState(false);
+
   // Check onboarding status on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -75,6 +78,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   // Fetch logs for the selected week
   useEffect(() => {
+    setSkipTransition(true);
     setLoading(true);
     async function fetchLogs() {
       try {
@@ -89,6 +93,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         console.error('Failed to fetch logs:', error);
       } finally {
         setLoading(false);
+        // Re-enable transitions after a frame so new state renders without animation
+        requestAnimationFrame(() => setSkipTransition(false));
       }
     }
     fetchLogs();
@@ -209,11 +215,11 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       {/* Dynamic ambient orb - responds to coverage */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
         <div 
-          className="relative w-[800px] h-[800px] transition-all duration-[2000ms] ease-out"
+          className={`relative w-[800px] h-[800px] ${skipTransition ? '' : 'transition-all duration-[2000ms] ease-out'}`}
           style={{ transform: `scale(${ambientStyle.scale})` }}
         >
           <div 
-            className="absolute inset-0 rounded-full blur-[150px] transition-opacity duration-[2000ms] ease-out"
+            className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? '' : 'transition-opacity duration-[2000ms] ease-out'}`}
             style={{
               opacity: ambientStyle.opacity,
               background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
@@ -271,6 +277,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         <StreakHero
           logs={logs}
           streak={streak}
+          skipTransition={skipTransition}
         />
 
         {/* Core Five Cards */}
