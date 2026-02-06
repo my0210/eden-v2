@@ -118,18 +118,6 @@ export default async function WeekPage() {
   if (V3_FOCUSED) {
     return (
       <div className="min-h-screen flex flex-col relative">
-        {/* Ambient gradient orb */}
-        <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
-          <div className="relative w-[800px] h-[800px]">
-            <div 
-              className="absolute inset-0 rounded-full opacity-10 blur-[150px]"
-              style={{
-                background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
-              }}
-            />
-          </div>
-        </div>
-
         {/* Header */}
         <header className="relative z-10 px-6 py-4 flex items-center justify-between">
           <SettingsButton 

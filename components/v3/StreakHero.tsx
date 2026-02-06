@@ -13,7 +13,6 @@ import {
 interface StreakHeroProps {
   logs: CoreFiveLog[];
   streak: number;
-  allFiveHit: boolean;
 }
 
 // SVG ring that fills proportionally
@@ -63,7 +62,7 @@ function PillarRing({
             className="transition-all duration-700 ease-out"
           />
         </svg>
-        {/* Center: checkmark when met, or percentage */}
+        {/* Center: checkmark when met, percentage when partial */}
         <div className="absolute inset-0 flex items-center justify-center">
           {met ? (
             <svg width={16} height={16} viewBox="0 0 24 24" fill="none">
@@ -96,8 +95,41 @@ function PillarRing({
   );
 }
 
-export function StreakHero({ logs, streak, allFiveHit }: StreakHeroProps) {
+// Gradual banner background based on coverage (0-5)
+function getBannerStyle(coverage: number) {
+  if (coverage === 5) {
+    return {
+      background: 'linear-gradient(135deg, rgba(34,197,94,0.14) 0%, rgba(16,185,129,0.08) 100%)',
+      border: '1px solid rgba(34,197,94,0.25)',
+    };
+  }
+  if (coverage >= 4) {
+    return {
+      background: 'linear-gradient(135deg, rgba(34,197,94,0.10) 0%, rgba(16,185,129,0.06) 100%)',
+      border: '1px solid rgba(34,197,94,0.18)',
+    };
+  }
+  if (coverage >= 3) {
+    return {
+      background: 'rgba(34,197,94,0.04)',
+      border: '1px solid rgba(34,197,94,0.10)',
+    };
+  }
+  if (coverage >= 1) {
+    return {
+      background: 'rgba(255,255,255,0.025)',
+      border: '1px solid rgba(255,255,255,0.06)',
+    };
+  }
+  return {
+    background: 'rgba(255,255,255,0.02)',
+    border: '1px solid rgba(255,255,255,0.04)',
+  };
+}
+
+export function StreakHero({ logs, streak }: StreakHeroProps) {
   const primeCoverage = getPrimeCoverage(logs);
+  const bannerStyle = getBannerStyle(primeCoverage);
 
   const pillarData = useMemo(() => {
     return PILLARS.map(pillar => {
@@ -113,49 +145,18 @@ export function StreakHero({ logs, streak, allFiveHit }: StreakHeroProps) {
 
   return (
     <div 
-      className="mb-6 p-5 rounded-2xl relative overflow-hidden transition-all duration-500"
-      style={{
-        background: allFiveHit
-          ? 'linear-gradient(135deg, rgba(34,197,94,0.18) 0%, rgba(16,185,129,0.12) 50%, rgba(34,197,94,0.08) 100%)'
-          : primeCoverage >= 4 
-            ? 'linear-gradient(135deg, rgba(34,197,94,0.12) 0%, rgba(16,185,129,0.08) 100%)'
-            : 'rgba(255,255,255,0.03)',
-        border: allFiveHit 
-          ? '1px solid rgba(34,197,94,0.4)'
-          : primeCoverage >= 4 
-            ? '1px solid rgba(34,197,94,0.25)'
-            : '1px solid rgba(255,255,255,0.06)',
-      }}
+      className="mb-6 p-5 rounded-2xl transition-all duration-[1500ms] ease-out"
+      style={bannerStyle}
     >
-      {/* Shimmer overlay when all 5 hit */}
-      {allFiveHit && (
-        <div 
-          className="absolute inset-0 animate-shimmer pointer-events-none"
-          style={{
-            background: 'linear-gradient(90deg, transparent 0%, rgba(34,197,94,0.06) 50%, transparent 100%)',
-            backgroundSize: '200% 100%',
-          }}
-        />
-      )}
-
-      {/* Streak count */}
-      <div className="flex items-center justify-center gap-1.5 mb-4">
-        {streak > 0 ? (
-          <>
-            <span className="text-lg" role="img" aria-label="streak">🔥</span>
-            <span className="text-2xl font-bold tabular-nums text-green-400">
-              {streak}
-            </span>
-            <span className="text-sm text-foreground/40 font-medium">
-              {streak === 1 ? 'week' : 'weeks'}
-            </span>
-          </>
-        ) : (
-          <span className="text-sm text-foreground/30">
-            Start your streak
+      {/* Streak count - quiet, only when > 0 */}
+      {streak > 0 && (
+        <div className="flex items-center justify-center gap-1.5 mb-4">
+          <div className="w-1.5 h-1.5 rounded-full bg-green-500/70" />
+          <span className="text-sm text-foreground/40 tabular-nums">
+            {streak} {streak === 1 ? 'week' : 'weeks'}
           </span>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Pillar rings */}
       <div className="flex items-center justify-center gap-4 mb-4">
@@ -169,14 +170,9 @@ export function StreakHero({ logs, streak, allFiveHit }: StreakHeroProps) {
         ))}
       </div>
 
-      {/* Status text */}
-      <p className="text-center text-sm transition-colors duration-300" style={{
-        color: allFiveHit ? '#22c55e' : 'rgba(255,255,255,0.4)',
-      }}>
-        {allFiveHit 
-          ? "All 5 hit — you're in your prime."
-          : `${primeCoverage} of 5 pillars hit`
-        }
+      {/* Status text - same tone regardless of coverage */}
+      <p className="text-center text-sm text-foreground/30">
+        {primeCoverage} of 5 this week
       </p>
     </div>
   );

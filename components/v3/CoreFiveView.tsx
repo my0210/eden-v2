@@ -8,7 +8,6 @@ import { TrendView } from './TrendView';
 import { PillarDetailDrawer } from './PillarDetailDrawer';
 import { V3Onboarding } from './V3Onboarding';
 import { StreakHero } from './StreakHero';
-import { CelebrationOverlay, getUnseenMilestone, markMilestoneSeen } from './CelebrationOverlay';
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -23,6 +22,19 @@ interface CoreFiveViewProps {
   userId: string;
 }
 
+// Ambient orb opacity/scale mapped to coverage
+function getAmbientStyle(coverage: number) {
+  const map: Record<number, { opacity: number; scale: number }> = {
+    0: { opacity: 0.03, scale: 0.8 },
+    1: { opacity: 0.05, scale: 0.85 },
+    2: { opacity: 0.07, scale: 0.9 },
+    3: { opacity: 0.09, scale: 0.95 },
+    4: { opacity: 0.12, scale: 1.0 },
+    5: { opacity: 0.17, scale: 1.05 },
+  };
+  return map[coverage] || map[0];
+}
+
 export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,17 +46,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   
   // Streak data
   const [streak, setStreak] = useState(0);
-  const [streakLoaded, setStreakLoaded] = useState(false);
   
-  // Celebration state
-  const [celebration, setCelebration] = useState<{
-    type: 'all_five' | 'milestone';
-    milestoneText?: string;
-  } | null>(null);
-  const [celebratedThisWeek, setCelebratedThisWeek] = useState(false);
+  // Subtle card glow on completion
   const [justCompletedPillar, setJustCompletedPillar] = useState<Pillar | null>(null);
-
-  // Track previous coverage to detect transitions
   const prevCoverageRef = useRef<number>(0);
 
   // Check onboarding status on mount
@@ -99,12 +103,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
           const data = await res.json();
           const allLogs: CoreFiveLog[] = data.logs || [];
           
-          // Group by week and calculate streak
-          const today = new Date();
           let calculatedStreak = 0;
-          
           for (let i = 0; i < 12; i++) {
-            const weekDate = addWeeks(today, -i);
+            const weekDate = addWeeks(new Date(), -i);
             const ws = getWeekStart(weekDate);
             const weekLogs = allLogs.filter((l: CoreFiveLog) => l.weekStart === ws);
             const coverage = getPrimeCoverage(weekLogs);
@@ -112,42 +113,27 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             if (coverage >= 4) {
               calculatedStreak++;
             } else {
-              // For week 0 (current week), don't break streak if week is in progress
               if (i === 0) continue;
               break;
             }
           }
           
           setStreak(calculatedStreak);
-          setStreakLoaded(true);
-          
-          // Check for unseen milestones
-          if (calculatedStreak > 0) {
-            const milestone = getUnseenMilestone(calculatedStreak);
-            if (milestone) {
-              setCelebration({ type: 'milestone', milestoneText: milestone.text });
-              markMilestoneSeen(milestone.id);
-            }
-          }
         }
       } catch (error) {
         console.error('Failed to fetch streak:', error);
-        setStreakLoaded(true);
       }
     }
     fetchStreak();
   }, []);
 
   const primeCoverage = getPrimeCoverage(logs);
-  const allFiveHit = primeCoverage === 5;
+  const ambientStyle = getAmbientStyle(primeCoverage);
 
-  // Detect when a log tips a pillar over its target or hits 5/5
+  // Detect when a log tips a pillar over its target (for subtle card glow)
   const handleLogComplete = useCallback((newLog: CoreFiveLog) => {
     const updatedLogs = [...logs, newLog];
-    const newCoverage = getPrimeCoverage(updatedLogs);
-    const prevCoverage = prevCoverageRef.current;
 
-    // Check if this pillar just completed
     const pillar = newLog.pillar;
     const prevProgress = getPillarProgress(logs, pillar);
     const newProgress = getPillarProgress(updatedLogs, pillar);
@@ -158,19 +144,10 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       setTimeout(() => setJustCompletedPillar(null), 1000);
     }
 
-    // Check for 5/5 celebration
-    if (newCoverage === 5 && prevCoverage < 5 && !celebratedThisWeek && isCurrentWeek) {
-      setCelebratedThisWeek(true);
-      // Small delay so the ring animation plays first
-      setTimeout(() => {
-        setCelebration({ type: 'all_five' });
-      }, 600);
-    }
-
     setLogs(updatedLogs);
-    prevCoverageRef.current = newCoverage;
+    prevCoverageRef.current = getPrimeCoverage(updatedLogs);
     setSelectedPillar(null);
-  }, [logs, celebratedThisWeek, isCurrentWeek]);
+  }, [logs]);
 
   const handleLogSaved = (newLog: CoreFiveLog) => {
     handleLogComplete(newLog);
@@ -214,10 +191,6 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     setShowOnboarding(false);
   };
 
-  const handleCelebrationDismiss = () => {
-    setCelebration(null);
-  };
-
   // Onboarding gate
   if (showOnboarding) {
     return <V3Onboarding onComplete={handleOnboardingComplete} />;
@@ -232,120 +205,127 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   }
 
   return (
-    <div className="px-6 py-4">
-      {/* Week Header with Navigation */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setWeekOffset(prev => Math.max(prev - 1, -12))}
-              disabled={weekOffset <= -12}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 19.5L8.25 12l7.5-7.5" />
-              </svg>
-            </button>
+    <>
+      {/* Dynamic ambient orb - responds to coverage */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div 
+          className="relative w-[800px] h-[800px] transition-all duration-[2000ms] ease-out"
+          style={{ transform: `scale(${ambientStyle.scale})` }}
+        >
+          <div 
+            className="absolute inset-0 rounded-full blur-[150px] transition-opacity duration-[2000ms] ease-out"
+            style={{
+              opacity: ambientStyle.opacity,
+              background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+            }}
+          />
+        </div>
+      </div>
 
-            <h1 className="text-lg font-medium text-foreground/80">
-              {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
-            </h1>
+      <div className="px-6 py-4 relative z-10">
+        {/* Week Header with Navigation */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setWeekOffset(prev => Math.max(prev - 1, -12))}
+                disabled={weekOffset <= -12}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 19.5L8.25 12l7.5-7.5" />
+                </svg>
+              </button>
 
-            <button
-              onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
-              disabled={isCurrentWeek}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+              <h1 className="text-lg font-medium text-foreground/80">
+                {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
+              </h1>
+
+              <button
+                onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
+                disabled={isCurrentWeek}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                </svg>
+              </button>
+            </div>
+
+            <button 
+              onClick={() => setShowRecord(true)}
+              className="text-sm text-foreground/50 hover:text-foreground/70 transition-colors flex items-center gap-1"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              View record
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
               </svg>
             </button>
           </div>
-
-          <button 
-            onClick={() => setShowRecord(true)}
-            className="text-sm text-foreground/50 hover:text-foreground/70 transition-colors flex items-center gap-1"
-          >
-            View record
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </button>
+          <p className="text-sm text-foreground/40">
+            {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
+          </p>
         </div>
-        <p className="text-sm text-foreground/40">
-          {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
-        </p>
-      </div>
 
-      {/* Streak Hero Banner */}
-      <StreakHero
-        logs={logs}
-        streak={streak}
-        allFiveHit={allFiveHit}
-      />
-
-      {/* Core Five Cards */}
-      <div className="grid gap-4">
-        {PILLARS.map(pillar => (
-          <CoreFiveCard
-            key={pillar}
-            config={PILLAR_CONFIGS[pillar]}
-            current={getPillarProgress(logs, pillar)}
-            onLogClick={() => setSelectedPillar(pillar)}
-            onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
-            onCardClick={() => setDetailPillar(pillar)}
-            readOnly={!isCurrentWeek}
-            justCompleted={justCompletedPillar === pillar}
-          />
-        ))}
-      </div>
-
-      {/* Quick Log Modal */}
-      {selectedPillar && (
-        <QuickLogModal
-          pillar={selectedPillar}
-          config={PILLAR_CONFIGS[selectedPillar]}
-          weekStart={weekStartStr}
-          onClose={() => setSelectedPillar(null)}
-          onSave={handleLogSaved}
-        />
-      )}
-
-      {/* Pillar Detail Drawer */}
-      {detailPillar && (
-        <PillarDetailDrawer
-          pillar={detailPillar}
-          config={PILLAR_CONFIGS[detailPillar]}
-          logs={logs.filter(l => l.pillar === detailPillar)}
-          weekStart={weekStartStr}
-          readOnly={!isCurrentWeek}
-          onClose={() => setDetailPillar(null)}
-          onDelete={handleLogDeleted}
-          onUpdate={handleLogUpdated}
-          onLogNew={() => {
-            setDetailPillar(null);
-            setSelectedPillar(detailPillar);
-          }}
-        />
-      )}
-
-      {/* Trend View */}
-      {showRecord && (
-        <TrendView
-          userId={userId}
-          onClose={() => setShowRecord(false)}
-        />
-      )}
-
-      {/* Celebration Overlay */}
-      {celebration && (
-        <CelebrationOverlay
-          type={celebration.type}
+        {/* Streak Hero Banner */}
+        <StreakHero
+          logs={logs}
           streak={streak}
-          milestoneText={celebration.milestoneText}
-          onDismiss={handleCelebrationDismiss}
         />
-      )}
-    </div>
+
+        {/* Core Five Cards */}
+        <div className="grid gap-4">
+          {PILLARS.map(pillar => (
+            <CoreFiveCard
+              key={pillar}
+              config={PILLAR_CONFIGS[pillar]}
+              current={getPillarProgress(logs, pillar)}
+              onLogClick={() => setSelectedPillar(pillar)}
+              onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
+              onCardClick={() => setDetailPillar(pillar)}
+              readOnly={!isCurrentWeek}
+              justCompleted={justCompletedPillar === pillar}
+            />
+          ))}
+        </div>
+
+        {/* Quick Log Modal */}
+        {selectedPillar && (
+          <QuickLogModal
+            pillar={selectedPillar}
+            config={PILLAR_CONFIGS[selectedPillar]}
+            weekStart={weekStartStr}
+            onClose={() => setSelectedPillar(null)}
+            onSave={handleLogSaved}
+          />
+        )}
+
+        {/* Pillar Detail Drawer */}
+        {detailPillar && (
+          <PillarDetailDrawer
+            pillar={detailPillar}
+            config={PILLAR_CONFIGS[detailPillar]}
+            logs={logs.filter(l => l.pillar === detailPillar)}
+            weekStart={weekStartStr}
+            readOnly={!isCurrentWeek}
+            onClose={() => setDetailPillar(null)}
+            onDelete={handleLogDeleted}
+            onUpdate={handleLogUpdated}
+            onLogNew={() => {
+              setDetailPillar(null);
+              setSelectedPillar(detailPillar);
+            }}
+          />
+        )}
+
+        {/* Trend View */}
+        {showRecord && (
+          <TrendView
+            userId={userId}
+            onClose={() => setShowRecord(false)}
+          />
+        )}
+      </div>
+    </>
   );
 }

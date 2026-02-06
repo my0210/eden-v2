@@ -92,7 +92,7 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
   const streak = calculateStreak();
 
   // Calculate total weeks with 5/5
-  const perfectWeeks = weeks.filter(w => w.coverage === 5).length;
+  const fullWeeks = weeks.filter(w => w.coverage === 5).length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -136,9 +136,9 @@ export function WeekRecord({ userId, onClose }: WeekRecordProps) {
                   <p className="text-xs text-foreground/30 mt-1">4+ pillars hit</p>
                 </div>
                 <div className="p-4 rounded-xl bg-foreground/5 border border-foreground/10">
-                  <p className="text-sm text-foreground/50 mb-1">Perfect Weeks</p>
+                  <p className="text-sm text-foreground/50 mb-1">Full Weeks</p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold">{perfectWeeks}</span>
+                    <span className="text-2xl font-semibold">{fullWeeks}</span>
                     {weeks.length > 1 && (
                       <span className="text-sm text-foreground/40">/ {weeks.length}</span>
                     )}

@@ -339,45 +339,6 @@ body {
     animation: check-draw 0.4s ease-out 0.2s forwards;
   }
 
-  /* Particle burst - 5 dots radiate outward */
-  @keyframes particle-0 {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-60px, -80px) scale(0); opacity: 0; }
-  }
-  @keyframes particle-1 {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(70px, -65px) scale(0); opacity: 0; }
-  }
-  @keyframes particle-2 {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(85px, 30px) scale(0); opacity: 0; }
-  }
-  @keyframes particle-3 {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(-75px, 45px) scale(0); opacity: 0; }
-  }
-  @keyframes particle-4 {
-    0% { transform: translate(0, 0) scale(1); opacity: 1; }
-    100% { transform: translate(5px, -90px) scale(0); opacity: 0; }
-  }
-
-  .particle-0 { animation: particle-0 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
-  .particle-1 { animation: particle-1 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; animation-delay: 0.05s; }
-  .particle-2 { animation: particle-2 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; animation-delay: 0.1s; }
-  .particle-3 { animation: particle-3 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; animation-delay: 0.15s; }
-  .particle-4 { animation: particle-4 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; animation-delay: 0.08s; }
-
-  /* Scale in with overshoot */
-  @keyframes scale-in {
-    0% { transform: scale(0.5); opacity: 0; }
-    60% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  .animate-scale-in {
-    animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
   /* Shimmer on streak hero */
   @keyframes shimmer {
     0% { background-position: -200% center; }
@@ -389,36 +350,6 @@ body {
     animation: shimmer 3s ease-in-out infinite;
   }
 
-  /* Celebration text fade */
-  @keyframes celebration-text {
-    0% { opacity: 0; transform: translateY(10px) scale(0.95); }
-    30% { opacity: 1; transform: translateY(0) scale(1); }
-    80% { opacity: 1; transform: translateY(0) scale(1); }
-    100% { opacity: 0; transform: translateY(-5px) scale(1.02); }
-  }
-
-  .animate-celebration-text {
-    animation: celebration-text 3s ease-out forwards;
-  }
-
-  /* Overlay fade */
-  @keyframes overlay-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes overlay-out {
-    from { opacity: 1; }
-    to { opacity: 0; }
-  }
-
-  .animate-overlay-in {
-    animation: overlay-in 0.3s ease-out forwards;
-  }
-
-  .animate-overlay-out {
-    animation: overlay-out 0.3s ease-in forwards;
-  }
 }
 
 /* Reduced motion fallback - instant state, no animation */
@@ -426,11 +357,7 @@ body {
   .animate-ring-fill,
   .animate-glow-pulse,
   .animate-check-draw,
-  .animate-scale-in,
-  .animate-shimmer,
-  .animate-celebration-text,
-  .animate-overlay-in,
-  .animate-overlay-out {
+  .animate-shimmer {
     animation: none !important;
   }
 }

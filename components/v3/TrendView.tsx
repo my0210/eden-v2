@@ -108,7 +108,7 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
 
   const streak = calculateStreak();
   const bestStreak = calculateBestStreak();
-  const perfectWeeks = weeks.filter(w => w.coverage === 5).length;
+  const fullWeeks = weeks.filter(w => w.coverage === 5).length;
 
   // Weeks with data for the heatmap (reversed to show oldest -> newest left to right)
   const heatmapWeeks = [...weeks].reverse();
@@ -161,9 +161,9 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                   </div>
                 </div>
                 <div className="p-3 rounded-xl bg-foreground/5 border border-foreground/10">
-                  <p className="text-xs text-foreground/40 mb-1">Perfect</p>
+                  <p className="text-xs text-foreground/40 mb-1">Full</p>
                   <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-semibold tabular-nums">{perfectWeeks}</span>
+                    <span className="text-xl font-semibold tabular-nums">{fullWeeks}</span>
                     <span className="text-xs text-foreground/30">/ {visibleWeeks.length}</span>
                   </div>
                 </div>

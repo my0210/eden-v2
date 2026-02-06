@@ -6,4 +6,3 @@ export { PillarDetailDrawer } from './PillarDetailDrawer';
 export { V3Onboarding } from './V3Onboarding';
 export { TrendView } from './TrendView';
 export { StreakHero } from './StreakHero';
-export { CelebrationOverlay } from './CelebrationOverlay';
