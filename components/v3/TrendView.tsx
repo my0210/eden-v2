@@ -110,8 +110,8 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
   const bestStreak = calculateBestStreak();
   const fullWeeks = weeks.filter(w => w.coverage === 5).length;
 
-  // Weeks with data for the heatmap (reversed to show oldest -> newest left to right)
-  const heatmapWeeks = [...weeks].reverse();
+  // Heatmap: only weeks with data (+ current week), oldest → newest left to right
+  const heatmapWeeks = [...visibleWeeks].reverse();
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -172,7 +172,7 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
               {/* Coverage Heatmap */}
               <div className="mb-8">
                 <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
-                  12-Week Heatmap
+                  Heatmap
                 </h3>
                 <div className="overflow-x-auto -mx-2 px-2">
                   <div className="min-w-[320px]">
