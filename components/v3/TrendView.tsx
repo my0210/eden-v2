@@ -311,23 +311,20 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                 </div>
               </div>
 
-              {/* Legend */}
-              <div className="pt-4 border-t border-foreground/5">
-                <p className="text-xs text-foreground/40 mb-2">Pillars</p>
-                <div className="flex flex-wrap gap-3">
-                  {PILLARS.map(pillar => {
-                    const config = PILLAR_CONFIGS[pillar];
-                    return (
-                      <div key={pillar} className="flex items-center gap-1.5">
-                        <div 
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: config.color }}
-                        />
-                        <span className="text-xs text-foreground/50">{config.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
+              {/* Color key — inline, no headline */}
+              <div className="pt-4 border-t border-foreground/5 flex flex-wrap gap-3">
+                {PILLARS.map(pillar => {
+                  const config = PILLAR_CONFIGS[pillar];
+                  return (
+                    <div key={pillar} className="flex items-center gap-1.5">
+                      <div 
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: config.color }}
+                      />
+                      <span className="text-xs text-foreground/50">{config.name}</span>
+                    </div>
+                  );
+                })}
               </div>
             </>
           )}

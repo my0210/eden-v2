@@ -35,6 +35,33 @@ function getAmbientStyle(coverage: number) {
   return map[coverage] || map[0];
 }
 
+// localStorage cache helpers
+function getCachedLogs(weekStart: string): CoreFiveLog[] | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const cached = localStorage.getItem(`huuman_logs_${weekStart}`);
+    return cached ? JSON.parse(cached) : null;
+  } catch { return null; }
+}
+
+function setCachedLogs(weekStart: string, logs: CoreFiveLog[]) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem(`huuman_logs_${weekStart}`, JSON.stringify(logs)); } catch {}
+}
+
+function getCachedStreak(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const cached = localStorage.getItem('huuman_streak');
+    return cached ? parseInt(cached, 10) : 0;
+  } catch { return 0; }
+}
+
+function setCachedStreak(streak: number) {
+  if (typeof window === 'undefined') return;
+  try { localStorage.setItem('huuman_streak', String(streak)); } catch {}
+}
+
 export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -44,8 +71,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
-  // Streak data
-  const [streak, setStreak] = useState(0);
+  // Streak data (initialized from cache for instant display)
+  const [streak, setStreak] = useState(() => getCachedStreak());
   
   // Subtle card glow on completion
   const [justCompletedPillar, setJustCompletedPillar] = useState<Pillar | null>(null);
@@ -121,21 +148,31 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     touchStartY.current = null;
   }, [goBack, goForward]);
 
-  // Fetch logs for the selected week
+  // Fetch logs for the selected week (stale-while-revalidate)
   useEffect(() => {
     setSkipTransition(true);
-    // Only show spinner on very first load, not on week switches
-    if (!hasLoadedOnce.current) {
+
+    // Instantly show cached data if available
+    const cached = getCachedLogs(weekStartStr);
+    if (cached) {
+      setLogs(cached);
+      prevCoverageRef.current = getPrimeCoverage(cached);
+      setInitialLoading(false);
+      hasLoadedOnce.current = true;
+    } else if (!hasLoadedOnce.current) {
       setInitialLoading(true);
     }
+
+    // Fetch fresh data in background
     async function fetchLogs() {
       try {
         const res = await fetch(`/api/v3/log?week_start=${weekStartStr}`);
         if (res.ok) {
           const data = await res.json();
-          const fetchedLogs = data.logs || [];
+          const fetchedLogs: CoreFiveLog[] = data.logs || [];
           setLogs(fetchedLogs);
           prevCoverageRef.current = getPrimeCoverage(fetchedLogs);
+          setCachedLogs(weekStartStr, fetchedLogs);
         }
       } catch (error) {
         console.error('Failed to fetch logs:', error);
@@ -173,6 +210,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
           }
           
           setStreak(calculatedStreak);
+          setCachedStreak(calculatedStreak);
         }
       } catch (error) {
         console.error('Failed to fetch streak:', error);
@@ -200,8 +238,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
     setLogs(updatedLogs);
     prevCoverageRef.current = getPrimeCoverage(updatedLogs);
+    setCachedLogs(weekStartStr, updatedLogs);
     setSelectedPillar(null);
-  }, [logs]);
+  }, [logs, weekStartStr]);
 
   const handleLogSaved = (newLog: CoreFiveLog) => {
     handleLogComplete(newLog);
@@ -232,12 +271,14 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     const updatedLogs = logs.filter(l => l.id !== logId);
     setLogs(updatedLogs);
     prevCoverageRef.current = getPrimeCoverage(updatedLogs);
+    setCachedLogs(weekStartStr, updatedLogs);
   };
 
   const handleLogUpdated = (updatedLog: CoreFiveLog) => {
     const updatedLogs = logs.map(l => l.id === updatedLog.id ? updatedLog : l);
     setLogs(updatedLogs);
     prevCoverageRef.current = getPrimeCoverage(updatedLogs);
+    setCachedLogs(weekStartStr, updatedLogs);
   };
 
   const handleOnboardingComplete = () => {
