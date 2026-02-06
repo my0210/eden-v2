@@ -1,13 +1,16 @@
 'use client';
 
-import { PillarConfig } from '@/lib/v3/coreFive';
+import { useState } from 'react';
+import { Pillar, PillarConfig } from '@/lib/v3/coreFive';
 
 interface CoreFiveCardProps {
   config: PillarConfig;
   current: number;
   onLogClick: () => void;
+  onQuickLog?: (value: number) => Promise<void>;
   onCardClick?: () => void;
   readOnly?: boolean;
+  justCompleted?: boolean;
 }
 
 // Icon props type
@@ -65,21 +68,38 @@ export const iconComponents: Record<string, React.ComponentType<IconProps>> = {
   brain: BrainIcon,
 };
 
-export function CoreFiveCard({ config, current, onLogClick, onCardClick, readOnly }: CoreFiveCardProps) {
-  const { name, weeklyTarget, unit, description, color, icon } = config;
+// Pillars that support quick-tap (no modal needed)
+const QUICK_TAP_PILLARS: Pillar[] = ['clean_eating', 'strength'];
+
+export function CoreFiveCard({ config, current, onLogClick, onQuickLog, onCardClick, readOnly, justCompleted }: CoreFiveCardProps) {
+  const { id: pillarId, name, weeklyTarget, unit, description, color, icon } = config;
   const progress = Math.min((current / weeklyTarget) * 100, 100);
   const isMet = current >= weeklyTarget;
-  
+  const isQuickTap = QUICK_TAP_PILLARS.includes(pillarId) && onQuickLog;
+  const [quickLogging, setQuickLogging] = useState(false);
+
   const IconComponent = iconComponents[icon] || HeartIcon;
+
+  const handleQuickLog = async (value: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!onQuickLog || quickLogging) return;
+    setQuickLogging(true);
+    try {
+      await onQuickLog(value);
+    } finally {
+      setQuickLogging(false);
+    }
+  };
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${onCardClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''}`}
+      className={`relative overflow-hidden rounded-2xl p-4 transition-all duration-300 ${onCardClick ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]' : ''} ${justCompleted ? 'animate-glow-pulse' : ''}`}
       style={{
         backgroundColor: `${color}10`,
         borderColor: `${color}30`,
         borderWidth: '1px',
         borderStyle: 'solid',
+        ['--glow-color' as string]: `${color}40`,
       }}
       onClick={onCardClick}
     >
@@ -139,21 +159,70 @@ export function CoreFiveCard({ config, current, onLogClick, onCardClick, readOnl
         </div>
       </div>
 
-      {/* Log button - hidden in readOnly mode */}
+      {/* Log buttons - hidden in readOnly mode */}
       {!readOnly && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onLogClick();
-          }}
-          className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:brightness-90"
-          style={{
-            backgroundColor: `${color}20`,
-            color: color,
-          }}
-        >
-          + Log {name}
-        </button>
+        <>
+          {/* Quick-tap: Clean Eating */}
+          {pillarId === 'clean_eating' && isQuickTap ? (
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => handleQuickLog(1, e)}
+                disabled={quickLogging}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:scale-[0.97] disabled:opacity-50"
+                style={{ backgroundColor: `${color}20`, color }}
+              >
+                {quickLogging ? '...' : '✓ On-plan'}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLogClick();
+                }}
+                className="py-2.5 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
+                style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}
+              >
+                More
+              </button>
+            </div>
+          ) : pillarId === 'strength' && isQuickTap ? (
+            /* Quick-tap: Strength */
+            <div className="flex gap-2">
+              <button
+                onClick={(e) => handleQuickLog(1, e)}
+                disabled={quickLogging}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:scale-[0.97] disabled:opacity-50"
+                style={{ backgroundColor: `${color}20`, color }}
+              >
+                {quickLogging ? '...' : '+1 Session'}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onLogClick();
+                }}
+                className="py-2.5 px-4 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:scale-[0.97]"
+                style={{ backgroundColor: 'rgba(255,255,255,0.05)', color: 'rgba(255,255,255,0.4)' }}
+              >
+                More
+              </button>
+            </div>
+          ) : (
+            /* Standard log button for Cardio, Sleep, Mindfulness */
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onLogClick();
+              }}
+              className="w-full py-2.5 rounded-xl text-sm font-medium transition-all duration-200 hover:brightness-110 active:brightness-90"
+              style={{
+                backgroundColor: `${color}20`,
+                color: color,
+              }}
+            >
+              + Log {name}
+            </button>
+          )}
+        </>
       )}
     </div>
   );

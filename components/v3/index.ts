@@ -2,3 +2,8 @@ export { CoreFiveCard } from './CoreFiveCard';
 export { CoreFiveView } from './CoreFiveView';
 export { QuickLogModal } from './QuickLogModal';
 export { WeekRecord } from './WeekRecord';
+export { PillarDetailDrawer } from './PillarDetailDrawer';
+export { V3Onboarding } from './V3Onboarding';
+export { TrendView } from './TrendView';
+export { StreakHero } from './StreakHero';
+export { CelebrationOverlay } from './CelebrationOverlay';

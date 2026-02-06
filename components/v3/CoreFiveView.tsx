@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { startOfWeek, format, endOfWeek, addWeeks } from 'date-fns';
 import { CoreFiveCard } from './CoreFiveCard';
 import { QuickLogModal } from './QuickLogModal';
 import { TrendView } from './TrendView';
 import { PillarDetailDrawer } from './PillarDetailDrawer';
 import { V3Onboarding } from './V3Onboarding';
+import { StreakHero } from './StreakHero';
+import { CelebrationOverlay, getUnseenMilestone, markMilestoneSeen } from './CelebrationOverlay';
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -27,8 +29,23 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
   const [detailPillar, setDetailPillar] = useState<Pillar | null>(null);
   const [showRecord, setShowRecord] = useState(false);
-  const [weekOffset, setWeekOffset] = useState(0); // 0 = this week, -1 = last week, etc.
+  const [weekOffset, setWeekOffset] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
+  
+  // Streak data
+  const [streak, setStreak] = useState(0);
+  const [streakLoaded, setStreakLoaded] = useState(false);
+  
+  // Celebration state
+  const [celebration, setCelebration] = useState<{
+    type: 'all_five' | 'milestone';
+    milestoneText?: string;
+  } | null>(null);
+  const [celebratedThisWeek, setCelebratedThisWeek] = useState(false);
+  const [justCompletedPillar, setJustCompletedPillar] = useState<Pillar | null>(null);
+
+  // Track previous coverage to detect transitions
+  const prevCoverageRef = useRef<number>(0);
 
   // Check onboarding status on mount
   useEffect(() => {
@@ -60,7 +77,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         const res = await fetch(`/api/v3/log?week_start=${weekStartStr}`);
         if (res.ok) {
           const data = await res.json();
-          setLogs(data.logs || []);
+          const fetchedLogs = data.logs || [];
+          setLogs(fetchedLogs);
+          prevCoverageRef.current = getPrimeCoverage(fetchedLogs);
         }
       } catch (error) {
         console.error('Failed to fetch logs:', error);
@@ -71,17 +90,123 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     fetchLogs();
   }, [weekStartStr]);
 
-  const handleLogSaved = (newLog: CoreFiveLog) => {
-    setLogs(prev => [...prev, newLog]);
+  // Fetch streak data on mount
+  useEffect(() => {
+    async function fetchStreak() {
+      try {
+        const res = await fetch('/api/v3/log/history?weeks=12');
+        if (res.ok) {
+          const data = await res.json();
+          const allLogs: CoreFiveLog[] = data.logs || [];
+          
+          // Group by week and calculate streak
+          const today = new Date();
+          let calculatedStreak = 0;
+          
+          for (let i = 0; i < 12; i++) {
+            const weekDate = addWeeks(today, -i);
+            const ws = getWeekStart(weekDate);
+            const weekLogs = allLogs.filter((l: CoreFiveLog) => l.weekStart === ws);
+            const coverage = getPrimeCoverage(weekLogs);
+            
+            if (coverage >= 4) {
+              calculatedStreak++;
+            } else {
+              // For week 0 (current week), don't break streak if week is in progress
+              if (i === 0) continue;
+              break;
+            }
+          }
+          
+          setStreak(calculatedStreak);
+          setStreakLoaded(true);
+          
+          // Check for unseen milestones
+          if (calculatedStreak > 0) {
+            const milestone = getUnseenMilestone(calculatedStreak);
+            if (milestone) {
+              setCelebration({ type: 'milestone', milestoneText: milestone.text });
+              markMilestoneSeen(milestone.id);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to fetch streak:', error);
+        setStreakLoaded(true);
+      }
+    }
+    fetchStreak();
+  }, []);
+
+  const primeCoverage = getPrimeCoverage(logs);
+  const allFiveHit = primeCoverage === 5;
+
+  // Detect when a log tips a pillar over its target or hits 5/5
+  const handleLogComplete = useCallback((newLog: CoreFiveLog) => {
+    const updatedLogs = [...logs, newLog];
+    const newCoverage = getPrimeCoverage(updatedLogs);
+    const prevCoverage = prevCoverageRef.current;
+
+    // Check if this pillar just completed
+    const pillar = newLog.pillar;
+    const prevProgress = getPillarProgress(logs, pillar);
+    const newProgress = getPillarProgress(updatedLogs, pillar);
+    const target = PILLAR_CONFIGS[pillar].weeklyTarget;
+    
+    if (prevProgress < target && newProgress >= target) {
+      setJustCompletedPillar(pillar);
+      setTimeout(() => setJustCompletedPillar(null), 1000);
+    }
+
+    // Check for 5/5 celebration
+    if (newCoverage === 5 && prevCoverage < 5 && !celebratedThisWeek && isCurrentWeek) {
+      setCelebratedThisWeek(true);
+      // Small delay so the ring animation plays first
+      setTimeout(() => {
+        setCelebration({ type: 'all_five' });
+      }, 600);
+    }
+
+    setLogs(updatedLogs);
+    prevCoverageRef.current = newCoverage;
     setSelectedPillar(null);
+  }, [logs, celebratedThisWeek, isCurrentWeek]);
+
+  const handleLogSaved = (newLog: CoreFiveLog) => {
+    handleLogComplete(newLog);
   };
 
+  // Quick-log handler: POST directly without modal
+  const handleQuickLog = useCallback(async (pillar: Pillar, value: number) => {
+    try {
+      const res = await fetch('/api/v3/log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pillar,
+          value,
+          weekStart: weekStartStr,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        handleLogComplete(data.log);
+      }
+    } catch (error) {
+      console.error('Quick log failed:', error);
+    }
+  }, [weekStartStr, handleLogComplete]);
+
   const handleLogDeleted = (logId: string) => {
-    setLogs(prev => prev.filter(l => l.id !== logId));
+    const updatedLogs = logs.filter(l => l.id !== logId);
+    setLogs(updatedLogs);
+    prevCoverageRef.current = getPrimeCoverage(updatedLogs);
   };
 
   const handleLogUpdated = (updatedLog: CoreFiveLog) => {
-    setLogs(prev => prev.map(l => l.id === updatedLog.id ? updatedLog : l));
+    const updatedLogs = logs.map(l => l.id === updatedLog.id ? updatedLog : l);
+    setLogs(updatedLogs);
+    prevCoverageRef.current = getPrimeCoverage(updatedLogs);
   };
 
   const handleOnboardingComplete = () => {
@@ -89,7 +214,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     setShowOnboarding(false);
   };
 
-  const primeCoverage = getPrimeCoverage(logs);
+  const handleCelebrationDismiss = () => {
+    setCelebration(null);
+  };
 
   // Onboarding gate
   if (showOnboarding) {
@@ -110,7 +237,6 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            {/* Back arrow */}
             <button
               onClick={() => setWeekOffset(prev => Math.max(prev - 1, -12))}
               disabled={weekOffset <= -12}
@@ -125,7 +251,6 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
               {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
             </h1>
 
-            {/* Forward arrow */}
             <button
               onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
               disabled={isCurrentWeek}
@@ -152,56 +277,12 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         </p>
       </div>
 
-      {/* Progress Banner */}
-      <div 
-        className="mb-6 p-4 rounded-2xl"
-        style={{
-          background: primeCoverage >= 4 
-            ? 'linear-gradient(135deg, rgba(34,197,94,0.15) 0%, rgba(16,185,129,0.1) 100%)'
-            : 'rgba(255,255,255,0.03)',
-          border: primeCoverage >= 4 
-            ? '1px solid rgba(34,197,94,0.3)'
-            : '1px solid rgba(255,255,255,0.06)',
-        }}
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-foreground/50 mb-1">Progress</p>
-            <div className="flex items-baseline gap-1">
-              <span 
-                className="text-3xl font-semibold tabular-nums"
-                style={{ color: primeCoverage >= 4 ? '#22c55e' : undefined }}
-              >
-                {primeCoverage}
-              </span>
-              <span className="text-lg text-foreground/40">/ 5</span>
-            </div>
-          </div>
-          <div className="flex gap-1.5">
-            {PILLARS.map(pillar => {
-              const progress = getPillarProgress(logs, pillar);
-              const target = PILLAR_CONFIGS[pillar].weeklyTarget;
-              const isMet = progress >= target;
-              return (
-                <div
-                  key={pillar}
-                  className="w-3 h-3 rounded-full transition-all duration-300"
-                  style={{
-                    backgroundColor: isMet 
-                      ? PILLAR_CONFIGS[pillar].color 
-                      : `${PILLAR_CONFIGS[pillar].color}30`,
-                  }}
-                />
-              );
-            })}
-          </div>
-        </div>
-        {primeCoverage === 5 && (
-          <p className="text-sm text-green-400/80 mt-2">
-            All pillars hit this week — you&apos;re in your prime.
-          </p>
-        )}
-      </div>
+      {/* Streak Hero Banner */}
+      <StreakHero
+        logs={logs}
+        streak={streak}
+        allFiveHit={allFiveHit}
+      />
 
       {/* Core Five Cards */}
       <div className="grid gap-4">
@@ -211,8 +292,10 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             config={PILLAR_CONFIGS[pillar]}
             current={getPillarProgress(logs, pillar)}
             onLogClick={() => setSelectedPillar(pillar)}
+            onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
             onCardClick={() => setDetailPillar(pillar)}
             readOnly={!isCurrentWeek}
+            justCompleted={justCompletedPillar === pillar}
           />
         ))}
       </div>
@@ -246,11 +329,21 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         />
       )}
 
-      {/* Trend View (replaces old WeekRecord) */}
+      {/* Trend View */}
       {showRecord && (
         <TrendView
           userId={userId}
           onClose={() => setShowRecord(false)}
+        />
+      )}
+
+      {/* Celebration Overlay */}
+      {celebration && (
+        <CelebrationOverlay
+          type={celebration.type}
+          streak={streak}
+          milestoneText={celebration.milestoneText}
+          onDismiss={handleCelebrationDismiss}
         />
       )}
     </div>
