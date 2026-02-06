@@ -108,7 +108,6 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
 
   const streak = calculateStreak();
   const bestStreak = calculateBestStreak();
-  const fullWeeks = weeks.filter(w => w.coverage === 5).length;
 
   // Heatmap: only weeks with data (+ current week), oldest → newest left to right
   const heatmapWeeks = [...visibleWeeks].reverse();
@@ -145,7 +144,7 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
           ) : (
             <>
               {/* Stats Row */}
-              <div className="grid grid-cols-3 gap-3 mb-8">
+              <div className="grid grid-cols-2 gap-3 mb-8">
                 <div className="p-3 rounded-xl bg-foreground/5 border border-foreground/10">
                   <p className="text-xs text-foreground/40 mb-1">Streak</p>
                   <div className="flex items-baseline gap-1">
@@ -160,17 +159,10 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                     <span className="text-xs text-foreground/30">wk</span>
                   </div>
                 </div>
-                <div className="p-3 rounded-xl bg-foreground/5 border border-foreground/10">
-                  <p className="text-xs text-foreground/40 mb-1">Full</p>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-xl font-semibold tabular-nums">{fullWeeks}</span>
-                    <span className="text-xs text-foreground/30">/ {visibleWeeks.length}</span>
-                  </div>
-                </div>
               </div>
 
-              {/* Coverage Heatmap */}
-              <div className="mb-8">
+              {/* Coverage Heatmap — hidden until 3+ weeks of data */}
+              {heatmapWeeks.length >= 3 && <div className="mb-8">
                 <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
                   Heatmap
                 </h3>
@@ -253,17 +245,17 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                     </div>
                   </div>
                 </div>
-              </div>
+              </div>}
 
-              {/* Per-Pillar Sparklines */}
-              <div className="mb-8">
+              {/* Per-Pillar Sparklines — hidden until 3+ weeks of data */}
+              {heatmapWeeks.length >= 3 && <div className="mb-8">
                 <h3 className="text-xs font-medium text-foreground/40 uppercase tracking-wider mb-3">
                   Pillar Trends
                 </h3>
                 <div className="space-y-3">
                   {PILLARS.map(pillar => {
                     const config = PILLAR_CONFIGS[pillar];
-                    // Get percentages for last 12 weeks (oldest to newest)
+                    // Get percentages for visible weeks (oldest to newest)
                     const pcts = heatmapWeeks.map(w => w.pillars[pillar].pct);
                     const weeksHit = heatmapWeeks.filter(w => w.pillars[pillar].met && w.hasData).length;
                     const totalWithData = heatmapWeeks.filter(w => w.hasData).length;
@@ -305,7 +297,7 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
                     );
                   })}
                 </div>
-              </div>
+              </div>}
 
               {/* Week-by-week breakdown */}
               <div>
