@@ -37,7 +37,7 @@ function getAmbientStyle(coverage: number) {
 
 export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
   const [detailPillar, setDetailPillar] = useState<Pillar | null>(null);
   const [showRecord, setShowRecord] = useState(false);
@@ -53,6 +53,14 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   // Skip transitions when switching weeks (snap instantly)
   const [skipTransition, setSkipTransition] = useState(false);
+
+  // Track if initial load has happened
+  const hasLoadedOnce = useRef(false);
+
+  // Swipe gesture tracking
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+  const swiping = useRef(false);
 
   // Check onboarding status on mount
   useEffect(() => {
@@ -76,10 +84,50 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     return { weekStart: ws, weekEnd: we, weekStartStr: wsStr };
   }, [weekOffset]);
 
+  // Navigate weeks
+  const goBack = useCallback(() => {
+    setWeekOffset(prev => Math.max(prev - 1, -12));
+  }, []);
+
+  const goForward = useCallback(() => {
+    setWeekOffset(prev => Math.min(prev + 1, 0));
+  }, []);
+
+  // Swipe handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+    touchStartY.current = e.touches[0].clientY;
+    swiping.current = false;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return;
+
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current;
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current;
+
+    // Only trigger if horizontal swipe is dominant and significant
+    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX > 0) {
+        // Swipe right = go to previous week
+        goBack();
+      } else {
+        // Swipe left = go to next week
+        goForward();
+      }
+    }
+
+    touchStartX.current = null;
+    touchStartY.current = null;
+  }, [goBack, goForward]);
+
   // Fetch logs for the selected week
   useEffect(() => {
     setSkipTransition(true);
-    setLoading(true);
+    // Only show spinner on very first load, not on week switches
+    if (!hasLoadedOnce.current) {
+      setInitialLoading(true);
+    }
     async function fetchLogs() {
       try {
         const res = await fetch(`/api/v3/log?week_start=${weekStartStr}`);
@@ -92,8 +140,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       } catch (error) {
         console.error('Failed to fetch logs:', error);
       } finally {
-        setLoading(false);
-        // Re-enable transitions after a frame so new state renders without animation
+        setInitialLoading(false);
+        hasLoadedOnce.current = true;
         requestAnimationFrame(() => setSkipTransition(false));
       }
     }
@@ -202,7 +250,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     return <V3Onboarding onComplete={handleOnboardingComplete} />;
   }
 
-  if (loading) {
+  // Only show spinner on very first load
+  if (initialLoading) {
     return (
       <div className="px-6 py-8 flex items-center justify-center">
         <div className="w-8 h-8 border-2 border-green-500/30 border-t-green-500 rounded-full animate-spin" />
@@ -228,29 +277,33 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         </div>
       </div>
 
-      <div className="px-6 py-4 relative z-10">
+      <div 
+        className="px-6 py-4 relative z-10"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {/* Week Header with Navigation */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <button
-                onClick={() => setWeekOffset(prev => Math.max(prev - 1, -12))}
+                onClick={goBack}
                 disabled={weekOffset <= -12}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:bg-foreground/10"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 19.5L8.25 12l7.5-7.5" />
                 </svg>
               </button>
 
-              <h1 className="text-lg font-medium text-foreground/80">
+              <h1 className="text-lg font-medium text-foreground/80 min-w-[100px] text-center">
                 {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
               </h1>
 
               <button
-                onClick={() => setWeekOffset(prev => Math.min(prev + 1, 0))}
+                onClick={goForward}
                 disabled={isCurrentWeek}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-all disabled:opacity-20 disabled:cursor-not-allowed"
+                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:bg-foreground/10"
               >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
