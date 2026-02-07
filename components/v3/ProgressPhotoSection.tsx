@@ -114,22 +114,21 @@ export function ProgressPhotoSection({ userId }: ProgressPhotoSectionProps) {
       <div
         className="rounded-2xl p-4"
         style={{
-          backgroundColor: 'rgba(255, 255, 255, 0.025)',
+          backgroundColor: 'rgba(255, 255, 255, 0.02)',
           border: '1px solid rgba(255, 255, 255, 0.06)',
         }}
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-sm font-medium text-foreground/70">Progress Photos</h3>
+          <h3 className="text-sm font-medium text-foreground/60">Progress Photos</h3>
           <button
             onClick={() => setShowUpload(true)}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/40 hover:text-green-400/80 transition-colors active:scale-95"
-            style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
+            className="w-8 h-8 rounded-full flex items-center justify-center text-foreground/30 hover:text-foreground/50 transition-colors active:scale-95"
+            style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
             aria-label="Add progress photo"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
             </svg>
           </button>
         </div>
@@ -138,28 +137,29 @@ export function ProgressPhotoSection({ userId }: ProgressPhotoSectionProps) {
           /* Empty state */
           <button
             onClick={() => setShowUpload(true)}
-            className="w-full py-6 rounded-xl border border-dashed flex flex-col items-center gap-2 transition-colors hover:border-white/15 active:scale-[0.98]"
-            style={{ borderColor: 'rgba(255, 255, 255, 0.08)' }}
+            className="w-full py-5 rounded-2xl border border-dashed flex flex-col items-center gap-2 transition-colors hover:border-white/12 active:scale-[0.98]"
+            style={{ borderColor: 'rgba(255, 255, 255, 0.06)' }}
           >
-            {/* Body silhouette icon */}
-            <svg className="w-8 h-8 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            <svg className="w-7 h-7 text-white/15" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
             </svg>
-            <p className="text-xs text-white/35">Track your progress — take your first photo</p>
+            <p className="text-xs text-white/30">Take your first progress photo</p>
           </button>
         ) : (
           /* Horizontal thumbnail strip */
-          <div className="flex gap-2.5 overflow-x-auto pb-1 scrollbar-hide" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-            {photos.slice(0, 10).map((photo) => (
+          <div className="flex gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            {photos.slice(0, 8).map((photo) => (
               <button
                 key={photo.id}
                 onClick={() => setShowGallery(true)}
-                className="flex-shrink-0 group active:scale-[0.96] transition-transform"
+                className="flex-shrink-0 active:scale-[0.96] transition-transform"
               >
                 <div
-                  className="w-[72px] h-[96px] rounded-xl overflow-hidden"
-                  style={{ border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                  className="w-[80px] h-[107px] rounded-xl overflow-hidden"
+                  style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
                 >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={photo.photoUrl}
                     alt={`Progress ${format(parseISO(photo.takenAt), 'MMM d')}`}
@@ -167,36 +167,23 @@ export function ProgressPhotoSection({ userId }: ProgressPhotoSectionProps) {
                     loading="lazy"
                   />
                 </div>
-                <p className="text-[10px] text-foreground/35 mt-1 text-center">
+                <p className="text-[10px] text-foreground/30 mt-1 text-center">
                   {format(parseISO(photo.takenAt), 'MMM d')}
                 </p>
               </button>
             ))}
 
             {/* "See all" if more than shown */}
-            {photos.length > 10 && (
+            {photos.length > 8 && (
               <button
                 onClick={() => setShowGallery(true)}
-                className="flex-shrink-0 w-[72px] h-[96px] rounded-xl flex items-center justify-center"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                className="flex-shrink-0 w-[80px] h-[107px] rounded-xl flex items-center justify-center"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
               >
-                <span className="text-xs text-foreground/40">+{photos.length - 10}</span>
+                <span className="text-xs text-foreground/30">+{photos.length - 8}</span>
               </button>
             )}
           </div>
-        )}
-
-        {/* View All link when photos exist */}
-        {photos.length > 0 && (
-          <button
-            onClick={() => setShowGallery(true)}
-            className="w-full mt-3 py-2 text-xs text-foreground/40 hover:text-foreground/60 transition-colors flex items-center justify-center gap-1"
-          >
-            View all {photos.length} {photos.length === 1 ? 'photo' : 'photos'}
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-            </svg>
-          </button>
         )}
       </div>
 

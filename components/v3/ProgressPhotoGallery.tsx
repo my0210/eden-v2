@@ -47,6 +47,12 @@ function FullScreenPhoto({
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [visible, setVisible] = useState(false);
+
+  // Fade in on mount
+  useEffect(() => {
+    requestAnimationFrame(() => setVisible(true));
+  }, []);
 
   const handleDelete = async () => {
     if (!confirmDelete) {
@@ -57,19 +63,27 @@ function FullScreenPhoto({
     onDelete();
   };
 
+  const handleClose = () => {
+    setVisible(false);
+    setTimeout(onClose, 200);
+  };
+
   return (
     <div 
-      className="fixed inset-0 z-[110] flex flex-col"
-      style={{ backgroundColor: 'rgba(0, 0, 0, 0.95)' }}
+      className="fixed inset-0 z-[110] flex flex-col transition-opacity duration-200"
+      style={{ 
+        backgroundColor: 'var(--background)',
+        opacity: visible ? 1 : 0,
+      }}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 flex-shrink-0">
+      <div className="flex items-center justify-between px-5 py-3 flex-shrink-0">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="w-9 h-9 rounded-full flex items-center justify-center text-white/60 hover:text-white/90 transition-colors"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
@@ -80,8 +94,8 @@ function FullScreenPhoto({
           className={`
             px-4 py-2 rounded-full text-sm font-medium transition-all
             ${confirmDelete 
-              ? 'bg-red-500/30 border border-red-500/50 text-red-400' 
-              : 'text-white/40 hover:text-red-400/80'
+              ? 'bg-red-500/20 border border-red-500/40 text-red-400' 
+              : 'text-white/30 hover:text-red-400/70'
             }
           `}
         >
@@ -91,20 +105,21 @@ function FullScreenPhoto({
 
       {/* Photo */}
       <div className="flex-1 flex items-center justify-center px-4 overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={photo.photoUrl}
           alt={`Progress photo from ${format(parseISO(photo.takenAt), 'MMMM d, yyyy')}`}
-          className="max-w-full max-h-full object-contain rounded-lg"
+          className="max-w-full max-h-full object-contain rounded-xl"
         />
       </div>
 
       {/* Info */}
-      <div className="px-6 py-4 flex-shrink-0 text-center safe-area-bottom">
-        <p className="text-white/70 text-sm font-medium">
+      <div className="px-6 py-5 flex-shrink-0 text-center safe-area-bottom">
+        <p className="text-white/60 text-sm font-medium">
           {format(parseISO(photo.takenAt), 'MMMM d, yyyy')}
         </p>
         {photo.notes && (
-          <p className="text-white/40 text-sm mt-1">&ldquo;{photo.notes}&rdquo;</p>
+          <p className="text-white/30 text-sm mt-1">{photo.notes}</p>
         )}
       </div>
     </div>
@@ -115,8 +130,6 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
-  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
@@ -184,14 +197,6 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
   const handleDeletePhoto = (photoId: string) => {
     onDelete(photoId);
     setSelectedPhoto(null);
-    setPhotoToDelete(null);
-    setDeleting(false);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (!photoToDelete) return;
-    setDeleting(true);
-    handleDeletePhoto(photoToDelete);
   };
 
   if (!shouldRender) return null;
@@ -202,7 +207,7 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
       className="fixed inset-0"
       style={{
         zIndex: 9999,
-        backgroundColor: '#0a0a0a',
+        backgroundColor: 'var(--background)',
         transform: isAnimating
           ? `translateX(${swipeOffset}px)`
           : 'translateX(100%)',
@@ -214,12 +219,12 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
     >
       {/* Header */}
       <header
-        className="sticky top-0 z-10 px-4 py-3 flex items-center justify-between border-b border-white/5"
-        style={{ backgroundColor: '#0a0a0a' }}
+        className="sticky top-0 z-10 px-5 py-3 flex items-center justify-between border-b"
+        style={{ backgroundColor: 'var(--background)', borderColor: 'rgba(255, 255, 255, 0.06)' }}
       >
         <button
           onClick={onClose}
-          className="flex items-center gap-1.5 text-foreground/50 hover:text-foreground/70 transition-colors"
+          className="flex items-center gap-1 text-foreground/40 hover:text-foreground/60 transition-colors"
         >
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
@@ -227,14 +232,14 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
           <span className="text-sm">Back</span>
         </button>
 
-        <span className="text-lg font-medium text-foreground/80">Progress Photos</span>
+        <span className="text-base font-medium text-foreground/70">Progress Photos</span>
 
         <button
           onClick={onAddNew}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-green-400/70 hover:text-green-400 transition-colors"
-          style={{ backgroundColor: 'rgba(34, 197, 94, 0.1)' }}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/60 transition-colors"
+          style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         </button>
@@ -258,7 +263,8 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
             <p className="text-foreground/30 text-xs mb-6">Take your first progress photo to start tracking.</p>
             <button
               onClick={onAddNew}
-              className="px-6 py-3 rounded-xl bg-green-500/20 border border-green-500/30 text-green-400 text-sm font-medium hover:bg-green-500/30 transition-all active:scale-[0.97]"
+              className="px-6 py-3 rounded-2xl text-sm font-medium text-foreground/50 hover:text-foreground/70 transition-all active:scale-[0.97]"
+              style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', border: '1px solid rgba(255, 255, 255, 0.08)' }}
             >
               Take Photo
             </button>
@@ -273,43 +279,31 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   {group.photos.map((photo) => (
-                    <div key={photo.id} className="relative">
-                      <button
-                        onClick={() => setSelectedPhoto(photo)}
-                        className="w-full relative aspect-[3/4] rounded-xl overflow-hidden active:scale-[0.97] transition-transform"
-                        style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={photo.photoUrl}
-                          alt={`Progress photo from ${format(parseISO(photo.takenAt), 'MMM d')}`}
-                          className="w-full h-full object-cover"
-                          loading="lazy"
-                        />
-                        {/* Date overlay */}
-                        <div className="absolute bottom-0 left-0 right-0 px-2.5 py-2 bg-gradient-to-t from-black/70 to-transparent">
-                          <p className="text-white/80 text-xs font-medium">
-                            {format(parseISO(photo.takenAt), 'MMM d')}
+                    <button
+                      key={photo.id}
+                      onClick={() => setSelectedPhoto(photo)}
+                      className="w-full relative aspect-[3/4] rounded-2xl overflow-hidden active:scale-[0.97] transition-transform"
+                      style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={photo.photoUrl}
+                        alt={`Progress photo from ${format(parseISO(photo.takenAt), 'MMM d')}`}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {/* Date overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 px-3 py-2.5 bg-gradient-to-t from-black/60 to-transparent">
+                        <p className="text-white/80 text-xs font-medium">
+                          {format(parseISO(photo.takenAt), 'MMM d')}
+                        </p>
+                        {photo.notes && (
+                          <p className="text-white/35 text-[10px] truncate mt-0.5">
+                            {photo.notes}
                           </p>
-                          {photo.notes && (
-                            <p className="text-white/40 text-[10px] truncate mt-0.5">
-                              {photo.notes}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                      {/* Delete button */}
-                      <button
-                        onClick={() => setPhotoToDelete(photo.id)}
-                        className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white/50 active:scale-90 transition-all z-10"
-                        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)' }}
-                        aria-label="Delete photo"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                    </div>
+                        )}
+                      </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -319,41 +313,6 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
           </div>
         )}
       </div>
-
-      {/* Delete confirmation dialog */}
-      {photoToDelete && !selectedPhoto && (
-        <div
-          className="fixed inset-0 z-[110] flex items-center justify-center px-8"
-          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
-          onClick={() => { setPhotoToDelete(null); setDeleting(false); }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl p-5 space-y-4"
-            style={{ backgroundColor: 'rgba(28, 28, 30, 0.98)' }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-white/90 text-base font-medium text-center">Delete this photo?</p>
-            <p className="text-white/40 text-sm text-center">This can&apos;t be undone.</p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setPhotoToDelete(null); setDeleting(false); }}
-                className="flex-1 py-3 rounded-xl text-sm font-medium text-white/60 transition-colors active:scale-[0.97]"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                disabled={deleting}
-                className="flex-1 py-3 rounded-xl text-sm font-medium text-red-400 transition-colors active:scale-[0.97]"
-                style={{ backgroundColor: 'rgba(255, 59, 48, 0.15)' }}
-              >
-                {deleting ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Full-screen photo view */}
       {selectedPhoto && (
