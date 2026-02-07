@@ -6,3 +6,6 @@ export { PillarDetailDrawer } from './PillarDetailDrawer';
 export { V3Onboarding } from './V3Onboarding';
 export { TrendView } from './TrendView';
 export { StreakHero } from './StreakHero';
+export { ProgressPhotoSection } from './ProgressPhotoSection';
+export { ProgressPhotoUpload } from './ProgressPhotoUpload';
+export { ProgressPhotoGallery } from './ProgressPhotoGallery';

@@ -542,3 +542,17 @@ export interface MetricScoring {
   createdAt: string;
 }
 
+
+// ============================================================
+// Progress Photo Types
+// ============================================================
+
+export interface ProgressPhoto {
+  id: string;
+  userId: string;
+  storagePath: string;
+  photoUrl: string;      // Signed URL for display
+  takenAt: string;       // ISO date string (YYYY-MM-DD)
+  notes?: string;
+  createdAt: string;
+}

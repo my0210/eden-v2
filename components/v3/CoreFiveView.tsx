@@ -8,6 +8,7 @@ import { TrendView } from './TrendView';
 import { PillarDetailDrawer } from './PillarDetailDrawer';
 import { V3Onboarding } from './V3Onboarding';
 import { StreakHero } from './StreakHero';
+import { ProgressPhotoSection } from './ProgressPhotoSection';
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -389,6 +390,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             />
           ))}
         </div>
+
+        {/* Progress Photos Section */}
+        <ProgressPhotoSection userId={userId} />
 
         {/* Quick Log Modal */}
         {selectedPillar && (
