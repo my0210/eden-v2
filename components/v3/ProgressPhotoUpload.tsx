@@ -216,64 +216,67 @@ export function ProgressPhotoUpload({ isOpen, onClose, onUploaded }: ProgressPho
             {preview ? (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full aspect-[3/4] rounded-xl overflow-hidden relative group"
+                className="w-full rounded-xl overflow-hidden relative group"
+                style={{ maxHeight: '40vh' }}
               >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={preview}
                   alt="Preview"
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-contain rounded-xl"
+                  style={{ maxHeight: '40vh' }}
                 />
-                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-active:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
                   <span className="text-white/90 text-sm font-medium">Change Photo</span>
                 </div>
               </button>
             ) : (
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="w-full aspect-[3/4] rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-3 transition-colors hover:border-white/20 active:scale-[0.98]"
+                className="w-full h-36 rounded-xl border-2 border-dashed flex items-center gap-4 px-5 transition-colors hover:border-white/20 active:scale-[0.98]"
                 style={{ borderColor: 'rgba(255, 255, 255, 0.1)' }}
               >
                 {/* Camera icon */}
                 <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center"
+                  className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0"
                   style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
                 >
-                  <svg className="w-8 h-8 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <svg className="w-7 h-7 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6.827 6.175A2.31 2.31 0 015.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 00-1.134-.175 2.31 2.31 0 01-1.64-1.055l-.822-1.316a2.192 2.192 0 00-1.736-1.039 48.774 48.774 0 00-5.232 0 2.192 2.192 0 00-1.736 1.039l-.821 1.316z" />
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 12.75a4.5 4.5 0 11-9 0 4.5 4.5 0 019 0z" />
                   </svg>
                 </div>
-                <div className="text-center">
+                <div className="text-left">
                   <p className="text-sm text-white/60 font-medium">Take or Choose Photo</p>
-                  <p className="text-xs text-white/30 mt-1">Full body selfie works best</p>
+                  <p className="text-xs text-white/30 mt-0.5">Full body selfie works best</p>
                 </div>
               </button>
             )}
 
-            {/* Date */}
-            <div>
-              <label className="text-xs text-white/50 mb-1.5 block">Date</label>
-              <input
-                type="date"
-                value={takenAt}
-                onChange={(e) => setTakenAt(e.target.value)}
-                max={new Date().toISOString().split('T')[0]}
-                className="w-full px-4 py-3 rounded-xl text-sm text-white/90 focus:outline-none focus:ring-1 focus:ring-white/20"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', colorScheme: 'dark' }}
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label className="text-xs text-white/50 mb-1.5 block">Notes (optional)</label>
-              <input
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="e.g. Week 6, feeling stronger"
-                className="w-full px-4 py-3 rounded-xl text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
-                style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
-              />
+            {/* Date & Notes row */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-white/50 mb-1.5 block">Date</label>
+                <input
+                  type="date"
+                  value={takenAt}
+                  onChange={(e) => setTakenAt(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/90 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)', colorScheme: 'dark' }}
+                />
+              </div>
+              <div>
+                <label className="text-xs text-white/50 mb-1.5 block">Notes (optional)</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Week 6..."
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/90 placeholder-white/30 focus:outline-none focus:ring-1 focus:ring-white/20"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.06)' }}
+                />
+              </div>
             </div>
 
             {/* Error */}
