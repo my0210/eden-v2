@@ -258,30 +258,29 @@ export function ProgressPhotoUpload({ isOpen, onClose, onUploaded }: ProgressPho
 
             {/* Bottom section — always pinned at bottom */}
             <div className="flex-shrink-0 space-y-3">
-              {/* Date & Notes row */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-[11px] text-white/30 mb-1 block uppercase tracking-wider">Date</label>
-                  <input
-                    type="date"
-                    value={takenAt}
-                    onChange={(e) => setTakenAt(e.target.value)}
-                    max={new Date().toISOString().split('T')[0]}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-white/15"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', colorScheme: 'dark' }}
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] text-white/30 mb-1 block uppercase tracking-wider">Note</label>
-                  <input
-                    type="text"
-                    value={notes}
-                    onChange={(e) => setNotes(e.target.value)}
-                    placeholder="Week 6..."
-                    className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/15"
-                    style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-                  />
-                </div>
+              {/* Date */}
+              <div>
+                <label className="text-[11px] text-white/30 mb-1 block uppercase tracking-wider">Date</label>
+                <input
+                  type="date"
+                  value={takenAt}
+                  onChange={(e) => setTakenAt(e.target.value)}
+                  max={new Date().toISOString().split('T')[0]}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-white/15"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)', colorScheme: 'dark' }}
+                />
+              </div>
+              {/* Note */}
+              <div>
+                <label className="text-[11px] text-white/30 mb-1 block uppercase tracking-wider">Note</label>
+                <input
+                  type="text"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="Week 6..."
+                  className="w-full px-3 py-2.5 rounded-xl text-sm text-white/80 placeholder-white/20 focus:outline-none focus:ring-1 focus:ring-white/15"
+                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+                />
               </div>
 
               {/* Error */}
