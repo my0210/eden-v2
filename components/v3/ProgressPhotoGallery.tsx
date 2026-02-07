@@ -115,6 +115,8 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
   const [isAnimating, setIsAnimating] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<ProgressPhoto | null>(null);
+  const [photoToDelete, setPhotoToDelete] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const overlayRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(false);
 
@@ -182,6 +184,14 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
   const handleDeletePhoto = (photoId: string) => {
     onDelete(photoId);
     setSelectedPhoto(null);
+    setPhotoToDelete(null);
+    setDeleting(false);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!photoToDelete) return;
+    setDeleting(true);
+    handleDeletePhoto(photoToDelete);
   };
 
   if (!shouldRender) return null;
@@ -263,30 +273,43 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
                 </h3>
                 <div className="grid grid-cols-2 gap-3">
                   {group.photos.map((photo) => (
-                    <button
-                      key={photo.id}
-                      onClick={() => setSelectedPhoto(photo)}
-                      className="relative aspect-[3/4] rounded-xl overflow-hidden group active:scale-[0.97] transition-transform"
-                      style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-                    >
-                      <img
-                        src={photo.photoUrl}
-                        alt={`Progress photo from ${format(parseISO(photo.takenAt), 'MMM d')}`}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {/* Date overlay */}
-                      <div className="absolute bottom-0 left-0 right-0 px-2.5 py-2 bg-gradient-to-t from-black/70 to-transparent">
-                        <p className="text-white/80 text-xs font-medium">
-                          {format(parseISO(photo.takenAt), 'MMM d')}
-                        </p>
-                        {photo.notes && (
-                          <p className="text-white/40 text-[10px] truncate mt-0.5">
-                            {photo.notes}
+                    <div key={photo.id} className="relative">
+                      <button
+                        onClick={() => setSelectedPhoto(photo)}
+                        className="w-full relative aspect-[3/4] rounded-xl overflow-hidden active:scale-[0.97] transition-transform"
+                        style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={photo.photoUrl}
+                          alt={`Progress photo from ${format(parseISO(photo.takenAt), 'MMM d')}`}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
+                        />
+                        {/* Date overlay */}
+                        <div className="absolute bottom-0 left-0 right-0 px-2.5 py-2 bg-gradient-to-t from-black/70 to-transparent">
+                          <p className="text-white/80 text-xs font-medium">
+                            {format(parseISO(photo.takenAt), 'MMM d')}
                           </p>
-                        )}
-                      </div>
-                    </button>
+                          {photo.notes && (
+                            <p className="text-white/40 text-[10px] truncate mt-0.5">
+                              {photo.notes}
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        onClick={() => setPhotoToDelete(photo.id)}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center text-white/50 active:scale-90 transition-all z-10"
+                        style={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', backdropFilter: 'blur(8px)' }}
+                        aria-label="Delete photo"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -296,6 +319,41 @@ export function ProgressPhotoGallery({ isOpen, onClose, photos, onDelete, onAddN
           </div>
         )}
       </div>
+
+      {/* Delete confirmation dialog */}
+      {photoToDelete && !selectedPhoto && (
+        <div
+          className="fixed inset-0 z-[110] flex items-center justify-center px-8"
+          style={{ backgroundColor: 'rgba(0, 0, 0, 0.7)' }}
+          onClick={() => { setPhotoToDelete(null); setDeleting(false); }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl p-5 space-y-4"
+            style={{ backgroundColor: 'rgba(28, 28, 30, 0.98)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-white/90 text-base font-medium text-center">Delete this photo?</p>
+            <p className="text-white/40 text-sm text-center">This can&apos;t be undone.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setPhotoToDelete(null); setDeleting(false); }}
+                className="flex-1 py-3 rounded-xl text-sm font-medium text-white/60 transition-colors active:scale-[0.97]"
+                style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                disabled={deleting}
+                className="flex-1 py-3 rounded-xl text-sm font-medium text-red-400 transition-colors active:scale-[0.97]"
+                style={{ backgroundColor: 'rgba(255, 59, 48, 0.15)' }}
+              >
+                {deleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Full-screen photo view */}
       {selectedPhoto && (
