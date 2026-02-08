@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { startOfWeek, format, endOfWeek, addWeeks } from 'date-fns';
-import { CoreFiveCard } from './CoreFiveCard';
-import { QuickLogModal } from './QuickLogModal';
-import { TrendView } from './TrendView';
-import { PillarDetailDrawer } from './PillarDetailDrawer';
-import { V3Onboarding } from './V3Onboarding';
-import { StreakHero } from './StreakHero';
-import { ProgressPhotoSection } from './ProgressPhotoSection';
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
+import { startOfWeek, format, endOfWeek, addWeeks } from "date-fns";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronRight } from "lucide-react";
+import { CoreFiveCard } from "./CoreFiveCard";
+import { QuickLogModal } from "./QuickLogModal";
+import { TrendView } from "./TrendView";
+import { PillarDetailDrawer } from "./PillarDetailDrawer";
+import { V3Onboarding } from "./V3Onboarding";
+import { StreakHero } from "./StreakHero";
+import { ProgressPhotoSection } from "./ProgressPhotoSection";
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -17,7 +19,7 @@ import {
   getPillarProgress,
   getPrimeCoverage,
   getWeekStart,
-} from '@/lib/v3/coreFive';
+} from "@/lib/v3/coreFive";
 
 interface CoreFiveViewProps {
   userId: string;
@@ -38,7 +40,7 @@ function getAmbientStyle(coverage: number) {
 
 // localStorage cache helpers
 function getCachedLogs(weekStart: string): CoreFiveLog[] | null {
-  if (typeof window === 'undefined') return null;
+  if (typeof window === "undefined") return null;
   try {
     const cached = localStorage.getItem(`huuman_logs_${weekStart}`);
     return cached ? JSON.parse(cached) : null;
@@ -46,21 +48,21 @@ function getCachedLogs(weekStart: string): CoreFiveLog[] | null {
 }
 
 function setCachedLogs(weekStart: string, logs: CoreFiveLog[]) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
   try { localStorage.setItem(`huuman_logs_${weekStart}`, JSON.stringify(logs)); } catch {}
 }
 
 function getCachedStreak(): number {
-  if (typeof window === 'undefined') return 0;
+  if (typeof window === "undefined") return 0;
   try {
-    const cached = localStorage.getItem('huuman_streak');
+    const cached = localStorage.getItem("huuman_streak");
     return cached ? parseInt(cached, 10) : 0;
   } catch { return 0; }
 }
 
 function setCachedStreak(streak: number) {
-  if (typeof window === 'undefined') return;
-  try { localStorage.setItem('huuman_streak', String(streak)); } catch {}
+  if (typeof window === "undefined") return;
+  try { localStorage.setItem("huuman_streak", String(streak)); } catch {}
 }
 
 export function CoreFiveView({ userId }: CoreFiveViewProps) {
@@ -68,7 +70,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
   const [detailPillar, setDetailPillar] = useState<Pillar | null>(null);
-  const [showRecord, setShowRecord] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
@@ -92,8 +94,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   // Check onboarding status on mount
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const onboarded = localStorage.getItem('huuman_v3_onboarded');
+    if (typeof window !== "undefined") {
+      const onboarded = localStorage.getItem("huuman_v3_onboarded");
       if (!onboarded) {
         setShowOnboarding(true);
       }
@@ -176,7 +178,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
           setCachedLogs(weekStartStr, fetchedLogs);
         }
       } catch (error) {
-        console.error('Failed to fetch logs:', error);
+        console.error("Failed to fetch logs:", error);
       } finally {
         setInitialLoading(false);
         hasLoadedOnce.current = true;
@@ -190,7 +192,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   useEffect(() => {
     async function fetchStreak() {
       try {
-        const res = await fetch('/api/v3/log/history?weeks=12');
+        const res = await fetch("/api/v3/log/history?weeks=12");
         if (res.ok) {
           const data = await res.json();
           const allLogs: CoreFiveLog[] = data.logs || [];
@@ -214,7 +216,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
           setCachedStreak(calculatedStreak);
         }
       } catch (error) {
-        console.error('Failed to fetch streak:', error);
+        console.error("Failed to fetch streak:", error);
       }
     }
     fetchStreak();
@@ -250,9 +252,9 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   // Quick-log handler: POST directly without modal
   const handleQuickLog = useCallback(async (pillar: Pillar, value: number) => {
     try {
-      const res = await fetch('/api/v3/log', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/v3/log", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           pillar,
           value,
@@ -264,7 +266,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         handleLogComplete(data.log);
       }
     } catch (error) {
-      console.error('Quick log failed:', error);
+      console.error("Quick log failed:", error);
     }
   }, [weekStartStr, handleLogComplete]);
 
@@ -283,7 +285,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   };
 
   const handleOnboardingComplete = () => {
-    localStorage.setItem('huuman_v3_onboarded', 'true');
+    localStorage.setItem("huuman_v3_onboarded", "true");
     setShowOnboarding(false);
   };
 
@@ -306,142 +308,135 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
       {/* Dynamic ambient orb - responds to coverage */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
         <div 
-          className={`relative w-[800px] h-[800px] ${skipTransition ? '' : 'transition-all duration-[2000ms] ease-out'}`}
+          className={`relative w-[800px] h-[800px] ${skipTransition ? "" : "transition-all duration-[2000ms] ease-out"}`}
           style={{ transform: `scale(${ambientStyle.scale})` }}
         >
           <div 
-            className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? '' : 'transition-opacity duration-[2000ms] ease-out'}`}
+            className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? "" : "transition-opacity duration-[2000ms] ease-out"}`}
             style={{
               opacity: ambientStyle.opacity,
-              background: 'radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)',
+              background: "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
             }}
           />
         </div>
       </div>
 
-      <div 
-        className="px-6 py-4 relative z-10"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
-      >
-        {/* Week Header with Navigation */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <h1 className="text-xl font-semibold text-white/90">
-                {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
-              </h1>
-              {!isCurrentWeek && (
-                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
-                  History
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-white/40 font-medium">
-              {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
-            </p>
-          </div>
-
-          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
-            <button
-              onClick={goBack}
-              disabled={weekOffset <= -12}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            <div className="w-px h-4 bg-white/10" />
-
-            <button
-              onClick={goForward}
-              disabled={isCurrentWeek}
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Streak Hero Banner */}
-        <StreakHero
-          logs={logs}
-          streak={streak}
-          skipTransition={skipTransition}
-        />
-
-        {/* Core Five Cards */}
-        <div className="grid gap-4">
-          {PILLARS.map(pillar => (
-            <CoreFiveCard
-              key={pillar}
-              config={PILLAR_CONFIGS[pillar]}
-              current={getPillarProgress(logs, pillar)}
-              onLogClick={() => setSelectedPillar(pillar)}
-              onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
-              onCardClick={() => setDetailPillar(pillar)}
-              readOnly={!isCurrentWeek}
-              justCompleted={justCompletedPillar === pillar}
-            />
-          ))}
-        </div>
-
-        {/* Progress Photos Section */}
-        <ProgressPhotoSection userId={userId} />
-
-        {/* Quick Log Modal */}
-        {selectedPillar && (
-          <QuickLogModal
-            pillar={selectedPillar}
-            config={PILLAR_CONFIGS[selectedPillar]}
-            weekStart={weekStartStr}
-            onClose={() => setSelectedPillar(null)}
-            onSave={handleLogSaved}
-          />
-        )}
-
-        {/* Pillar Detail Drawer */}
-        {detailPillar && (
-          <PillarDetailDrawer
-            pillar={detailPillar}
-            config={PILLAR_CONFIGS[detailPillar]}
-            logs={logs.filter(l => l.pillar === detailPillar)}
-            weekStart={weekStartStr}
-            readOnly={!isCurrentWeek}
-            onClose={() => setDetailPillar(null)}
-            onDelete={handleLogDeleted}
-            onUpdate={handleLogUpdated}
-            onLogNew={() => {
-              setDetailPillar(null);
-              setSelectedPillar(detailPillar);
-            }}
-          />
-        )}
-
-        {/* Trend View */}
-        {showRecord && (
+      <AnimatePresence mode="wait">
+        {showHistory ? (
           <TrendView
+            key="history"
             userId={userId}
-            onClose={() => setShowRecord(false)}
+            onBack={() => setShowHistory(false)}
           />
-        )}
+        ) : (
+          <motion.div 
+            key="week-view"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="px-6 py-4 relative z-10"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
+            {/* Week Header with Navigation */}
+            <div className="mb-6 flex items-center justify-between">
+              <div 
+                onClick={() => setShowHistory(true)}
+                className="cursor-pointer group"
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <h1 className="text-xl font-semibold text-white/90 group-hover:text-white transition-colors">
+                    {isCurrentWeek ? "This Week" : format(weekStart, "MMM d")}
+                  </h1>
+                  <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all" />
+                </div>
+                <p className="text-sm text-white/40 font-medium group-hover:text-white/60 transition-colors">
+                  {format(weekStart, "MMM d")} – {format(weekEnd, "MMM d, yyyy")}
+                </p>
+              </div>
 
-        {/* Record Button (Floating) */}
-        <button 
-          onClick={() => setShowRecord(true)}
-          className="fixed top-24 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all shadow-lg"
-          style={{ marginTop: '4px' }}
-        >
-          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-          </svg>
-          History
-        </button>
-      </div>
+              <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
+                <button
+                  onClick={goBack}
+                  disabled={weekOffset <= -12}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                <div className="w-px h-4 bg-white/10" />
+
+                <button
+                  onClick={goForward}
+                  disabled={isCurrentWeek}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Streak Hero Banner */}
+            <StreakHero
+              logs={logs}
+              streak={streak}
+              skipTransition={skipTransition}
+            />
+
+            {/* Core Five Cards */}
+            <div className="grid gap-4">
+              {PILLARS.map(pillar => (
+                <CoreFiveCard
+                  key={pillar}
+                  config={PILLAR_CONFIGS[pillar]}
+                  current={getPillarProgress(logs, pillar)}
+                  onLogClick={() => setSelectedPillar(pillar)}
+                  onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
+                  onCardClick={() => setDetailPillar(pillar)}
+                  readOnly={!isCurrentWeek}
+                  justCompleted={justCompletedPillar === pillar}
+                />
+              ))}
+            </div>
+
+            {/* Progress Photos Section */}
+            <ProgressPhotoSection userId={userId} />
+
+            {/* Quick Log Modal */}
+            {selectedPillar && (
+              <QuickLogModal
+                pillar={selectedPillar}
+                config={PILLAR_CONFIGS[selectedPillar]}
+                weekStart={weekStartStr}
+                onClose={() => setSelectedPillar(null)}
+                onSave={handleLogSaved}
+              />
+            )}
+
+            {/* Pillar Detail Drawer */}
+            {detailPillar && (
+              <PillarDetailDrawer
+                pillar={detailPillar}
+                config={PILLAR_CONFIGS[detailPillar]}
+                logs={logs.filter(l => l.pillar === detailPillar)}
+                weekStart={weekStartStr}
+                readOnly={!isCurrentWeek}
+                onClose={() => setDetailPillar(null)}
+                onDelete={handleLogDeleted}
+                onUpdate={handleLogUpdated}
+                onLogNew={() => {
+                  setDetailPillar(null);
+                  setSelectedPillar(detailPillar);
+                }}
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }
