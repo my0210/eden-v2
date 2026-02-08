@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import { startOfWeek, endOfWeek, format, parseISO, differenceInWeeks } from 'date-fns';
 import { WeeklyDomainView } from '@/components/WeeklyDomainView';
 import { HuumanHeader } from '@/components/HuumanHeader';
-import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
 import { NavigationWrapper } from '@/components/NavigationWrapper';
 import { 
@@ -120,13 +119,6 @@ export default async function WeekPage() {
       <div className="min-h-screen flex flex-col relative pb-32">
         {/* Header */}
         <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-          <SettingsButton 
-            isAdmin={userProfile?.isAdmin} 
-            unitSystem={userProfile?.unitSystem}
-            glucoseUnit={userProfile?.glucoseUnit}
-            lipidsUnit={userProfile?.lipidsUnit}
-            coachingStyle={userProfile?.coachingStyle}
-          />
           <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
           <div className="w-10" /> {/* Spacer for balance */}
         </header>
@@ -136,8 +128,14 @@ export default async function WeekPage() {
           <CoreFiveView userId={user.id} />
         </div>
 
-        {/* Navigation Wrapper (Floating Dock + Chat) */}
-        <NavigationWrapper />
+        {/* Navigation Wrapper (Floating Dock + Chat + Settings) */}
+        <NavigationWrapper 
+          isAdmin={userProfile?.isAdmin}
+          unitSystem={userProfile?.unitSystem}
+          glucoseUnit={userProfile?.glucoseUnit}
+          lipidsUnit={userProfile?.lipidsUnit}
+          coachingStyle={userProfile?.coachingStyle}
+        />
       </div>
     );
   }
@@ -159,13 +157,6 @@ export default async function WeekPage() {
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 flex items-center justify-between">
-        <SettingsButton 
-          isAdmin={userProfile?.isAdmin} 
-          unitSystem={userProfile?.unitSystem}
-          glucoseUnit={userProfile?.glucoseUnit}
-          lipidsUnit={userProfile?.lipidsUnit}
-          coachingStyle={userProfile?.coachingStyle}
-        />
         <span className="text-xl font-light tracking-tight text-foreground/60">huuman</span>
         <YouButton />
       </header>
@@ -190,8 +181,14 @@ export default async function WeekPage() {
         )}
       </div>
 
-      {/* Navigation Wrapper (Floating Dock + Chat) */}
-      <NavigationWrapper />
+      {/* Navigation Wrapper (Floating Dock + Chat + Settings) */}
+      <NavigationWrapper 
+        isAdmin={userProfile?.isAdmin}
+        unitSystem={userProfile?.unitSystem}
+        glucoseUnit={userProfile?.glucoseUnit}
+        lipidsUnit={userProfile?.lipidsUnit}
+        coachingStyle={userProfile?.coachingStyle}
+      />
     </div>
   );
 }

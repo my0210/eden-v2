@@ -1,24 +1,56 @@
 "use client";
 
+import { useState } from "react";
 import { ChatOverlay } from "@/components/ChatOverlay";
 import { FloatingDock } from "@/components/ui/FloatingDock";
+import { SettingsOverlay } from "@/components/SettingsOverlay";
+import { UnitSystem, GlucoseUnit, LipidsUnit } from "@/lib/types";
 
-export function NavigationWrapper() {
+interface NavigationWrapperProps {
+  isAdmin?: boolean;
+  unitSystem?: UnitSystem;
+  glucoseUnit?: GlucoseUnit;
+  lipidsUnit?: LipidsUnit;
+  coachingStyle?: {
+    tone: 'supportive' | 'neutral' | 'tough';
+    density: 'minimal' | 'balanced' | 'detailed';
+    formality: 'casual' | 'professional' | 'clinical';
+  };
+}
+
+export function NavigationWrapper({
+  isAdmin,
+  unitSystem,
+  glucoseUnit,
+  lipidsUnit,
+  coachingStyle,
+}: NavigationWrapperProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
-    <ChatOverlay
-      trigger={<div />}
-      customTrigger={(open) => (
-        <FloatingDock
-          onChatClick={open}
-          onSettingsClick={() => {
-            const settingsBtn = document.querySelector('[aria-label="Settings"]');
-            if (settingsBtn instanceof HTMLElement) settingsBtn.click();
-          }}
-          onHomeClick={() => {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          }}
-        />
-      )}
-    />
+    <>
+      <ChatOverlay
+        trigger={<div />}
+        customTrigger={(openChat) => (
+          <FloatingDock
+            onChatClick={openChat}
+            onSettingsClick={() => setIsSettingsOpen(true)}
+            onHomeClick={() => {
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }}
+          />
+        )}
+      />
+
+      <SettingsOverlay
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        isAdmin={isAdmin}
+        initialUnitSystem={unitSystem}
+        initialGlucoseUnit={glucoseUnit}
+        initialLipidsUnit={lipidsUnit}
+        initialCoachingStyle={coachingStyle}
+      />
+    </>
   );
 }
