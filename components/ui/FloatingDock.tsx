@@ -57,6 +57,7 @@ export function FloatingDock({ onChatClick, onHomeClick, onSettingsClick }: Floa
           icon={MessageCircle} 
           label="Oracle" 
           onClick={onChatClick} 
+          isActive={false}
         />
         
         <div className="w-px h-8 bg-white/10 mx-1" />

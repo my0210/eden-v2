@@ -433,7 +433,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         {/* Record Button (Floating) */}
         <button 
           onClick={() => setShowRecord(true)}
-          className="fixed top-24 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
+          className="fixed top-24 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all shadow-lg"
+          style={{ marginTop: '4px' }}
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
