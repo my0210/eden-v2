@@ -345,7 +345,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0 border-b border-white/5">
             {view === 'feedback' ? (
               <button
                 onClick={() => setView('settings')}
@@ -507,7 +507,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
                   </>
                 )}
 
-                <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
+                {!V3_FOCUSED && <div className="h-px" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />}
 
                 {/* Account */}
                 <div className="space-y-2">
