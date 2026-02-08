@@ -121,13 +121,13 @@ export function TrendView({ userId, onClose }: TrendViewProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full h-full sm:h-auto sm:max-w-lg sm:max-h-[85vh] bg-background sm:rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full h-full sm:h-auto sm:max-w-lg sm:max-h-[85vh] bg-background/95 backdrop-blur-xl sm:rounded-2xl overflow-hidden animate-in slide-in-from-bottom-4 duration-300 border border-white/10 shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-foreground/5 px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-semibold text-foreground/90">Your Record</h2>
+        <div className="sticky top-0 bg-black/40 backdrop-blur-md border-b border-white/5 px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-lg font-semibold text-white/90">Your Record</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-foreground/5 flex items-center justify-center text-foreground/40 hover:text-foreground/60 transition-colors"
+            className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-white/40 hover:text-white hover:bg-white/10 transition-colors"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />

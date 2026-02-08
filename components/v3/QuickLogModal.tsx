@@ -77,17 +77,14 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div 
-        className="relative w-full sm:max-w-md bg-background rounded-t-3xl sm:rounded-2xl p-6 pb-8 sm:pb-6 animate-in slide-in-from-bottom-4 duration-300"
-        style={{
-          borderColor: `${config.color}30`,
-          borderWidth: '1px 1px 0 1px',
-          borderTopStyle: 'solid',
-          borderLeftStyle: 'solid',
-          borderRightStyle: 'solid',
-        }}
-      >
+        {/* Modal */}
+        <div 
+          className="relative w-full sm:max-w-md bg-background rounded-t-3xl sm:rounded-2xl p-6 pb-8 sm:pb-6 animate-in slide-in-from-bottom-4 duration-300 border border-t-0 sm:border-t"
+          style={{
+            borderColor: `${config.color}30`,
+            boxShadow: `0 -10px 40px -10px ${config.color}10`,
+          }}
+        >
         {/* Close button */}
         <button
           onClick={onClose}

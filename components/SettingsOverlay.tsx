@@ -345,7 +345,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
           </div>
 
           {/* Header */}
-          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0">
+          <div className="flex items-center justify-between px-4 pb-3 flex-shrink-0 border-b border-white/5">
             {view === 'feedback' ? (
               <button
                 onClick={() => setView('settings')}
@@ -378,9 +378,6 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
               </button>
             </Drawer.Close>
           </div>
-
-          {/* Divider */}
-          <div className="h-px mx-4 flex-shrink-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }} />
 
           {/* Content */}
           <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4">

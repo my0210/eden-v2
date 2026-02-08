@@ -175,7 +175,7 @@ export function StreakHero({ logs, streak, skipTransition }: StreakHeroProps) {
       </div>
 
       {/* Status text - same tone regardless of coverage */}
-      <p className="text-center text-sm text-foreground/30">
+      <p className="text-center text-sm text-foreground/40 font-medium">
         {primeCoverage} of 5 this week
       </p>
     </div>

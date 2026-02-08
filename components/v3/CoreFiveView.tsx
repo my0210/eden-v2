@@ -325,47 +325,46 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         onTouchEnd={handleTouchEnd}
       >
         {/* Week Header with Navigation */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-1">
-              <button
-                onClick={goBack}
-                disabled={weekOffset <= -12}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:bg-foreground/10"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15.75 19.5L8.25 12l7.5-7.5" />
-                </svg>
-              </button>
-
-              <h1 className="text-lg font-medium text-foreground/80 min-w-[100px] text-center">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <h1 className="text-xl font-semibold text-white/90">
                 {isCurrentWeek ? 'This Week' : format(weekStart, 'MMM d')}
               </h1>
-
-              <button
-                onClick={goForward}
-                disabled={isCurrentWeek}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-foreground/40 hover:text-foreground/70 hover:bg-foreground/5 transition-colors disabled:opacity-20 disabled:cursor-not-allowed active:bg-foreground/10"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-                </svg>
-              </button>
+              {!isCurrentWeek && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/60">
+                  History
+                </span>
+              )}
             </div>
+            <p className="text-sm text-white/40 font-medium">
+              {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
+            </p>
+          </div>
 
-            <button 
-              onClick={() => setShowRecord(true)}
-              className="text-sm text-foreground/50 hover:text-foreground/70 transition-colors flex items-center gap-1"
+          <div className="flex items-center gap-1 bg-white/5 p-1 rounded-full border border-white/5">
+            <button
+              onClick={goBack}
+              disabled={weekOffset <= -12}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
             >
-              View record
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.25 4.5l7.5 7.5-7.5 7.5" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            <div className="w-px h-4 bg-white/10" />
+
+            <button
+              onClick={goForward}
+              disabled={isCurrentWeek}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors disabled:opacity-20 disabled:cursor-not-allowed"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
-          <p className="text-sm text-foreground/40">
-            {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
-          </p>
         </div>
 
         {/* Streak Hero Banner */}
@@ -430,6 +429,17 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             onClose={() => setShowRecord(false)}
           />
         )}
+
+        {/* Record Button (Floating) */}
+        <button 
+          onClick={() => setShowRecord(true)}
+          className="fixed top-24 right-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-white/60 hover:text-white hover:bg-white/10 transition-all"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          History
+        </button>
       </div>
     </>
   );

@@ -144,16 +144,15 @@ export function PillarDetailDrawer({
           {/* Header */}
           <div className="px-5 pb-4 flex-shrink-0">
             <div className="flex items-center justify-between mb-4">
-              <Drawer.Title className="sr-only">{name} Details</Drawer.Title>
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 shadow-sm"
                   style={{ backgroundColor: `${color}20` }}
                 >
                   {IconComponent && <IconComponent className="w-5 h-5" style={{ color }} />}
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold text-white/90">{name}</h2>
+                  <h2 className="text-lg font-semibold text-white/90 leading-tight">{name}</h2>
                   <div className="flex items-baseline gap-1">
                     <span 
                       className="text-sm font-medium tabular-nums"
@@ -167,8 +166,7 @@ export function PillarDetailDrawer({
               </div>
               <Drawer.Close asChild>
                 <button
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors"
-                  style={{ backgroundColor: 'rgba(255, 255, 255, 0.1)' }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-colors bg-white/5 hover:bg-white/10"
                   aria-label="Close"
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -180,8 +178,7 @@ export function PillarDetailDrawer({
 
             {/* Progress bar */}
             <div 
-              className="h-2 rounded-full overflow-hidden"
-              style={{ backgroundColor: `${color}15` }}
+              className="h-2 rounded-full overflow-hidden bg-white/5 border border-white/5"
             >
               <div
                 className="h-full rounded-full transition-all duration-500"
@@ -189,6 +186,7 @@ export function PillarDetailDrawer({
                   width: `${progress}%`,
                   backgroundColor: color,
                   opacity: isMet ? 1 : 0.7,
+                  boxShadow: `0 0 10px ${color}40`
                 }}
               />
             </div>
