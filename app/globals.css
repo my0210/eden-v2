@@ -1,40 +1,77 @@
 @import "tailwindcss";
 
-:root {
-  /* Background colors */
-  --background: #0a0a0a;
-  --background-secondary: #141414;
-  --background-tertiary: #1a1a1a;
+@theme {
+  --color-background: var(--background);
+  --color-background-secondary: var(--background-secondary);
+  --color-background-tertiary: var(--background-tertiary);
   
-  /* Foreground colors */
-  --foreground: #fafafa;
-  --foreground-muted: #a1a1aa;
-  --foreground-subtle: #71717a;
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-subtle: var(--foreground-subtle);
+  
+  --color-accent: var(--accent);
+  --color-accent-muted: var(--accent-muted);
+  
+  --color-domain-heart: var(--domain-heart);
+  --color-domain-muscle: var(--domain-muscle);
+  --color-domain-sleep: var(--domain-sleep);
+  --color-domain-metabolism: var(--domain-metabolism);
+  --color-domain-mind: var(--domain-mind);
+  
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-display: var(--font-space-grotesk), system-ui, sans-serif;
+
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-slide-up: slide-up 0.3s ease-out;
+  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  --animate-float: float 6s ease-in-out infinite;
+  
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  
+  @keyframes slide-up {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  
+  @keyframes pulse-soft {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+}
+
+:root {
+  /* Deep Glass Backgrounds */
+  --background: #000000;
+  --background-secondary: #0a0a0a;
+  --background-tertiary: #121212;
+  
+  /* Foreground colors - Using opacity for depth */
+  --foreground: #ffffff;
+  --foreground-muted: rgba(255, 255, 255, 0.6);
+  --foreground-subtle: rgba(255, 255, 255, 0.4);
   
   /* Accent colors */
-  --accent: #22c55e;
-  --accent-muted: #16a34a;
+  --accent: #ffffff;
+  --accent-muted: rgba(255, 255, 255, 0.8);
   
-  /* Domain colors */
+  /* Domain colors - Vibrant & Glowing */
   --domain-heart: #ef4444;
   --domain-muscle: #f97316;
   --domain-sleep: #8b5cf6;
   --domain-metabolism: #22c55e;
   --domain-mind: #3b82f6;
   
-  /* Status colors */
-  --status-done: #22c55e;
-  --status-skipped: #71717a;
-  --status-pending: #3b82f6;
-  
   /* Border colors */
-  --border: #27272a;
-  --border-muted: #1f1f23;
-  
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+  --border: rgba(255, 255, 255, 0.1);
+  --border-muted: rgba(255, 255, 255, 0.05);
 }
 
 /* Global styles */
@@ -45,6 +82,10 @@
 body {
   background-color: var(--background);
   color: var(--foreground);
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 30%);
+  background-attachment: fixed;
 }
 
 /* Scrollbar styling */
@@ -54,16 +95,35 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--background-secondary);
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--foreground-subtle);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Glass Utilities */
+@layer utilities {
+  .glass-subtle {
+    @apply bg-black/40 backdrop-blur-md border border-white/5;
+  }
+  
+  .glass-panel {
+    @apply bg-black/60 backdrop-blur-xl border border-white/10 shadow-lg;
+  }
+  
+  .glass-highlight {
+    @apply bg-white/5 backdrop-blur-lg border border-white/20;
+  }
+  
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
 /* Focus states */
@@ -77,299 +137,3 @@ body {
   background-color: var(--accent);
   color: var(--background);
 }
-
-/* Utility classes */
-.bg-background {
-  background-color: var(--background);
-}
-
-.bg-background-secondary {
-  background-color: var(--background-secondary);
-}
-
-.bg-background-tertiary {
-  background-color: var(--background-tertiary);
-}
-
-.text-foreground {
-  color: var(--foreground);
-}
-
-.text-foreground-muted {
-  color: var(--foreground-muted);
-}
-
-.text-foreground-subtle {
-  color: var(--foreground-subtle);
-}
-
-.border-default {
-  border-color: var(--border);
-}
-
-.border-muted {
-  border-color: var(--border-muted);
-}
-
-/* Domain color utilities */
-.bg-domain-heart { background-color: var(--domain-heart); }
-.bg-domain-muscle { background-color: var(--domain-muscle); }
-.bg-domain-sleep { background-color: var(--domain-sleep); }
-.bg-domain-metabolism { background-color: var(--domain-metabolism); }
-.bg-domain-mind { background-color: var(--domain-mind); }
-
-.text-domain-heart { color: var(--domain-heart); }
-.text-domain-muscle { color: var(--domain-muscle); }
-.text-domain-sleep { color: var(--domain-sleep); }
-.text-domain-metabolism { color: var(--domain-metabolism); }
-.text-domain-mind { color: var(--domain-mind); }
-
-/* Animation utilities */
-@keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slide-up {
-  from { 
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes pulse-soft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
-}
-
-@keyframes breathe {
-  0%, 100% { 
-    transform: scale(1);
-    opacity: 0.3;
-  }
-  50% { 
-    transform: scale(1.05);
-    opacity: 0.4;
-  }
-}
-
-@keyframes fade-in-up {
-  from { 
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to { 
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 1s ease-out;
-}
-
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out;
-}
-
-.animate-pulse-soft {
-  animation: pulse-soft 2s ease-in-out infinite;
-}
-
-.animate-breathe {
-  animation: breathe 8s ease-in-out infinite;
-}
-
-.animate-breathe-delayed {
-  animation: breathe 8s ease-in-out infinite;
-  animation-delay: 4s;
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 1s ease-out forwards;
-}
-
-.animate-fade-in-up-delayed {
-  animation: fade-in-up 1s ease-out forwards;
-  animation-delay: 0.2s;
-  opacity: 0;
-}
-
-.animate-fade-in-up-delayed-2 {
-  animation: fade-in-up 1s ease-out forwards;
-  animation-delay: 0.4s;
-  opacity: 0;
-}
-
-/* Card component base */
-.card {
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px;
-}
-
-.card-hover {
-  transition: all 0.2s ease;
-}
-
-.card-hover:hover {
-  border-color: var(--foreground-subtle);
-  transform: translateY(-1px);
-}
-
-/* Button variants */
-.btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-weight: 500;
-  font-size: 14px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.btn-primary {
-  background-color: var(--accent);
-  color: var(--background);
-}
-
-.btn-primary:hover {
-  background-color: var(--accent-muted);
-}
-
-.btn-secondary {
-  background-color: var(--background-tertiary);
-  color: var(--foreground);
-  border: 1px solid var(--border);
-}
-
-.btn-secondary:hover {
-  background-color: var(--background-secondary);
-  border-color: var(--foreground-subtle);
-}
-
-.btn-ghost {
-  background-color: transparent;
-  color: var(--foreground-muted);
-}
-
-.btn-ghost:hover {
-  background-color: var(--background-tertiary);
-  color: var(--foreground);
-}
-
-/* Input styling */
-.input {
-  width: 100%;
-  padding: 12px 16px;
-  background-color: var(--background-secondary);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  color: var(--foreground);
-  font-size: 16px;
-  transition: all 0.2s ease;
-}
-
-.input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-}
-
-.input::placeholder {
-  color: var(--foreground-subtle);
-}
-
-/* Progress bar */
-.progress-bar {
-  height: 4px;
-  background-color: var(--background-tertiary);
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: var(--accent);
-  transition: width 0.3s ease;
-}
-
-/* ============================================================
-   Phase 1: Habit Loop Animations
-   ============================================================ */
-
-@media (prefers-reduced-motion: no-preference) {
-  /* Ring fill - SVG stroke-dashoffset animation */
-  @keyframes ring-fill {
-    from { stroke-dashoffset: var(--ring-circumference, 100); }
-    to { stroke-dashoffset: var(--ring-target, 0); }
-  }
-
-  .animate-ring-fill {
-    animation: ring-fill 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-  }
-
-  /* Glow pulse on pillar card completion */
-  @keyframes glow-pulse {
-    0% { box-shadow: 0 0 0 0 var(--glow-color, rgba(34, 197, 94, 0.4)); }
-    50% { box-shadow: 0 0 20px 4px var(--glow-color, rgba(34, 197, 94, 0.3)); }
-    100% { box-shadow: 0 0 0 0 var(--glow-color, rgba(34, 197, 94, 0)); }
-  }
-
-  .animate-glow-pulse {
-    animation: glow-pulse 0.8s ease-out;
-  }
-
-  /* Checkmark draw via stroke-dasharray */
-  @keyframes check-draw {
-    from { stroke-dashoffset: 24; }
-    to { stroke-dashoffset: 0; }
-  }
-
-  .animate-check-draw {
-    stroke-dasharray: 24;
-    stroke-dashoffset: 24;
-    animation: check-draw 0.4s ease-out 0.2s forwards;
-  }
-
-  /* Shimmer on streak hero */
-  @keyframes shimmer {
-    0% { background-position: -200% center; }
-    100% { background-position: 200% center; }
-  }
-
-  .animate-shimmer {
-    background-size: 200% 100%;
-    animation: shimmer 3s ease-in-out infinite;
-  }
-
-}
-
-/* Reduced motion fallback - instant state, no animation */
-@media (prefers-reduced-motion: reduce) {
-  .animate-ring-fill,
-  .animate-glow-pulse,
-  .animate-check-draw,
-  .animate-shimmer {
-    animation: none !important;
-  }
-}
-
-/* Safe area padding for mobile */
-.safe-area-bottom {
-  padding-bottom: 16px;
-}
-
-@supports (padding-bottom: env(safe-area-inset-bottom)) {
-  .safe-area-bottom {
-    padding-bottom: max(16px, env(safe-area-inset-bottom));
-  }
-}
-
