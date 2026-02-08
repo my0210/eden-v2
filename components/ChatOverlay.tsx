@@ -124,7 +124,6 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
       open={isOpen}
       onOpenChange={setIsOpen}
       shouldScaleBackground={true}
-      scaleBackgroundValues={[1, 0.95]}
     >
       <Drawer.Trigger asChild>
         {customTrigger ? customTrigger(() => setIsOpen(true)) : trigger}
