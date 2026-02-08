@@ -1,11 +1,10 @@
 import { createClient } from '@/lib/supabase/server';
 import { startOfWeek, endOfWeek, format, parseISO, differenceInWeeks } from 'date-fns';
 import { WeeklyDomainView } from '@/components/WeeklyDomainView';
-import { ChatOverlay } from '@/components/ChatOverlay';
 import { HuumanHeader } from '@/components/HuumanHeader';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
-import { FloatingDock } from '@/components/ui/FloatingDock';
+import { NavigationWrapper } from '@/components/NavigationWrapper';
 import { 
   UserProfile, 
   Domain, 
@@ -137,23 +136,8 @@ export default async function WeekPage() {
           <CoreFiveView userId={user.id} />
         </div>
 
-        {/* Floating Dock & Chat */}
-        <ChatOverlay 
-          trigger={<div />} // Triggered by dock
-          customTrigger={(open) => (
-            <FloatingDock 
-              onChatClick={open}
-              onSettingsClick={() => {
-                // Settings click handler - could trigger settings modal
-                const settingsBtn = document.querySelector('[aria-label="Settings"]');
-                if (settingsBtn instanceof HTMLElement) settingsBtn.click();
-              }}
-              onHomeClick={() => {
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-            />
-          )}
-        />
+        {/* Navigation Wrapper (Floating Dock + Chat) */}
+        <NavigationWrapper />
       </div>
     );
   }
@@ -206,22 +190,8 @@ export default async function WeekPage() {
         )}
       </div>
 
-      {/* Floating Dock & Chat */}
-      <ChatOverlay 
-        trigger={<div />} // Triggered by dock
-        customTrigger={(open) => (
-          <FloatingDock 
-            onChatClick={open}
-            onSettingsClick={() => {
-              const settingsBtn = document.querySelector('[aria-label="Settings"]');
-              if (settingsBtn instanceof HTMLElement) settingsBtn.click();
-            }}
-            onHomeClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-          />
-        )}
-      />
+      {/* Navigation Wrapper (Floating Dock + Chat) */}
+      <NavigationWrapper />
     </div>
   );
 }
