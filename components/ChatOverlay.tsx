@@ -1,11 +1,62 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Drawer } from "vaul";
 import { ChatMessage, Message } from "./ChatMessage";
 import { SuggestedPrompts } from "./SuggestedPrompts";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, Sparkles } from "lucide-react";
+import { getWeekStart, PILLAR_CONFIGS, PILLARS, type CoreFiveLog, getPillarProgress } from "@/lib/v3/coreFive";
+
+// Default prompts shown before we have progress data
+const DEFAULT_PROMPTS = [
+  "How's my week looking?",
+  "Log 30 min of cardio",
+  "What should I focus on today?",
+];
+
+/**
+ * Generate smart suggested prompts based on Core Five progress.
+ */
+function getSmartPrompts(logs: CoreFiveLog[]): string[] {
+  const prompts: string[] = [];
+
+  // Check each pillar and suggest based on gaps
+  for (const pillar of PILLARS) {
+    const config = PILLAR_CONFIGS[pillar];
+    const current = getPillarProgress(logs, pillar);
+    const remaining = config.weeklyTarget - current;
+
+    if (remaining <= 0) continue; // pillar met, skip
+
+    if (pillar === 'cardio' && current === 0) {
+      prompts.push("Log a walk or run");
+    } else if (pillar === 'sleep' && current === 0) {
+      prompts.push("Log last night's sleep");
+    } else if (pillar === 'strength' && current < config.weeklyTarget) {
+      prompts.push("Log a strength session");
+    } else if (pillar === 'clean_eating' && current < config.weeklyTarget) {
+      prompts.push("Log a clean eating day");
+    } else if (pillar === 'mindfulness' && current === 0) {
+      prompts.push("Start a 10 min breathwork");
+    }
+  }
+
+  // Count met pillars
+  const metCount = PILLARS.filter(p => getPillarProgress(logs, p) >= PILLAR_CONFIGS[p].weeklyTarget).length;
+
+  if (metCount >= 4) {
+    prompts.unshift("What's left to hit all 5?");
+  } else if (metCount === 0 && logs.length === 0) {
+    // No data at all yet
+    return DEFAULT_PROMPTS;
+  } else {
+    prompts.unshift("How's my week looking?");
+  }
+
+  // Cap at 3 prompts
+  return prompts.slice(0, 3);
+}
 
 interface ChatOverlayProps {
   trigger: React.ReactNode;
@@ -17,13 +68,10 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([
-    "What's my plan for today?",
-    "Help me adjust my protocol",
-    "Why this routine for me?",
-  ]);
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const hasFetchedSmartPrompts = useRef(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -39,6 +87,25 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
     }
   }, [input]);
 
+  // Fetch smart prompts when chat opens (only once, only for empty state)
+  useEffect(() => {
+    if (isOpen && messages.length === 0 && !hasFetchedSmartPrompts.current) {
+      hasFetchedSmartPrompts.current = true;
+      const weekStart = getWeekStart(new Date());
+      fetch(`/api/v3/log?week_start=${weekStart}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.logs) {
+            const smart = getSmartPrompts(data.logs);
+            setSuggestedPrompts(smart);
+          }
+        })
+        .catch(() => {
+          // Keep default prompts on error
+        });
+    }
+  }, [isOpen, messages.length]);
+
   // Focus input when opened
   useEffect(() => {
     if (isOpen) {
@@ -46,11 +113,10 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
     }
   }, [isOpen]);
 
-  // Listen for "Ask Eden about item" events
+  // Listen for external chat trigger events
   useEffect(() => {
     const handleAskAboutItem = (e: CustomEvent<{ question: string }>) => {
       setIsOpen(true);
-      // Send the question after a short delay for the drawer to open
       setTimeout(() => {
         handleSend(e.detail.question);
       }, 400);
@@ -89,12 +155,13 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
 
       const data = await response.json();
 
-      const edenMessage: Message = {
+      const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: data.message,
+        action: data.action || null,
       };
-      setMessages((prev) => [...prev, edenMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
 
       if (data.suggestedPrompts) {
         setSuggestedPrompts(data.suggestedPrompts);
@@ -145,8 +212,7 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
           {/* Header */}
           <div className="flex items-center justify-center py-2 border-b border-white/5">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-white/60" />
-              <span className="text-sm font-medium text-white/80 tracking-wide">ORACLE</span>
+              <span className="text-sm font-light text-white/80 tracking-tight">huuman</span>
             </div>
           </div>
 
@@ -157,8 +223,8 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
                 <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
                   <Sparkles className="w-8 h-8 text-white/40" />
                 </div>
-                <p className="text-white/40 text-sm max-w-[200px]">
-                  Ask me anything about your health, protocol, or progress.
+                <p className="text-white/40 text-sm max-w-[220px]">
+                  Ask about your week, log an activity, or get a recommendation.
                 </p>
               </div>
             ) : (

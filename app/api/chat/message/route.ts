@@ -1,14 +1,25 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
 import { generateJSON, Message } from '@/lib/ai/provider';
-import { getSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
-import { UserProfile, WeeklyPlan, ChatMessage, Protocol, ProtocolNarrative, RecommendedActivity, ProtocolWeek } from '@/lib/types';
+import { getCoreFiveSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
+import { ChatMessage } from '@/lib/types';
 import { startOfWeek, format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+import { Pillar, PILLARS, PILLAR_CONFIGS, CoreFiveLog, getPillarProgress, getWeekStart } from '@/lib/v3/coreFive';
+
+interface ChatAction {
+  type: 'log' | 'deep_link' | 'timer';
+  pillar?: Pillar;
+  value?: number;
+  details?: Record<string, unknown>;
+  url?: string;
+  label?: string;
+}
 
 interface ChatResponse {
   response: string;
   suggestedPrompts: string[];
+  action?: ChatAction | null;
 }
 
 export async function POST(request: Request) {
@@ -21,82 +32,58 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { message, context } = body;
+    const { message } = body;
 
     if (!message || typeof message !== 'string') {
       return NextResponse.json({ error: 'Message required' }, { status: 400 });
     }
 
-    // Get user profile
+    // Get user profile (for coaching style)
     const { data: profileData } = await supabase
       .from('user_profiles')
-      .select('*')
+      .select('coaching_style')
       .eq('id', user.id)
       .single();
 
-    if (!profileData) {
-      return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-    }
-
-    const profile: UserProfile = {
-      id: profileData.id,
-      email: profileData.email,
-      goals: profileData.goals,
-      constraints: profileData.constraints,
-      coachingStyle: profileData.coaching_style,
-      currentFitnessLevel: profileData.current_fitness_level,
-      onboardingCompleted: profileData.onboarding_completed,
-      isAdmin: profileData.is_admin || false,
-      unitSystem: profileData.unit_system || 'metric',
-      glucoseUnit: profileData.glucose_unit || 'mg/dL',
-      lipidsUnit: profileData.lipids_unit || 'mg/dL',
-      createdAt: profileData.created_at,
-      updatedAt: profileData.updated_at,
+    const coachingStyle = profileData?.coaching_style || {
+      tone: 'supportive',
+      density: 'balanced',
+      formality: 'casual',
     };
 
-    // Get current week's plan
-    const weekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-    const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+    // Get this week's Core Five logs
+    const weekStartStr = getWeekStart(new Date());
 
-    const { data: planData } = await supabase
-      .from('weekly_plans')
-      .select('*, plan_items(*)')
-      .eq('user_id', user.id)
-      .eq('week_start_date', weekStartStr)
-      .single();
-
-    const currentPlan: WeeklyPlan | null = planData ? {
-      id: planData.id,
-      userId: planData.user_id,
-      weekStartDate: planData.week_start_date,
-      huumanIntro: planData.huuman_intro,
-      domainIntros: planData.domain_intros || {},
-      generationContext: planData.generation_context,
-      items: planData.plan_items || [],
-      createdAt: planData.created_at,
-    } : null;
-
-    // Get active protocol
-    const { data: protocolData } = await supabase
-      .from('protocols')
+    const { data: logsData } = await supabase
+      .from('core_five_logs')
       .select('*')
       .eq('user_id', user.id)
-      .eq('status', 'active')
-      .single();
+      .eq('week_start', weekStartStr)
+      .order('logged_at', { ascending: false });
 
-    const protocol: Protocol | null = protocolData ? {
-      id: protocolData.id,
-      userId: protocolData.user_id,
-      startDate: protocolData.start_date,
-      endDate: protocolData.end_date,
-      status: protocolData.status,
-      goalSummary: protocolData.goal_summary,
-      narrative: (protocolData.narrative || { why: '', approach: '', expectedOutcomes: '' }) as ProtocolNarrative,
-      recommendedActivities: (protocolData.recommended_activities || []) as RecommendedActivity[],
-      weeks: (protocolData.weeks || []) as ProtocolWeek[],
-      createdAt: protocolData.created_at,
-      updatedAt: protocolData.updated_at,
-    } : null;
+    const logs: CoreFiveLog[] = (logsData || []).map(row => ({
+      id: row.id,
+      userId: row.user_id,
+      pillar: row.pillar as Pillar,
+      value: row.value,
+      details: row.details,
+      loggedAt: row.logged_at,
+      weekStart: row.week_start,
+      createdAt: row.created_at,
+    }));
+
+    // Build per-pillar progress
+    const coreFiveProgress = PILLARS.map(pillar => {
+      const config = PILLAR_CONFIGS[pillar];
+      const current = getPillarProgress(logs, pillar);
+      return {
+        pillar,
+        current,
+        target: config.weeklyTarget,
+        unit: config.unit,
+        met: current >= config.weeklyTarget,
+      };
+    });
 
     // Get recent conversation history
     const { data: conversationData } = await supabase
@@ -114,24 +101,23 @@ export async function POST(request: Request) {
     }));
 
     // Build messages for LLM
-    const systemPrompt = getSystemPrompt(profile, protocol);
-    const chatPrompt = getChatPrompt(profile, currentPlan, protocol, conversationHistory, message);
+    const systemPrompt = getCoreFiveSystemPrompt(coachingStyle);
+    const chatPrompt = getChatPrompt(coreFiveProgress, conversationHistory, message);
 
     const messages: Message[] = [
       { role: 'system', content: systemPrompt },
       { role: 'user', content: chatPrompt },
     ];
 
-    // Generate response with suggested prompts
+    // Generate response
     let chatResponse: ChatResponse;
     try {
       chatResponse = await generateJSON<ChatResponse>(messages, {
-        model: 'instant', // Use fast model for chat
+        model: 'instant',
         temperature: 0.7,
         maxTokens: 2048,
       });
       
-      // Validate response structure
       if (!chatResponse.response || typeof chatResponse.response !== 'string') {
         throw new Error('Invalid response structure');
       }
@@ -150,20 +136,55 @@ export async function POST(request: Request) {
         chatResponse = {
           response: plainResponse,
           suggestedPrompts: [
-            "Can you help me with my plan?",
+            "How's my week looking?",
             "What should I focus on today?",
           ],
+          action: null,
         };
       } catch (fallbackErr) {
         console.error('[Chat] Fallback also failed:', fallbackErr);
         chatResponse = {
           response: "I'm having trouble responding right now. Please try again.",
           suggestedPrompts: [
-            "Can you help me with my plan?",
+            "How's my week looking?",
             "What should I focus on today?",
           ],
+          action: null,
         };
       }
+    }
+
+    // Execute log action if present
+    let executedAction: ChatAction | null = null;
+    if (chatResponse.action && chatResponse.action.type === 'log' && chatResponse.action.pillar && chatResponse.action.value) {
+      const { pillar, value, details } = chatResponse.action;
+      
+      if (PILLARS.includes(pillar) && typeof value === 'number' && value > 0) {
+        const { data: logData, error: logError } = await supabase
+          .from('core_five_logs')
+          .insert({
+            user_id: user.id,
+            pillar,
+            value,
+            details: details || null,
+            week_start: weekStartStr,
+          })
+          .select()
+          .single();
+
+        if (!logError && logData) {
+          executedAction = {
+            type: 'log',
+            pillar,
+            value,
+            details,
+            label: `Logged ${value} ${PILLAR_CONFIGS[pillar].unit} of ${PILLAR_CONFIGS[pillar].name}`,
+          };
+        }
+      }
+    } else if (chatResponse.action && chatResponse.action.type !== 'log') {
+      // Pass through deep_link and timer actions for the frontend to handle
+      executedAction = chatResponse.action;
     }
 
     // Save conversation
@@ -184,25 +205,24 @@ export async function POST(request: Request) {
     ];
 
     if (conversationData) {
-      // Update existing conversation
       await supabase
         .from('conversations')
         .update({ messages: newMessages })
         .eq('user_id', user.id);
     } else {
-      // Create new conversation
       await supabase
         .from('conversations')
         .insert({
           user_id: user.id,
           messages: newMessages,
-          context: context || {},
+          context: {},
         });
     }
 
     return NextResponse.json({ 
       message: chatResponse.response,
       suggestedPrompts: chatResponse.suggestedPrompts || [],
+      action: executedAction,
       success: true,
     });
   } catch (error) {
@@ -210,4 +230,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
