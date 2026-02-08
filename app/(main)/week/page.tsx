@@ -5,6 +5,7 @@ import { ChatOverlay } from '@/components/ChatOverlay';
 import { HuumanHeader } from '@/components/HuumanHeader';
 import { SettingsButton } from '@/components/SettingsButton';
 import { YouButton } from '@/components/YouButton';
+import { FloatingDock } from '@/components/ui/FloatingDock';
 import { 
   UserProfile, 
   Domain, 
@@ -117,7 +118,7 @@ export default async function WeekPage() {
   // V3 Focused Mode: Show Core Five Protocol view
   if (V3_FOCUSED) {
     return (
-      <div className="min-h-screen flex flex-col relative">
+      <div className="min-h-screen flex flex-col relative pb-32">
         {/* Header */}
         <header className="relative z-10 px-6 py-4 flex items-center justify-between">
           <SettingsButton 
@@ -135,13 +136,31 @@ export default async function WeekPage() {
         <div className="relative z-10 flex-1">
           <CoreFiveView userId={user.id} />
         </div>
+
+        {/* Floating Dock & Chat */}
+        <ChatOverlay 
+          trigger={<div />} // Triggered by dock
+          customTrigger={(open) => (
+            <FloatingDock 
+              onChatClick={open}
+              onSettingsClick={() => {
+                // Settings click handler - could trigger settings modal
+                const settingsBtn = document.querySelector('[aria-label="Settings"]');
+                if (settingsBtn instanceof HTMLElement) settingsBtn.click();
+              }}
+              onHomeClick={() => {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+          )}
+        />
       </div>
     );
   }
 
   // V2 Mode: Show original view with protocol, chat, You tab
   return (
-    <div className="min-h-screen flex flex-col relative pb-24">
+    <div className="min-h-screen flex flex-col relative pb-32">
       {/* Ambient gradient orb */}
       <div className="fixed inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-[800px] h-[800px]">
@@ -187,33 +206,22 @@ export default async function WeekPage() {
         )}
       </div>
 
-      {/* Chat FAB */}
-      <div className="fixed bottom-6 right-6 z-50 safe-area-bottom">
-        <ChatOverlay 
-          trigger={
-            <button className="
-              w-14 h-14 rounded-full
-              bg-green-500/20 border border-green-500/30
-              text-green-400
-              hover:bg-green-500/30 hover:border-green-500/40 hover:scale-105
-              active:scale-95
-              transition-all duration-300
-              flex items-center justify-center
-              shadow-lg shadow-green-500/10
-              backdrop-blur-sm
-            ">
-              <svg 
-                className="w-6 h-6" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-              </svg>
-            </button>
-          }
-        />
-      </div>
+      {/* Floating Dock & Chat */}
+      <ChatOverlay 
+        trigger={<div />} // Triggered by dock
+        customTrigger={(open) => (
+          <FloatingDock 
+            onChatClick={open}
+            onSettingsClick={() => {
+              const settingsBtn = document.querySelector('[aria-label="Settings"]');
+              if (settingsBtn instanceof HTMLElement) settingsBtn.click();
+            }}
+            onHomeClick={() => {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
+      />
     </div>
   );
 }

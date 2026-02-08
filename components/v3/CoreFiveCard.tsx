@@ -38,6 +38,8 @@ export const iconComponents: Record<string, React.ElementType> = {
 // Pillars that support quick-tap (no modal needed)
 const QUICK_TAP_PILLARS: Pillar[] = ["clean_eating", "strength"];
 
+import { Haptics, Sounds } from "@/lib/soul";
+
 export function CoreFiveCard({
   config,
   current,
@@ -47,20 +49,21 @@ export function CoreFiveCard({
   readOnly,
   justCompleted,
 }: CoreFiveCardProps) {
-  const { id: pillarId, name, weeklyTarget, unit, description, color, icon } = config;
-  const progress = Math.min((current / weeklyTarget) * 100, 100);
-  const isMet = current >= weeklyTarget;
-  const isQuickTap = QUICK_TAP_PILLARS.includes(pillarId) && onQuickLog;
-  const [quickLogging, setQuickLogging] = useState(false);
-
-  const IconComponent = iconComponents[icon] || Heart;
+  // ... existing code ...
 
   const handleQuickLog = async (value: number, e: React.MouseEvent) => {
     e.stopPropagation();
     if (!onQuickLog || quickLogging) return;
+    
+    Haptics.light();
     setQuickLogging(true);
+    
     try {
       await onQuickLog(value);
+      Haptics.success();
+      Sounds.playSuccess();
+    } catch (error) {
+      Haptics.error();
     } finally {
       setQuickLogging(false);
     }
@@ -70,94 +73,16 @@ export function CoreFiveCard({
     <GlassCard
       variant="panel"
       hoverEffect={!!onCardClick}
-      onClick={onCardClick}
-      className={cn(
-        "relative overflow-hidden p-5 flex flex-col justify-between h-full group",
-        justCompleted && "animate-pulse-soft"
-      )}
-      style={{
-        // Dynamic glow based on pillar color
-        boxShadow: isMet 
-          ? `0 0 40px -10px ${color}40` 
-          : undefined,
-        borderColor: isMet ? `${color}60` : undefined,
+      onClick={() => {
+        if (onCardClick) {
+          Haptics.light();
+          onCardClick();
+        }
       }}
+      // ... rest of props
     >
-      {/* Background Gradient */}
-      <div 
-        className="absolute inset-0 opacity-10 transition-opacity duration-500 group-hover:opacity-20"
-        style={{
-          background: `radial-gradient(circle at top right, ${color}, transparent 70%)`
-        }}
-      />
-
-      {/* Header */}
-      <div className="relative z-10 flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 shadow-sm"
-            style={{ backgroundColor: `${color}20` }}
-          >
-            <IconComponent 
-              className="w-5 h-5 transition-transform group-hover:scale-110" 
-              style={{ color }} 
-            />
-          </div>
-          <div>
-            <h3 className="text-lg font-medium text-white leading-tight">{name}</h3>
-            <p className="text-xs text-white/50 font-medium">{description}</p>
-          </div>
-        </div>
-        
-        {/* Status Indicator */}
-        <div className="flex items-center">
-          <AnimatePresence>
-            {isMet && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
-                className="w-6 h-6 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: color }}
-              >
-                <Check className="w-3.5 h-3.5 text-black font-bold" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Progress Section */}
-      <div className="relative z-10 mt-auto">
-        <div className="flex items-baseline justify-between mb-2">
-          <div className="flex items-baseline gap-1">
-            <span 
-              className="text-3xl font-display font-bold tracking-tight"
-              style={{ color: isMet ? color : "white" }}
-            >
-              {current}
-            </span>
-            <span className="text-sm text-white/40 font-medium">
-              / {weeklyTarget} {unit}
-            </span>
-          </div>
-        </div>
-        
-        {/* Progress Bar */}
-        <div className="h-2 rounded-full bg-white/5 overflow-hidden backdrop-blur-sm border border-white/5">
-          <motion.div
-            className="h-full rounded-full"
-            initial={{ width: 0 }}
-            animate={{ width: `${progress}%` }}
-            transition={{ type: "spring", stiffness: 50, damping: 15 }}
-            style={{ 
-              backgroundColor: color,
-              boxShadow: `0 0 10px ${color}80`
-            }}
-          />
-        </div>
-      </div>
-
+      {/* ... existing JSX ... */}
+      
       {/* Actions */}
       {!readOnly && (
         <div className="relative z-10 mt-4 pt-4 border-t border-white/5">
@@ -166,27 +91,18 @@ export function CoreFiveCard({
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => handleQuickLog(1, e)}
-                disabled={quickLogging}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:brightness-110 disabled:opacity-50"
-                style={{ backgroundColor: `${color}20`, color }}
+                // ... rest of button props
               >
-                {quickLogging ? (
-                  <span className="animate-pulse">...</span>
-                ) : (
-                  <>
-                    <Plus className="w-4 h-4" />
-                    {pillarId === 'clean_eating' ? 'On-plan' : 'Session'}
-                  </>
-                )}
+                {/* ... button content ... */}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => {
                   e.stopPropagation();
+                  Haptics.light();
                   onLogClick();
                 }}
-                className="p-2.5 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
-                style={{ color: 'rgba(255,255,255,0.6)' }}
+                // ... rest of button props
               >
                 <MoreHorizontal className="w-5 h-5" />
               </motion.button>
@@ -196,10 +112,10 @@ export function CoreFiveCard({
               whileTap={{ scale: 0.98 }}
               onClick={(e) => {
                 e.stopPropagation();
+                Haptics.light();
                 onLogClick();
               }}
-              className="w-full py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:brightness-110"
-              style={{ backgroundColor: `${color}20`, color }}
+              // ... rest of button props
             >
               <Plus className="w-4 h-4" />
               Log {name}
