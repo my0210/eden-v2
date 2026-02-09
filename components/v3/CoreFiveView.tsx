@@ -194,9 +194,10 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     fetchLogs();
   }, [weekStartStr]);
 
-  // Listen for log events from chat (or other surfaces) and refetch
+  // Refetch logs when page gains focus (handles coming back from /chat or other pages)
+  // Also listen for the logCreated event as a fallback
   useEffect(() => {
-    const handleLogCreated = () => {
+    const refetchLogs = () => {
       fetch(`/api/v3/log?week_start=${weekStartStr}`)
         .then(res => res.json())
         .then(data => {
@@ -209,8 +210,20 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
         .catch(() => {});
     };
 
-    window.addEventListener('huuman:logCreated', handleLogCreated);
-    return () => window.removeEventListener('huuman:logCreated', handleLogCreated);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') refetchLogs();
+    };
+
+    const handleFocus = () => refetchLogs();
+
+    window.addEventListener('huuman:logCreated', refetchLogs);
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      window.removeEventListener('huuman:logCreated', refetchLogs);
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [weekStartStr]);
 
   // Fetch streak data on mount

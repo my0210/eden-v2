@@ -193,7 +193,11 @@ export async function POST(request: Request) {
     const executedActions: ChatAction[] = [];
     for (const action of rawActions) {
       if (action.type === 'log' && action.pillar && action.value) {
-        const { pillar, value, details } = action;
+        // Normalize pillar name: "clean eating" -> "clean_eating", "Clean Eating" -> "clean_eating"
+        const normalizedPillar = (action.pillar as string).toLowerCase().replace(/[\s-]+/g, '_') as Pillar;
+        const { details } = action;
+        const pillar = PILLARS.includes(normalizedPillar) ? normalizedPillar : action.pillar;
+        const value = typeof action.value === 'string' ? parseFloat(action.value) : action.value;
         if (PILLARS.includes(pillar) && typeof value === 'number' && value > 0) {
           const { data: logData, error: logError } = await supabase
             .from('core_five_logs')
