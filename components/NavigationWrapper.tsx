@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChatOverlay } from "@/components/ChatOverlay";
+import { useRouter } from "next/navigation";
 import { FloatingDock } from "@/components/ui/FloatingDock";
 import { SettingsOverlay } from "@/components/SettingsOverlay";
 import { UnitSystem, GlucoseUnit, LipidsUnit } from "@/lib/types";
@@ -26,20 +26,16 @@ export function NavigationWrapper({
   coachingStyle,
 }: NavigationWrapperProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const router = useRouter();
 
   return (
     <>
-      <ChatOverlay
-        trigger={<div />}
-        customTrigger={(openChat) => (
-          <FloatingDock
-            onChatClick={openChat}
-            onSettingsClick={() => setIsSettingsOpen(true)}
-            onHomeClick={() => {
-              window.scrollTo({ top: 0, behavior: "smooth" });
-            }}
-          />
-        )}
+      <FloatingDock
+        onChatClick={() => router.push("/chat")}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+        onHomeClick={() => {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }}
       />
 
       <SettingsOverlay
