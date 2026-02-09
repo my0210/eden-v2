@@ -81,6 +81,21 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
     if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
   }, [isOpen]);
 
+  // Handle iOS keyboard: scroll input into view when keyboard opens
+  useEffect(() => {
+    if (!isOpen) return;
+    
+    const handleResize = () => {
+      // Scroll the input into view when keyboard changes viewport
+      setTimeout(() => {
+        inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    };
+
+    window.visualViewport?.addEventListener('resize', handleResize);
+    return () => window.visualViewport?.removeEventListener('resize', handleResize);
+  }, [isOpen]);
+
   useEffect(() => {
     const handleAskAboutItem = (e: CustomEvent<{ question: string }>) => {
       setIsOpen(true);
@@ -177,7 +192,8 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
         <Drawer.Content 
           className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none rounded-t-2xl"
           style={{
-            height: '92dvh',
+            height: '92vh',
+            maxHeight: '92vh',
             backgroundColor: '#111113',
           }}
         >
