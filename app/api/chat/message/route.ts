@@ -124,20 +124,24 @@ export async function POST(request: Request) {
       max_tokens: 4096,
     });
 
+    console.log(`[Agent] Initial response - stop_reason: ${response.stop_reason}, content blocks: ${response.content.map(b => b.type).join(', ')}`);
+
     while (response.stop_reason === 'tool_use' && iterations < MAX_TOOL_ITERATIONS) {
       iterations++;
 
-      // Extract tool_use blocks
+      // Extract tool_use blocks from response content
       const toolUseBlocks = response.content.filter(
-        (block): block is Anthropic.ContentBlockParam & { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
-          block.type === 'tool_use'
-      );
+        (block) => block.type === 'tool_use'
+      ) as Array<{ type: 'tool_use'; id: string; name: string; input: Record<string, unknown> }>;
+
+      console.log(`[Agent] Iteration ${iterations} - ${toolUseBlocks.length} tool calls: ${toolUseBlocks.map(b => b.name).join(', ')}`);
 
       // Execute each tool
       const toolResultBlocks: Anthropic.ToolResultBlockParam[] = [];
       for (const block of toolUseBlocks) {
-        console.log(`[Agent] Tool call: ${block.name}`, block.input);
-        const result = await executeTool(block.name, block.input as Record<string, unknown>, toolContext);
+        console.log(`[Agent] Executing tool: ${block.name}`, JSON.stringify(block.input));
+        const result = await executeTool(block.name, block.input, toolContext);
+        console.log(`[Agent] Tool result: ${block.name} success=${result.success}`, result.display?.type);
         toolResults.push(result);
 
         // Update logs context if a log was created
@@ -162,7 +166,23 @@ export async function POST(request: Request) {
       }
 
       // Append assistant message + tool results, call again
-      anthropicMessages.push({ role: 'assistant', content: response.content as Anthropic.ContentBlockParam[] });
+      anthropicMessages.push({
+        role: 'assistant',
+        content: response.content.map(block => {
+          if (block.type === 'text') {
+            return { type: 'text' as const, text: block.text };
+          }
+          if (block.type === 'tool_use') {
+            return {
+              type: 'tool_use' as const,
+              id: block.id,
+              name: block.name,
+              input: block.input,
+            };
+          }
+          return block;
+        }),
+      });
       anthropicMessages.push({ role: 'user', content: toolResultBlocks });
 
       response = await anthropic.messages.create({
@@ -172,7 +192,11 @@ export async function POST(request: Request) {
         tools: TOOL_DEFINITIONS,
         max_tokens: 4096,
       });
+
+      console.log(`[Agent] Follow-up response - stop_reason: ${response.stop_reason}, content blocks: ${response.content.map(b => b.type).join(', ')}`);
     }
+
+    console.log(`[Agent] Final - ${iterations} tool iterations, ${toolResults.length} tool results`);
 
     // Extract final text from response
     const finalText = response.content
