@@ -72,6 +72,7 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const hasFetchedSmartPrompts = useRef(false);
+  const logsCreatedInSession = useRef(false);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -183,6 +184,7 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
       // Notify dashboard to refresh if any log actions were executed
       const hasLogAction = allActions.some((a: { type: string }) => a.type === 'log');
       if (hasLogAction) {
+        logsCreatedInSession.current = true;
         window.dispatchEvent(new CustomEvent('huuman:logCreated'));
       }
 
@@ -212,7 +214,14 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
   return (
     <Drawer.Root
       open={isOpen}
-      onOpenChange={setIsOpen}
+      onOpenChange={(open) => {
+        setIsOpen(open);
+        // When drawer closes, refresh dashboard if any logs were created
+        if (!open && logsCreatedInSession.current) {
+          logsCreatedInSession.current = false;
+          window.dispatchEvent(new CustomEvent('huuman:logCreated'));
+        }
+      }}
       shouldScaleBackground={true}
     >
       <Drawer.Trigger asChild>
