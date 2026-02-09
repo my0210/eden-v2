@@ -150,8 +150,13 @@ export default function ChatPage() {
           : m
       ));
 
-      // Dispatch log event if applicable
+      // Dispatch log event and invalidate dashboard cache
       if (data.hasLogs) {
+        // Clear the cached logs so dashboard fetches fresh data
+        try {
+          const weekStart = getWeekStart(new Date());
+          localStorage.removeItem(`huuman_logs_${weekStart}`);
+        } catch {}
         window.dispatchEvent(new CustomEvent('huuman:logCreated'));
       }
 
