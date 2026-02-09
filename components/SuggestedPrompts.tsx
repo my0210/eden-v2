@@ -9,23 +9,14 @@ export function SuggestedPrompts({ prompts, onSelect }: SuggestedPromptsProps) {
   if (prompts.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-0.5 -mx-1 px-1">
       {prompts.map((prompt, index) => (
         <button
           key={index}
           onClick={() => onSelect(prompt)}
-          className="w-full px-4 py-3 rounded-xl text-left text-sm text-white/80 hover:text-white transition-all duration-200 flex items-center justify-between gap-3 active:scale-[0.98]"
-          style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }}
+          className="flex-shrink-0 px-3.5 py-2 rounded-full text-xs text-white/60 hover:text-white/90 border border-white/10 hover:border-white/20 hover:bg-white/5 transition-all duration-200 active:scale-[0.97] whitespace-nowrap"
         >
-          <span className="line-clamp-2">{prompt}</span>
-          <svg 
-            className="w-4 h-4 flex-shrink-0 text-white/40" 
-            fill="none" 
-            viewBox="0 0 24 24" 
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.5 12h15m0 0l-6.75-6.75M19.5 12l-6.75 6.75" />
-          </svg>
+          {prompt}
         </button>
       ))}
     </div>

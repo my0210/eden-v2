@@ -5,7 +5,7 @@ import { Drawer } from "vaul";
 import { ChatMessage, Message } from "./ChatMessage";
 import { SuggestedPrompts } from "./SuggestedPrompts";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Sparkles } from "lucide-react";
+import { ArrowUp, X } from "lucide-react";
 import { getWeekStart, PILLAR_CONFIGS, PILLARS, type CoreFiveLog, getPillarProgress } from "@/lib/v3/coreFive";
 
 // Default prompts shown before we have progress data
@@ -21,13 +21,12 @@ const DEFAULT_PROMPTS = [
 function getSmartPrompts(logs: CoreFiveLog[]): string[] {
   const prompts: string[] = [];
 
-  // Check each pillar and suggest based on gaps
   for (const pillar of PILLARS) {
     const config = PILLAR_CONFIGS[pillar];
     const current = getPillarProgress(logs, pillar);
     const remaining = config.weeklyTarget - current;
 
-    if (remaining <= 0) continue; // pillar met, skip
+    if (remaining <= 0) continue;
 
     if (pillar === 'cardio' && current === 0) {
       prompts.push("Log a walk or run");
@@ -42,19 +41,16 @@ function getSmartPrompts(logs: CoreFiveLog[]): string[] {
     }
   }
 
-  // Count met pillars
   const metCount = PILLARS.filter(p => getPillarProgress(logs, p) >= PILLAR_CONFIGS[p].weeklyTarget).length;
 
   if (metCount >= 4) {
     prompts.unshift("What's left to hit all 5?");
   } else if (metCount === 0 && logs.length === 0) {
-    // No data at all yet
     return DEFAULT_PROMPTS;
   } else {
     prompts.unshift("How's my week looking?");
   }
 
-  // Cap at 3 prompts
   return prompts.slice(0, 3);
 }
 
@@ -88,7 +84,7 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
     }
   }, [input]);
 
-  // Fetch smart prompts when chat opens (only once, only for empty state)
+  // Fetch smart prompts when chat opens
   useEffect(() => {
     if (isOpen && messages.length === 0 && !hasFetchedSmartPrompts.current) {
       hasFetchedSmartPrompts.current = true;
@@ -97,13 +93,10 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
         .then((res) => res.json())
         .then((data) => {
           if (data.logs) {
-            const smart = getSmartPrompts(data.logs);
-            setSuggestedPrompts(smart);
+            setSuggestedPrompts(getSmartPrompts(data.logs));
           }
         })
-        .catch(() => {
-          // Keep default prompts on error
-        });
+        .catch(() => {});
     }
   }, [isOpen, messages.length]);
 
@@ -156,7 +149,6 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
 
       const data = await response.json();
 
-      // Support both single action and multi-action responses
       const primaryAction = data.action || null;
       const allActions = data.actions || (primaryAction ? [primaryAction] : []);
 
@@ -168,7 +160,6 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
       };
       setMessages((prev) => [...prev, assistantMessage]);
 
-      // If there are additional actions beyond the first, add them as separate messages
       if (allActions.length > 1) {
         for (let i = 1; i < allActions.length; i++) {
           const actionMsg: Message = {
@@ -181,7 +172,6 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
         }
       }
 
-      // Notify dashboard to refresh if any log actions were executed
       const hasLogAction = allActions.some((a: { type: string }) => a.type === 'log');
       if (hasLogAction) {
         logsCreatedInSession.current = true;
@@ -216,13 +206,11 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
       open={isOpen}
       onOpenChange={(open) => {
         setIsOpen(open);
-        // When drawer closes, refresh dashboard if any logs were created
         if (!open && logsCreatedInSession.current) {
           logsCreatedInSession.current = false;
           window.dispatchEvent(new CustomEvent('huuman:logCreated'));
         }
       }}
-      shouldScaleBackground={true}
     >
       <Drawer.Trigger asChild>
         {customTrigger ? customTrigger(() => setIsOpen(true)) : trigger}
@@ -230,52 +218,74 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
 
       <Drawer.Portal>
         <Drawer.Overlay 
-          className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm" 
+          className="fixed inset-0 z-[100]"
+          style={{ backgroundColor: 'rgba(0,0,0,0.6)' }}
         />
         
         <Drawer.Content 
-          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none h-[96vh] glass-panel rounded-t-[20px] border-t border-white/10"
+          className="fixed bottom-0 left-0 right-0 z-[101] flex flex-col outline-none rounded-t-2xl"
+          style={{
+            height: '92dvh',
+            backgroundColor: 'rgba(18, 18, 20, 0.98)',
+            backdropFilter: 'blur(40px)',
+            WebkitBackdropFilter: 'blur(40px)',
+          }}
         >
-          {/* Drag Handle */}
-          <div className="flex justify-center pt-3 pb-2">
-            <div className="w-12 h-1.5 rounded-full bg-white/20" />
-          </div>
-
-          {/* Header */}
-          <div className="flex items-center justify-center py-2 border-b border-white/5">
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-light text-white/80 tracking-tight">huuman</span>
+          {/* Drag Handle + Header */}
+          <div className="flex-shrink-0">
+            <div className="flex justify-center pt-2.5 pb-1">
+              <div className="w-9 h-1 rounded-full bg-white/20" />
+            </div>
+            
+            <div className="flex items-center justify-between px-4 py-2">
+              <div className="w-8" />
+              <span className="text-sm font-medium text-white/70 tracking-tight">huuman</span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white/40 hover:text-white/70 hover:bg-white/5 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
 
           {/* Messages Area */}
-          <div className="flex-1 overflow-y-auto px-4 py-6 space-y-6">
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-4 space-y-4">
             {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center space-y-4 opacity-0 animate-fade-in">
-                <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
-                  <Sparkles className="w-8 h-8 text-white/40" />
+              <div className="flex flex-col items-center justify-center h-full text-center space-y-3 opacity-0 animate-fade-in">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                  <svg className="w-5 h-5 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
+                  </svg>
                 </div>
-                <p className="text-white/40 text-sm max-w-[220px]">
+                <p className="text-white/30 text-xs max-w-[200px]">
                   Ask about your week, log an activity, or get a recommendation.
                 </p>
               </div>
             ) : (
               <>
                 {messages.map((message) => (
-                  <ChatMessage key={message.id} message={message} />
+                  <motion.div
+                    key={message.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <ChatMessage message={message} />
+                  </motion.div>
                 ))}
                 
                 {isLoading && (
                   <motion.div 
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="flex justify-start"
                   >
-                    <div className="rounded-2xl px-4 py-3 bg-white/5 border border-white/5">
-                      <div className="flex gap-1.5">
-                        <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.3s]" />
-                        <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce [animation-delay:-0.15s]" />
-                        <span className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" />
+                    <div className="rounded-2xl px-4 py-3 bg-white/5">
+                      <div className="flex gap-1">
+                        <span className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.3s]" />
+                        <span className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce [animation-delay:-0.15s]" />
+                        <span className="w-1.5 h-1.5 bg-white/30 rounded-full animate-bounce" />
                       </div>
                     </div>
                   </motion.div>
@@ -286,15 +296,15 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
           </div>
 
           {/* Input Area */}
-          <div className="p-4 safe-area-bottom bg-black/40 backdrop-blur-xl border-t border-white/10">
-            {/* Suggested Prompts */}
+          <div className="flex-shrink-0 px-4 pt-2 pb-4 safe-area-bottom" style={{ backgroundColor: 'rgba(18, 18, 20, 0.98)' }}>
+            {/* Suggested Prompts - horizontal scroll */}
             <AnimatePresence>
               {suggestedPrompts.length > 0 && !isLoading && (
                 <motion.div 
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mb-4 overflow-hidden"
+                  className="mb-3 overflow-hidden"
                 >
                   <SuggestedPrompts prompts={suggestedPrompts} onSelect={handleSend} />
                 </motion.div>
@@ -302,16 +312,16 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
             </AnimatePresence>
 
             <div className="relative flex items-end gap-2">
-              <div className="relative flex-1 bg-white/10 rounded-[24px] border border-white/10 focus-within:border-white/30 focus-within:bg-white/15 transition-all duration-300">
+              <div className="relative flex-1 rounded-2xl border border-white/10 bg-white/5 focus-within:border-white/20 focus-within:bg-white/8 transition-all duration-200">
                 <textarea
                   ref={inputRef}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask anything..."
+                  placeholder="Message huuman..."
                   disabled={isLoading}
                   rows={1}
-                  className="w-full px-5 py-4 pr-12 bg-transparent text-white placeholder:text-white/30 resize-none focus:outline-none max-h-[120px] min-h-[56px]"
+                  className="w-full px-4 py-3 pr-12 bg-transparent text-sm text-white placeholder:text-white/25 resize-none focus:outline-none max-h-[120px] min-h-[44px]"
                 />
                 
                 <AnimatePresence>
@@ -322,9 +332,9 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
                       exit={{ scale: 0.8, opacity: 0 }}
                       onClick={() => handleSend()}
                       disabled={isLoading}
-                      className="absolute right-2 bottom-2 w-10 h-10 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-all"
+                      className="absolute right-1.5 bottom-1.5 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-all"
                     >
-                      <ArrowUp className="w-5 h-5" strokeWidth={2.5} />
+                      <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
                     </motion.button>
                   )}
                 </AnimatePresence>

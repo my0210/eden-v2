@@ -57,15 +57,15 @@ const PILLAR_COLORS: Record<string, string> = {
 };
 
 /**
- * Typewriter effect: reveals text word-by-word for assistant messages.
+ * Typewriter effect: reveals text in chunks for assistant messages.
+ * Fast and smooth -- reveals 2-3 words per tick at 20ms intervals.
  */
-function useTypewriter(text: string, speed = 25): { displayText: string; done: boolean } {
+function useTypewriter(text: string): { displayText: string; done: boolean } {
   const [displayText, setDisplayText] = useState('');
   const [done, setDone] = useState(false);
   const hasAnimated = useRef(false);
 
   useEffect(() => {
-    // Only animate once per message, and skip if already seen
     if (hasAnimated.current || !text) {
       setDisplayText(text);
       setDone(true);
@@ -73,22 +73,25 @@ function useTypewriter(text: string, speed = 25): { displayText: string; done: b
     }
 
     hasAnimated.current = true;
-    let i = 0;
     const words = text.split(' ');
+    let shown = 0;
     setDisplayText('');
     setDone(false);
 
+    // Reveal 2-3 words per tick for a fast but visible effect
+    const wordsPerTick = words.length > 20 ? 3 : 2;
+
     const interval = setInterval(() => {
-      i++;
-      setDisplayText(words.slice(0, i).join(' '));
-      if (i >= words.length) {
+      shown = Math.min(shown + wordsPerTick, words.length);
+      setDisplayText(words.slice(0, shown).join(' '));
+      if (shown >= words.length) {
         clearInterval(interval);
         setDone(true);
       }
-    }, speed);
+    }, 20);
 
     return () => clearInterval(interval);
-  }, [text, speed]);
+  }, [text]);
 
   return { displayText, done };
 }
