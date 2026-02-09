@@ -194,6 +194,25 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
     fetchLogs();
   }, [weekStartStr]);
 
+  // Listen for log events from chat (or other surfaces) and refetch
+  useEffect(() => {
+    const handleLogCreated = () => {
+      fetch(`/api/v3/log?week_start=${weekStartStr}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.logs) {
+            setLogs(data.logs);
+            prevCoverageRef.current = getPrimeCoverage(data.logs);
+            setCachedLogs(weekStartStr, data.logs);
+          }
+        })
+        .catch(() => {});
+    };
+
+    window.addEventListener('huuman:logCreated', handleLogCreated);
+    return () => window.removeEventListener('huuman:logCreated', handleLogCreated);
+  }, [weekStartStr]);
+
   // Fetch streak data on mount
   useEffect(() => {
     async function fetchStreak() {

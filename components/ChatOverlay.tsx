@@ -180,6 +180,12 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
         }
       }
 
+      // Notify dashboard to refresh if any log actions were executed
+      const hasLogAction = allActions.some((a: { type: string }) => a.type === 'log');
+      if (hasLogAction) {
+        window.dispatchEvent(new CustomEvent('huuman:logCreated'));
+      }
+
       if (data.suggestedPrompts) {
         setSuggestedPrompts(data.suggestedPrompts);
       }
