@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { ChatMessage, Message } from "@/components/ChatMessage";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { ChatMessage, Message, ToolDisplay } from "@/components/ChatMessage";
+import { BreathworkTimer } from "@/components/BreathworkTimer";
+import { MealScanner } from "@/components/MealScanner";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, ArrowLeft } from "lucide-react";
+import { ArrowUp, LayoutDashboard, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getWeekStart, PILLAR_CONFIGS, PILLARS, type CoreFiveLog, getPillarProgress } from "@/lib/v3/coreFive";
+
+// ============================================================================
+// Smart Prompts
+// ============================================================================
 
 const DEFAULT_PROMPTS = [
   "How's my week looking?",
   "Log 30 min of cardio",
+  "Give me a quick workout",
   "What should I focus on today?",
 ];
 
@@ -21,16 +28,20 @@ function getSmartPrompts(logs: CoreFiveLog[]): string[] {
     if (current >= config.weeklyTarget) continue;
     if (pillar === 'cardio' && current === 0) prompts.push("Log a walk or run");
     else if (pillar === 'sleep' && current === 0) prompts.push("Log last night's sleep");
-    else if (pillar === 'strength' && current < config.weeklyTarget) prompts.push("Log a strength session");
-    else if (pillar === 'clean_eating' && current < config.weeklyTarget) prompts.push("Log a clean eating day");
-    else if (pillar === 'mindfulness' && current === 0) prompts.push("Start a 10 min breathwork");
+    else if (pillar === 'strength' && current < config.weeklyTarget) prompts.push("Give me a workout");
+    else if (pillar === 'clean_eating' && current < config.weeklyTarget) prompts.push("Scan my meal");
+    else if (pillar === 'mindfulness' && current === 0) prompts.push("Start breathwork");
   }
   const metCount = PILLARS.filter(p => getPillarProgress(logs, p) >= PILLAR_CONFIGS[p].weeklyTarget).length;
   if (metCount >= 4) prompts.unshift("What's left to hit all 5?");
   else if (metCount === 0 && logs.length === 0) return DEFAULT_PROMPTS;
   else prompts.unshift("How's my week looking?");
-  return prompts.slice(0, 3);
+  return prompts.slice(0, 4);
 }
+
+// ============================================================================
+// Chat Page (Main Screen)
+// ============================================================================
 
 export default function ChatPage() {
   const router = useRouter();
@@ -38,13 +49,17 @@ export default function ChatPage() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>(DEFAULT_PROMPTS);
+  const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
+  const [showMealScanner, setShowMealScanner] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const logsCreatedInSession = useRef(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
   }, [messages]);
 
   // Auto-resize textarea
@@ -81,21 +96,37 @@ export default function ChatPage() {
     return () => window.removeEventListener("huuman:askAboutItem", handleAskAboutItem as EventListener);
   }, []);
 
-  const handleBack = () => {
-    if (logsCreatedInSession.current) {
-      window.dispatchEvent(new CustomEvent('huuman:logCreated'));
-    }
-    router.back();
-  };
+  const handleTimerStart = useCallback((minutes: number) => {
+    setShowBreathworkTimer(true);
+  }, []);
+
+  const handleScannerOpen = useCallback(() => {
+    setShowMealScanner(true);
+  }, []);
 
   const handleSend = async (messageText?: string) => {
     const text = messageText || input.trim();
     if (!text || isLoading) return;
 
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: "user", content: text }]);
+    // Add user message
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: "user",
+      content: text,
+    };
+    setMessages(prev => [...prev, userMsg]);
     setInput("");
     setIsLoading(true);
     setSuggestedPrompts([]);
+
+    // Add placeholder assistant message for streaming feel
+    const assistantId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: assistantId,
+      role: "assistant",
+      content: "",
+      isStreaming: true,
+    }]);
 
     try {
       const response = await fetch("/api/chat/message", {
@@ -103,41 +134,42 @@ export default function ChatPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
+
       if (!response.ok) throw new Error("Failed");
       const data = await response.json();
 
-      const primaryAction = data.action || null;
-      const allActions = data.actions || (primaryAction ? [primaryAction] : []);
+      // Update assistant message with real content
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId
+          ? {
+              ...m,
+              content: data.message,
+              toolResults: data.toolResults || [],
+              isStreaming: false,
+            }
+          : m
+      ));
 
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: data.message,
-        action: primaryAction,
-      }]);
-
-      if (allActions.length > 1) {
-        for (let i = 1; i < allActions.length; i++) {
-          setMessages((prev) => [...prev, {
-            id: (Date.now() + 2 + i).toString(),
-            role: "assistant",
-            content: "",
-            action: allActions[i],
-          }]);
-        }
+      // Dispatch log event if applicable
+      if (data.hasLogs) {
+        window.dispatchEvent(new CustomEvent('huuman:logCreated'));
       }
 
-      if (allActions.some((a: { type: string }) => a.type === 'log')) {
-        logsCreatedInSession.current = true;
-      }
+      // Refresh smart prompts
+      const weekStart = getWeekStart(new Date());
+      fetch(`/api/v3/log?week_start=${weekStart}`)
+        .then(res => res.json())
+        .then(d => {
+          if (d.logs) setSuggestedPrompts(getSmartPrompts(d.logs));
+        })
+        .catch(() => {});
 
-      if (data.suggestedPrompts) setSuggestedPrompts(data.suggestedPrompts);
     } catch {
-      setMessages((prev) => [...prev, {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "Sorry, I had trouble responding. Please try again.",
-      }]);
+      setMessages(prev => prev.map(m =>
+        m.id === assistantId
+          ? { ...m, content: "Sorry, I had trouble responding. Please try again.", isStreaming: false }
+          : m
+      ));
     } finally {
       setIsLoading(false);
     }
@@ -153,125 +185,151 @@ export default function ChatPage() {
   const isEmpty = messages.length === 0;
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: '#0a0a0a' }}>
-      {/* Header */}
-      <header className="flex-shrink-0 flex items-center justify-between px-4 py-3 safe-area-top">
-        <button
-          onClick={handleBack}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-white/40 hover:text-white/70 transition-colors"
-          style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
+    <>
+      <div className="h-[100dvh] flex flex-col" style={{ backgroundColor: '#0a0a0b' }}>
+        {/* Header */}
+        <header className="flex-shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] pb-3">
+          <span className="text-lg font-light tracking-tight text-white/40">huuman</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => router.push("/week")}
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+            >
+              <LayoutDashboard className="w-[18px] h-[18px]" />
+            </button>
+          </div>
+        </header>
+
+        {/* Messages Area */}
+        <div 
+          ref={scrollContainerRef}
+          className="flex-1 overflow-y-auto overscroll-contain"
         >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <span className="text-[13px] font-medium text-white/50">huuman</span>
-        <div className="w-9" />
-      </header>
+          {isEmpty ? (
+            /* Empty State -- centered greeting with prompts */
+            <div className="flex flex-col justify-end h-full px-5 pb-4">
+              <div className="flex flex-col items-center mb-10">
+                <div className="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center mb-4">
+                  <span className="text-xl">✦</span>
+                </div>
+                <p className="text-white/30 text-sm text-center max-w-[260px] leading-relaxed">
+                  What can I help you with today?
+                </p>
+              </div>
 
-      {/* Messages or Empty State */}
-      <div className="flex-1 overflow-y-auto overscroll-contain">
-        {isEmpty ? (
-          <div className="flex flex-col items-center justify-end h-full px-5 pb-6">
-            <div className="flex flex-col items-center mb-8">
-              <div className="text-2xl mb-2">👋</div>
-              <p className="text-white/40 text-sm text-center max-w-[240px]">
-                What can I help you with?
-              </p>
+              {/* Prompt cards */}
+              <div className="grid grid-cols-2 gap-2">
+                {suggestedPrompts.map((prompt, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSend(prompt)}
+                    className="px-4 py-3.5 rounded-2xl text-left text-[13px] text-white/60 hover:text-white/80 transition-all duration-150 active:scale-[0.97] border border-white/6 hover:border-white/12 hover:bg-white/4"
+                    style={{ backgroundColor: 'rgba(255,255,255,0.02)' }}
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
             </div>
+          ) : (
+            /* Messages */
+            <div className="px-5 py-4">
+              {messages.map((message) => (
+                <ChatMessage 
+                  key={message.id} 
+                  message={message}
+                  onTimerStart={handleTimerStart}
+                  onScannerOpen={handleScannerOpen}
+                />
+              ))}
 
-            <div className="w-full space-y-2">
+              {/* Loading indicator */}
+              {isLoading && messages[messages.length - 1]?.role === 'assistant' && !messages[messages.length - 1]?.content && (
+                <div className="flex gap-1.5 py-2">
+                  <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s]" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                  <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s]" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                  <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(255,255,255,0.2)' }} />
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          )}
+        </div>
+
+        {/* Input Area */}
+        <div className="flex-shrink-0 px-4 pt-2 pb-[max(env(safe-area-inset-bottom),16px)]">
+          {/* Inline suggested prompts (after conversation starts) */}
+          {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (
+            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-2.5 -mx-1 px-1">
               {suggestedPrompts.map((prompt, i) => (
                 <button
                   key={i}
                   onClick={() => handleSend(prompt)}
-                  className="w-full px-4 py-3.5 rounded-2xl text-left text-[13px] text-white/70 hover:text-white transition-all duration-150 flex items-center justify-between gap-3 active:scale-[0.98]"
-                  style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}
+                  className="flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] text-white/40 hover:text-white/70 transition-colors whitespace-nowrap active:scale-[0.97] border border-white/6 hover:border-white/12"
                 >
-                  <span>{prompt}</span>
-                  <ArrowUp className="w-3.5 h-3.5 text-white/20 flex-shrink-0 rotate-45" />
+                  {prompt}
                 </button>
               ))}
             </div>
-          </div>
-        ) : (
-          <div className="px-4 py-4 space-y-3">
-            {messages.map((message) => (
-              <motion.div
-                key={message.id}
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <ChatMessage message={message} />
-              </motion.div>
-            ))}
+          )}
+
+          {/* Input field */}
+          <div 
+            className="relative rounded-2xl border border-white/8 transition-colors focus-within:border-white/15"
+            style={{ backgroundColor: 'rgba(255,255,255,0.04)' }}
+          >
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Message huuman..."
+              disabled={isLoading}
+              rows={1}
+              className="w-full px-4 py-3.5 pr-12 text-[15px] text-white placeholder:text-white/20 resize-none focus:outline-none max-h-[120px] min-h-[48px] bg-transparent"
+            />
             
-            {isLoading && (
-              <motion.div 
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex justify-start"
-              >
-                <div className="rounded-2xl px-4 py-3" style={{ backgroundColor: 'rgba(255,255,255,0.05)' }}>
-                  <div className="flex gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.3s]" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                    <span className="w-1.5 h-1.5 rounded-full animate-bounce [animation-delay:-0.15s]" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                    <span className="w-1.5 h-1.5 rounded-full animate-bounce" style={{ backgroundColor: 'rgba(255,255,255,0.25)' }} />
-                  </div>
-                </div>
-              </motion.div>
-            )}
-            <div ref={messagesEndRef} />
+            <AnimatePresence>
+              {input.trim() && (
+                <motion.button
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  onClick={() => handleSend()}
+                  disabled={isLoading}
+                  className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-all"
+                >
+                  <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+                </motion.button>
+              )}
+            </AnimatePresence>
           </div>
-        )}
-      </div>
-
-      {/* Input Area */}
-      <div className="flex-shrink-0 px-4 pt-2 pb-4 safe-area-bottom" style={{ backgroundColor: '#0a0a0a' }}>
-        {/* Inline suggested prompts after first message */}
-        {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (
-          <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-2.5 -mx-1 px-1 pb-0.5">
-            {suggestedPrompts.map((prompt, i) => (
-              <button
-                key={i}
-                onClick={() => handleSend(prompt)}
-                className="flex-shrink-0 px-3 py-1.5 rounded-full text-[12px] text-white/50 hover:text-white/80 transition-colors whitespace-nowrap active:scale-[0.97]"
-                style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-              >
-                {prompt}
-              </button>
-            ))}
-          </div>
-        )}
-
-        <div className="relative">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Message huuman..."
-            disabled={isLoading}
-            rows={1}
-            className="w-full px-4 py-3 pr-11 rounded-2xl text-sm text-white placeholder:text-white/20 resize-none focus:outline-none max-h-[120px] min-h-[44px]"
-            style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}
-          />
-          
-          <AnimatePresence>
-            {input.trim() && (
-              <motion.button
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                onClick={() => handleSend()}
-                disabled={isLoading}
-                className="absolute right-1.5 bottom-1.5 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-all"
-              >
-                <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
-              </motion.button>
-            )}
-          </AnimatePresence>
         </div>
       </div>
-    </div>
+
+      {/* Breathwork Timer Overlay */}
+      <AnimatePresence>
+        {showBreathworkTimer && (
+          <BreathworkTimer
+            onComplete={() => {
+              window.dispatchEvent(new CustomEvent('huuman:logCreated'));
+            }}
+            onClose={() => setShowBreathworkTimer(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Meal Scanner Overlay */}
+      <AnimatePresence>
+        {showMealScanner && (
+          <MealScanner
+            onComplete={() => {
+              window.dispatchEvent(new CustomEvent('huuman:logCreated'));
+            }}
+            onClose={() => setShowMealScanner(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 }

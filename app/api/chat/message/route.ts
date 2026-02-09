@@ -1,36 +1,15 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import { generateJSON, Message } from '@/lib/ai/provider';
-import { getCoreFiveSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
+import { anthropic, MODELS } from '@/lib/ai/provider';
+import { getCoreFiveSystemPrompt } from '@/lib/ai/prompts';
+import { TOOL_DEFINITIONS, executeTool, ToolContext, ToolResult } from '@/lib/ai/tools';
 import { ChatMessage } from '@/lib/types';
-import { startOfWeek, format, subWeeks } from 'date-fns';
+import { subWeeks } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
 import { Pillar, PILLARS, PILLAR_CONFIGS, CoreFiveLog, getPillarProgress, getPrimeCoverage, getWeekStart } from '@/lib/v3/coreFive';
+import Anthropic from '@anthropic-ai/sdk';
 
-interface ChatAction {
-  type: 'log' | 'deep_link' | 'timer' | 'generate_workout' | 'generate_grocery_list';
-  pillar?: Pillar;
-  value?: number;
-  details?: Record<string, unknown>;
-  url?: string;
-  label?: string;
-  workout?: {
-    title: string;
-    duration: string;
-    exercises: { name: string; sets: number; reps: string }[];
-  };
-  groceryList?: {
-    title: string;
-    categories: { name: string; items: string[] }[];
-  };
-}
-
-interface ChatResponse {
-  response: string;
-  suggestedPrompts: string[];
-  action?: ChatAction | null;
-  actions?: ChatAction[];
-}
+const MAX_TOOL_ITERATIONS = 5;
 
 export async function POST(request: Request) {
   try {
@@ -82,19 +61,6 @@ export async function POST(request: Request) {
       createdAt: row.created_at,
     }));
 
-    // Build per-pillar progress
-    const coreFiveProgress = PILLARS.map(pillar => {
-      const config = PILLAR_CONFIGS[pillar];
-      const current = getPillarProgress(logs, pillar);
-      return {
-        pillar,
-        current,
-        target: config.weeklyTarget,
-        unit: config.unit,
-        met: current >= config.weeklyTarget,
-      };
-    });
-
     // Fetch last 4 weeks of logs for pattern detection
     const fourWeeksAgo = getWeekStart(subWeeks(new Date(), 4));
     const { data: historyData } = await supabase
@@ -109,7 +75,6 @@ export async function POST(request: Request) {
       weekStart: row.week_start,
     }));
 
-    // Compute per-pillar pattern summary
     const patternSummary = computePatternSummary(historyLogs, weekStartStr);
 
     // Get recent conversation history
@@ -122,113 +87,103 @@ export async function POST(request: Request) {
       .single();
 
     const recentMessages: ChatMessage[] = conversationData?.messages || [];
+
+    // Build context for the system prompt
+    const coreFiveContext = buildCoreFiveContext(logs);
+    const systemPrompt = getCoreFiveSystemPrompt(coachingStyle, patternSummary, coreFiveContext);
+
+    // Build conversation messages for Anthropic
     const conversationHistory = recentMessages.slice(-10).map(m => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     }));
 
-    // Build messages for LLM
-    const systemPrompt = getCoreFiveSystemPrompt(coachingStyle, patternSummary);
-    const chatPrompt = getChatPrompt(coreFiveProgress, conversationHistory, message);
-
-    const messages: Message[] = [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: chatPrompt },
+    const anthropicMessages: Anthropic.MessageParam[] = [
+      ...conversationHistory,
+      { role: 'user', content: message },
     ];
 
-    // Generate response
-    let chatResponse: ChatResponse;
-    try {
-      chatResponse = await generateJSON<ChatResponse>(messages, {
-        model: 'instant',
-        temperature: 0.7,
-        maxTokens: 2048,
-      });
-      
-      if (!chatResponse.response || typeof chatResponse.response !== 'string') {
-        throw new Error('Invalid response structure');
-      }
-    } catch (err) {
-      console.error('[Chat] JSON generation failed:', err);
-      
-      // Fallback: try plain text completion
-      try {
-        const { generateCompletion } = await import('@/lib/ai/provider');
-        const plainResponse = await generateCompletion(messages, {
-          model: 'instant',
-          temperature: 0.7,
-          maxTokens: 1024,
-        });
-        
-        chatResponse = {
-          response: plainResponse,
-          suggestedPrompts: [
-            "How's my week looking?",
-            "What should I focus on today?",
-          ],
-          action: null,
-        };
-      } catch (fallbackErr) {
-        console.error('[Chat] Fallback also failed:', fallbackErr);
-        chatResponse = {
-          response: "I'm having trouble responding right now. Please try again.",
-          suggestedPrompts: [
-            "How's my week looking?",
-            "What should I focus on today?",
-          ],
-          action: null,
-        };
-      }
-    }
+    // Tool execution context
+    const toolContext: ToolContext = {
+      userId: user.id,
+      weekStart: weekStartStr,
+      logs,
+    };
 
-    // Collect all actions (support both single action and actions array)
-    const rawActions: ChatAction[] = [];
-    if (chatResponse.actions && Array.isArray(chatResponse.actions)) {
-      rawActions.push(...chatResponse.actions);
-    } else if (chatResponse.action) {
-      rawActions.push(chatResponse.action);
-    }
+    // ====================================================================
+    // Agentic Loop: call Claude, execute tools, feed results back, repeat
+    // ====================================================================
+    const toolResults: ToolResult[] = [];
+    let iterations = 0;
 
-    // Execute actions and collect results
-    const executedActions: ChatAction[] = [];
-    for (const action of rawActions) {
-      if (action.type === 'log' && action.pillar && action.value) {
-        // Normalize pillar name: "clean eating" -> "clean_eating", "Clean Eating" -> "clean_eating"
-        const normalizedPillar = (action.pillar as string).toLowerCase().replace(/[\s-]+/g, '_') as Pillar;
-        const { details } = action;
-        const pillar = PILLARS.includes(normalizedPillar) ? normalizedPillar : action.pillar;
-        const value = typeof action.value === 'string' ? parseFloat(action.value) : action.value;
-        if (PILLARS.includes(pillar) && typeof value === 'number' && value > 0) {
-          const { data: logData, error: logError } = await supabase
-            .from('core_five_logs')
-            .insert({
-              user_id: user.id,
-              pillar,
-              value,
-              details: details || null,
-              week_start: weekStartStr,
-            })
-            .select()
-            .single();
+    let response = await anthropic.messages.create({
+      model: MODELS.instant,
+      system: systemPrompt,
+      messages: anthropicMessages,
+      tools: TOOL_DEFINITIONS,
+      max_tokens: 4096,
+    });
 
-          if (!logError && logData) {
-            executedActions.push({
-              type: 'log',
-              pillar,
-              value,
-              details,
-              label: `Logged ${value} ${PILLAR_CONFIGS[pillar].unit} of ${PILLAR_CONFIGS[pillar].name}`,
-            });
-          }
+    while (response.stop_reason === 'tool_use' && iterations < MAX_TOOL_ITERATIONS) {
+      iterations++;
+
+      // Extract tool_use blocks
+      const toolUseBlocks = response.content.filter(
+        (block): block is Anthropic.ContentBlockParam & { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> } =>
+          block.type === 'tool_use'
+      );
+
+      // Execute each tool
+      const toolResultBlocks: Anthropic.ToolResultBlockParam[] = [];
+      for (const block of toolUseBlocks) {
+        console.log(`[Agent] Tool call: ${block.name}`, block.input);
+        const result = await executeTool(block.name, block.input as Record<string, unknown>, toolContext);
+        toolResults.push(result);
+
+        // Update logs context if a log was created
+        if (result.success && block.name === 'log_activity') {
+          const logData = result.data as { logId: string; pillar: Pillar; value: number };
+          toolContext.logs = [...toolContext.logs, {
+            id: logData.logId,
+            userId: user.id,
+            pillar: logData.pillar,
+            value: logData.value,
+            loggedAt: new Date().toISOString(),
+            weekStart: weekStartStr,
+            createdAt: new Date().toISOString(),
+          }];
         }
-      } else {
-        // Pass through non-log actions for the frontend
-        executedActions.push(action);
+
+        toolResultBlocks.push({
+          type: 'tool_result',
+          tool_use_id: block.id,
+          content: JSON.stringify(result.data),
+        });
       }
+
+      // Append assistant message + tool results, call again
+      anthropicMessages.push({ role: 'assistant', content: response.content as Anthropic.ContentBlockParam[] });
+      anthropicMessages.push({ role: 'user', content: toolResultBlocks });
+
+      response = await anthropic.messages.create({
+        model: MODELS.instant,
+        system: systemPrompt,
+        messages: anthropicMessages,
+        tools: TOOL_DEFINITIONS,
+        max_tokens: 4096,
+      });
     }
 
-    // For backward compat, set action to first executed action
-    const executedAction = executedActions.length > 0 ? executedActions[0] : null;
+    // Extract final text from response
+    const finalText = response.content
+      .filter((block): block is Anthropic.TextBlock => block.type === 'text')
+      .map(block => block.text)
+      .join('\n');
+
+    // Build display actions from tool results
+    const displayActions = toolResults
+      .filter(r => r.success && r.display)
+      .map(r => r.display!);
 
     // Save conversation
     const newMessages: ChatMessage[] = [
@@ -242,7 +197,7 @@ export async function POST(request: Request) {
       {
         id: uuidv4(),
         role: 'assistant',
-        content: chatResponse.response,
+        content: finalText,
         timestamp: new Date().toISOString(),
       },
     ];
@@ -262,11 +217,15 @@ export async function POST(request: Request) {
         });
     }
 
-    return NextResponse.json({ 
-      message: chatResponse.response,
-      suggestedPrompts: chatResponse.suggestedPrompts || [],
-      action: executedAction,
-      actions: executedActions.length > 1 ? executedActions : undefined,
+    // Check if any logs were created
+    const hasLogs = toolResults.some(r =>
+      r.success && r.display?.type === 'log_confirmation'
+    );
+
+    return NextResponse.json({
+      message: finalText,
+      toolResults: displayActions,
+      hasLogs,
       success: true,
     });
   } catch (error) {
@@ -275,16 +234,34 @@ export async function POST(request: Request) {
   }
 }
 
-/**
- * Compute a human-readable pattern summary from the last 4 weeks of logs.
- */
+// ============================================================================
+// Helpers
+// ============================================================================
+
+function buildCoreFiveContext(logs: CoreFiveLog[]): string {
+  const lines = PILLARS.map(pillar => {
+    const config = PILLAR_CONFIGS[pillar];
+    const current = getPillarProgress(logs, pillar);
+    const status = current >= config.weeklyTarget ? 'met' : `${config.weeklyTarget - current} ${config.unit} to go`;
+    return `${config.name}: ${current}/${config.weeklyTarget} ${config.unit} (${status})`;
+  });
+
+  const coverage = getPrimeCoverage(logs);
+  lines.push(`\nPrime Coverage: ${coverage}/5 pillars met`);
+
+  const dow = new Date().getDay();
+  const daysLeft = dow === 0 ? 1 : 8 - dow;
+  lines.push(`Days left in week: ${daysLeft}`);
+
+  return lines.join('\n');
+}
+
 function computePatternSummary(
   historyLogs: { pillar: Pillar; value: number; weekStart: string }[],
   currentWeekStart: string
 ): string {
   if (historyLogs.length === 0) return '';
 
-  // Get unique week starts (excluding current week)
   const pastWeeks = [...new Set(historyLogs.map(l => l.weekStart))]
     .filter(ws => ws !== currentWeekStart)
     .sort()

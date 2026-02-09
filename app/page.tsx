@@ -8,9 +8,9 @@ export default async function LandingPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (user) {
-    // V3 mode: skip onboarding check, go straight to week view
+    // Chat is the main screen
     if (V3_FOCUSED) {
-      redirect('/week');
+      redirect('/chat');
     }
 
     const { data: profile } = await supabase
@@ -20,7 +20,7 @@ export default async function LandingPage() {
       .single();
 
     if (profile?.onboarding_completed) {
-      redirect('/week');
+      redirect('/chat');
     } else {
       redirect('/onboarding');
     }

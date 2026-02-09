@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import OpenAI from 'openai';
+import { anthropic, MODELS } from '@/lib/ai/provider';
 import { getWeekStart } from '@/lib/v3/coreFive';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 interface MealAnalysis {
   onPlan: boolean;
@@ -30,13 +26,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Image data required' }, { status: 400 });
     }
 
-    // Call OpenAI Vision API
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a meal analyzer for a health app. Analyze the food in the photo and determine if the meal is "on-plan" or "off-plan".
+    // Call Claude Vision API
+    const response = await anthropic.messages.create({
+      model: MODELS.instant,
+      system: `You are a meal analyzer for a health app. Analyze the food in the photo and determine if the meal is "on-plan" or "off-plan".
 
 On-plan means: protein-forward, mostly whole foods, minimal processed/junk food. Think grilled meats, fish, vegetables, whole grains, legumes, fruits, nuts.
 
@@ -46,41 +39,42 @@ Mixed meals: if the meal is mostly on-plan with minor off-plan elements, call it
 
 Be concise and non-judgmental. No guilt. Just clarity.
 
-Respond in JSON:
+Respond in JSON only, no markdown:
 {
   "onPlan": true/false,
   "summary": "Brief 5-10 word description of the meal",
   "foods": ["food1", "food2", "food3"],
   "reasoning": "One sentence explaining why on-plan or off-plan"
-}`
-        },
+}`,
+      messages: [
         {
           role: 'user',
           content: [
             {
               type: 'text',
-              text: 'Analyze this meal. Is it on-plan or off-plan?'
+              text: 'Analyze this meal. Is it on-plan or off-plan?',
             },
             {
-              type: 'image_url',
-              image_url: {
-                url: `data:image/jpeg;base64,${imageBase64}`,
-                detail: 'low',
-              }
-            }
-          ]
-        }
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: 'image/jpeg',
+                data: imageBase64,
+              },
+            },
+          ],
+        },
       ],
       max_tokens: 300,
-      response_format: { type: 'json_object' },
     });
 
-    const content = response.choices[0]?.message?.content;
-    if (!content) {
-      throw new Error('No response from Vision API');
+    const textContent = response.content.find(block => block.type === 'text');
+    if (!textContent || textContent.type !== 'text') {
+      throw new Error('No text response from Claude');
     }
 
-    const analysis: MealAnalysis = JSON.parse(content);
+    const cleaned = textContent.text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const analysis: MealAnalysis = JSON.parse(cleaned);
 
     // Auto-log if on-plan
     let logId: string | null = null;

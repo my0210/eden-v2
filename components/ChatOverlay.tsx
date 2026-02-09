@@ -124,28 +124,14 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
       if (!response.ok) throw new Error("Failed to send message");
       const data = await response.json();
 
-      const primaryAction = data.action || null;
-      const allActions = data.actions || (primaryAction ? [primaryAction] : []);
-
       setMessages((prev) => [...prev, {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: data.message,
-        action: primaryAction,
+        toolResults: data.toolResults || [],
       }]);
 
-      if (allActions.length > 1) {
-        for (let i = 1; i < allActions.length; i++) {
-          setMessages((prev) => [...prev, {
-            id: (Date.now() + 2 + i).toString(),
-            role: "assistant",
-            content: "",
-            action: allActions[i],
-          }]);
-        }
-      }
-
-      if (allActions.some((a: { type: string }) => a.type === 'log')) {
+      if (data.hasLogs) {
         logsCreatedInSession.current = true;
         window.dispatchEvent(new CustomEvent('huuman:logCreated'));
       }
