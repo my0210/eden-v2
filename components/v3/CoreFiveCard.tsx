@@ -12,7 +12,10 @@ import {
   Brain, 
   Check, 
   Plus, 
-  MoreHorizontal 
+  MoreHorizontal,
+  Timer,
+  Camera,
+  ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Haptics, Sounds } from "@/lib/soul";
@@ -23,6 +26,8 @@ interface CoreFiveCardProps {
   onLogClick: () => void;
   onQuickLog?: (value: number) => Promise<void>;
   onCardClick?: () => void;
+  onTimerClick?: () => void;
+  onScanClick?: () => void;
   readOnly?: boolean;
   justCompleted?: boolean;
 }
@@ -39,12 +44,37 @@ export const iconComponents: Record<string, React.ElementType> = {
 // Pillars that support quick-tap (no modal needed)
 const QUICK_TAP_PILLARS: Pillar[] = ["clean_eating", "strength"];
 
+// Per-pillar deep links for agent actions
+interface DeepLink {
+  label: string;
+  url: string;
+}
+
+const PILLAR_DEEP_LINKS: Partial<Record<Pillar, DeepLink[]>> = {
+  cardio: [
+    { label: "Find a route", url: "https://www.google.com/maps/search/running+trail+near+me" },
+    { label: "Find a class", url: "https://classpass.com/search?category=cycling,running,swimming" },
+  ],
+  strength: [
+    { label: "Find a gym", url: "https://www.google.com/maps/search/gym+near+me" },
+  ],
+  mindfulness: [
+    { label: "Headspace", url: "https://www.headspace.com/meditation" },
+    { label: "YouTube", url: "https://www.youtube.com/results?search_query=guided+meditation+10+minutes" },
+  ],
+  clean_eating: [
+    { label: "Healthy food", url: "https://www.google.com/maps/search/healthy+food+near+me" },
+  ],
+};
+
 export function CoreFiveCard({
   config,
   current,
   onLogClick,
   onQuickLog,
   onCardClick,
+  onTimerClick,
+  onScanClick,
   readOnly,
   justCompleted,
 }: CoreFiveCardProps) {
@@ -192,6 +222,48 @@ export function CoreFiveCard({
                   </>
                 )}
               </motion.button>
+              {pillarId === 'clean_eating' && onScanClick && (
+                <motion.button
+                  whileTap={{ scale: 0.95 }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    Haptics.light();
+                    onScanClick();
+                  }}
+                  className="p-2.5 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
+                  style={{ color }}
+                >
+                  <Camera className="w-5 h-5" />
+                </motion.button>
+              )}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  Haptics.light();
+                  onLogClick();
+                }}
+                className="p-2.5 rounded-xl flex items-center justify-center transition-colors hover:bg-white/10"
+                style={{ color: 'rgba(255,255,255,0.6)' }}
+              >
+                <MoreHorizontal className="w-5 h-5" />
+              </motion.button>
+            </div>
+          ) : pillarId === 'mindfulness' && onTimerClick ? (
+            <div className="flex gap-2">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  Haptics.light();
+                  onTimerClick();
+                }}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:brightness-110"
+                style={{ backgroundColor: `${color}20`, color }}
+              >
+                <Timer className="w-4 h-4" />
+                Breathwork
+              </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={(e) => {
@@ -220,6 +292,25 @@ export function CoreFiveCard({
               Log {name}
             </motion.button>
           )}
+        </div>
+      )}
+
+      {/* Deep Links */}
+      {!readOnly && PILLAR_DEEP_LINKS[pillarId] && (
+        <div className="relative z-10 mt-2 flex gap-2 flex-wrap">
+          {PILLAR_DEEP_LINKS[pillarId]!.map((link) => (
+            <a
+              key={link.label}
+              href={link.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+            >
+              <ExternalLink className="w-3 h-3" />
+              {link.label}
+            </a>
+          ))}
         </div>
       )}
     </GlassCard>

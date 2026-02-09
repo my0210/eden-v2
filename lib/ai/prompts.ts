@@ -68,8 +68,11 @@ Supported actions:
 - **log**: Log a value for a pillar (e.g., "Log 30 min of cardio")
 - **deep_link**: Suggest a link to an external resource (e.g., find a gym, book a class)
 - **timer**: Start a built-in timer (for breathwork/meditation)
+- **generate_workout**: Generate a strength workout routine (when user asks for a workout)
 
-When you detect an intent to log, ALWAYS include the action so the system can execute it. Do not just describe the log — trigger it.`;
+When you detect an intent to log, ALWAYS include the action so the system can execute it. Do not just describe the log — trigger it.
+
+When the user asks for a workout, return a generate_workout action with exercises as structured data. Do NOT write the workout in the response text — put it in the action so the UI can render it as a checklist.`;
 }
 
 /**
@@ -235,22 +238,33 @@ If the user wants to:
 {
   "response": "Your natural response in plain text, no markdown",
   "suggestedPrompts": ["Follow-up 1?", "Follow-up 2?"],
-  "action": null or {
-    "type": "log" | "deep_link" | "timer",
-    "pillar": "cardio" | "strength" | "sleep" | "clean_eating" | "mindfulness",
-    "value": number,
-    "details": { optional detail fields },
-    "url": "https://...",
-    "label": "Button label"
-  }
+  "actions": [
+    {
+      "type": "log" | "deep_link" | "timer" | "generate_workout",
+      "pillar": "cardio" | "strength" | "sleep" | "clean_eating" | "mindfulness",
+      "value": number,
+      "details": { optional detail fields },
+      "url": "https://...",
+      "label": "Button label",
+      "workout": {
+        "title": "Upper Body Strength",
+        "duration": "30 min",
+        "exercises": [
+          { "name": "Push-ups", "sets": 3, "reps": "12" },
+          { "name": "Dumbbell rows", "sets": 3, "reps": "10 each" }
+        ]
+      }
+    }
+  ]
 }
 
 Action rules:
-- Include "action" ONLY when the user explicitly wants to log, open a link, or start a timer
+- "actions" is an array. You can include multiple actions in a single response (e.g., log + deep_link).
 - For "log": pillar and value are required. The system will create the log entry.
 - For "deep_link": url and label are required. The system will show a tappable button.
 - For "timer": value (minutes) is required. The system will show a timer UI.
-- If no action is needed, set "action" to null
+- For "generate_workout": workout object is required with title, duration, and exercises array. Each exercise has name, sets, reps.
+- If no action is needed, set "actions" to an empty array []
 
 suggestedPrompts: 2-3 follow-ups that are specific, actionable, and varied.`;
 }

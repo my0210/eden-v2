@@ -155,13 +155,30 @@ export function ChatOverlay({ trigger, customTrigger }: ChatOverlayProps) {
 
       const data = await response.json();
 
+      // Support both single action and multi-action responses
+      const primaryAction = data.action || null;
+      const allActions = data.actions || (primaryAction ? [primaryAction] : []);
+
       const assistantMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
         content: data.message,
-        action: data.action || null,
+        action: primaryAction,
       };
       setMessages((prev) => [...prev, assistantMessage]);
+
+      // If there are additional actions beyond the first, add them as separate messages
+      if (allActions.length > 1) {
+        for (let i = 1; i < allActions.length; i++) {
+          const actionMsg: Message = {
+            id: (Date.now() + 2 + i).toString(),
+            role: "assistant",
+            content: "",
+            action: allActions[i],
+          };
+          setMessages((prev) => [...prev, actionMsg]);
+        }
+      }
 
       if (data.suggestedPrompts) {
         setSuggestedPrompts(data.suggestedPrompts);

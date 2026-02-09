@@ -11,6 +11,9 @@ import { PillarDetailDrawer } from "./PillarDetailDrawer";
 import { V3Onboarding } from "./V3Onboarding";
 import { StreakHero } from "./StreakHero";
 import { ProgressPhotoSection } from "./ProgressPhotoSection";
+import { BreathworkTimer } from "@/components/BreathworkTimer";
+import { MealScanner } from "@/components/MealScanner";
+import { generateNudge, type Nudge } from "@/lib/v3/nudgeEngine";
 import { 
   PILLARS, 
   PILLAR_CONFIGS, 
@@ -71,6 +74,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
   const [detailPillar, setDetailPillar] = useState<Pillar | null>(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
+  const [showMealScanner, setShowMealScanner] = useState(false);
   const [weekOffset, setWeekOffset] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
@@ -224,6 +229,12 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   const primeCoverage = getPrimeCoverage(logs);
   const ambientStyle = getAmbientStyle(primeCoverage);
+
+  // Generate contextual nudge based on progress + time
+  const nudge = useMemo(() => {
+    if (!isCurrentWeek) return null;
+    return generateNudge(logs);
+  }, [logs, isCurrentWeek]);
 
   // Detect when a log tips a pillar over its target (for subtle card glow)
   const handleLogComplete = useCallback((newLog: CoreFiveLog) => {
@@ -387,6 +398,60 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
               skipTransition={skipTransition}
             />
 
+            {/* Proactive Nudge Banner */}
+            <AnimatePresence>
+              {nudge && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, height: 0 }}
+                  animate={{ opacity: 1, y: 0, height: "auto" }}
+                  exit={{ opacity: 0, y: -10, height: 0 }}
+                  className="mb-4 overflow-hidden"
+                >
+                  <div
+                    className="rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 border"
+                    style={{
+                      backgroundColor: nudge.pillar
+                        ? `${PILLAR_CONFIGS[nudge.pillar].color}08`
+                        : "rgba(255,255,255,0.03)",
+                      borderColor: nudge.pillar
+                        ? `${PILLAR_CONFIGS[nudge.pillar].color}20`
+                        : "rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <p className="text-sm text-white/70 flex-1 leading-snug">{nudge.message}</p>
+                    {nudge.action && nudge.actionLabel && (
+                      <button
+                        onClick={() => {
+                          if (nudge.action === "timer") setShowBreathworkTimer(true);
+                          else if (nudge.action === "scan") setShowMealScanner(true);
+                          else if (nudge.action === "log" && nudge.pillar) setSelectedPillar(nudge.pillar);
+                          else if (nudge.action === "chat") {
+                            // Dispatch event to open chat with a message
+                            window.dispatchEvent(
+                              new CustomEvent("huuman:askAboutItem", {
+                                detail: { question: nudge.actionLabel },
+                              })
+                            );
+                          }
+                        }}
+                        className="px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors"
+                        style={{
+                          backgroundColor: nudge.pillar
+                            ? `${PILLAR_CONFIGS[nudge.pillar].color}20`
+                            : "rgba(255,255,255,0.1)",
+                          color: nudge.pillar
+                            ? PILLAR_CONFIGS[nudge.pillar].color
+                            : "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        {nudge.actionLabel}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* Core Five Cards */}
             <div className="grid gap-4">
               {PILLARS.map(pillar => (
@@ -397,6 +462,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
                   onLogClick={() => setSelectedPillar(pillar)}
                   onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
                   onCardClick={() => setDetailPillar(pillar)}
+                  onTimerClick={pillar === "mindfulness" && isCurrentWeek ? () => setShowBreathworkTimer(true) : undefined}
+                  onScanClick={pillar === "clean_eating" && isCurrentWeek ? () => setShowMealScanner(true) : undefined}
                   readOnly={!isCurrentWeek}
                   justCompleted={justCompletedPillar === pillar}
                 />
@@ -434,6 +501,48 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
                 }}
               />
             )}
+
+            {/* Breathwork Timer */}
+            <AnimatePresence>
+              {showBreathworkTimer && (
+                <BreathworkTimer
+                  onComplete={() => {
+                    // Refresh logs after timer auto-logs
+                    fetch(`/api/v3/log?week_start=${weekStartStr}`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.logs) {
+                          setLogs(data.logs);
+                          setCachedLogs(weekStartStr, data.logs);
+                        }
+                      })
+                      .catch(() => {});
+                  }}
+                  onClose={() => setShowBreathworkTimer(false)}
+                />
+              )}
+            </AnimatePresence>
+
+            {/* Meal Scanner */}
+            <AnimatePresence>
+              {showMealScanner && (
+                <MealScanner
+                  onComplete={() => {
+                    // Refresh logs after meal scan auto-logs
+                    fetch(`/api/v3/log?week_start=${weekStartStr}`)
+                      .then(res => res.json())
+                      .then(data => {
+                        if (data.logs) {
+                          setLogs(data.logs);
+                          setCachedLogs(weekStartStr, data.logs);
+                        }
+                      })
+                      .catch(() => {});
+                  }}
+                  onClose={() => setShowMealScanner(false)}
+                />
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

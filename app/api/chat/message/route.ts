@@ -8,18 +8,24 @@ import { v4 as uuidv4 } from 'uuid';
 import { Pillar, PILLARS, PILLAR_CONFIGS, CoreFiveLog, getPillarProgress, getWeekStart } from '@/lib/v3/coreFive';
 
 interface ChatAction {
-  type: 'log' | 'deep_link' | 'timer';
+  type: 'log' | 'deep_link' | 'timer' | 'generate_workout';
   pillar?: Pillar;
   value?: number;
   details?: Record<string, unknown>;
   url?: string;
   label?: string;
+  workout?: {
+    title: string;
+    duration: string;
+    exercises: { name: string; sets: number; reps: string }[];
+  };
 }
 
 interface ChatResponse {
   response: string;
   suggestedPrompts: string[];
   action?: ChatAction | null;
+  actions?: ChatAction[];
 }
 
 export async function POST(request: Request) {
@@ -154,38 +160,50 @@ export async function POST(request: Request) {
       }
     }
 
-    // Execute log action if present
-    let executedAction: ChatAction | null = null;
-    if (chatResponse.action && chatResponse.action.type === 'log' && chatResponse.action.pillar && chatResponse.action.value) {
-      const { pillar, value, details } = chatResponse.action;
-      
-      if (PILLARS.includes(pillar) && typeof value === 'number' && value > 0) {
-        const { data: logData, error: logError } = await supabase
-          .from('core_five_logs')
-          .insert({
-            user_id: user.id,
-            pillar,
-            value,
-            details: details || null,
-            week_start: weekStartStr,
-          })
-          .select()
-          .single();
-
-        if (!logError && logData) {
-          executedAction = {
-            type: 'log',
-            pillar,
-            value,
-            details,
-            label: `Logged ${value} ${PILLAR_CONFIGS[pillar].unit} of ${PILLAR_CONFIGS[pillar].name}`,
-          };
-        }
-      }
-    } else if (chatResponse.action && chatResponse.action.type !== 'log') {
-      // Pass through deep_link and timer actions for the frontend to handle
-      executedAction = chatResponse.action;
+    // Collect all actions (support both single action and actions array)
+    const rawActions: ChatAction[] = [];
+    if (chatResponse.actions && Array.isArray(chatResponse.actions)) {
+      rawActions.push(...chatResponse.actions);
+    } else if (chatResponse.action) {
+      rawActions.push(chatResponse.action);
     }
+
+    // Execute actions and collect results
+    const executedActions: ChatAction[] = [];
+    for (const action of rawActions) {
+      if (action.type === 'log' && action.pillar && action.value) {
+        const { pillar, value, details } = action;
+        if (PILLARS.includes(pillar) && typeof value === 'number' && value > 0) {
+          const { data: logData, error: logError } = await supabase
+            .from('core_five_logs')
+            .insert({
+              user_id: user.id,
+              pillar,
+              value,
+              details: details || null,
+              week_start: weekStartStr,
+            })
+            .select()
+            .single();
+
+          if (!logError && logData) {
+            executedActions.push({
+              type: 'log',
+              pillar,
+              value,
+              details,
+              label: `Logged ${value} ${PILLAR_CONFIGS[pillar].unit} of ${PILLAR_CONFIGS[pillar].name}`,
+            });
+          }
+        }
+      } else {
+        // Pass through non-log actions for the frontend
+        executedActions.push(action);
+      }
+    }
+
+    // For backward compat, set action to first executed action
+    const executedAction = executedActions.length > 0 ? executedActions[0] : null;
 
     // Save conversation
     const newMessages: ChatMessage[] = [
@@ -223,6 +241,7 @@ export async function POST(request: Request) {
       message: chatResponse.response,
       suggestedPrompts: chatResponse.suggestedPrompts || [],
       action: executedAction,
+      actions: executedActions.length > 1 ? executedActions : undefined,
       success: true,
     });
   } catch (error) {
