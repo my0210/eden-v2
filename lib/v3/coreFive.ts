@@ -130,11 +130,14 @@ export function getPrimeCoverage(logs: CoreFiveLog[]): number {
 }
 
 // Get week start date (Monday) for a given date
+// Uses local time consistently (no UTC conversion that shifts dates across timezone boundaries)
 export function getWeekStart(date: Date = new Date()): string {
   const d = new Date(date);
   const day = d.getDay();
   const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday
   d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d.toISOString().split('T')[0];
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const dayOfMonth = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${dayOfMonth}`;
 }
