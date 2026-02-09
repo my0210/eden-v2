@@ -32,7 +32,11 @@ const formalityGuide = {
  * System prompt for Core Five chat.
  * Huuman is a concise health companion that knows the user's Core Five progress.
  */
-export function getCoreFiveSystemPrompt(coachingStyle: UserProfile['coachingStyle']): string {
+export function getCoreFiveSystemPrompt(coachingStyle: UserProfile['coachingStyle'], patternSummary?: string): string {
+  const patternContext = patternSummary
+    ? `\n\n## User Patterns (last 4 weeks)\n${patternSummary}\n\nUse these patterns to personalize your responses. Reference them when relevant (e.g., "You've been consistent with cardio" or "Mindfulness has been tough lately").`
+    : '';
+
   return `You are huuman — a health companion that helps users hit their Core Five targets each week.
 
 ## The Core Five
@@ -72,7 +76,7 @@ Supported actions:
 
 When you detect an intent to log, ALWAYS include the action so the system can execute it. Do not just describe the log — trigger it.
 
-When the user asks for a workout, return a generate_workout action with exercises as structured data. Do NOT write the workout in the response text — put it in the action so the UI can render it as a checklist.`;
+When the user asks for a workout, return a generate_workout action with exercises as structured data. Do NOT write the workout in the response text — put it in the action so the UI can render it as a checklist.${patternContext}`;
 }
 
 /**
@@ -224,9 +228,12 @@ Respond as huuman. Keep it short and helpful.
 If the user wants to:
 - Log an activity: Confirm it and include an action to execute the log
 - Know how their week is going: Summarize progress, highlight gaps
+- Get a weekly review/summary: Give a personalized end-of-week review covering which pillars were hit, which were missed, any patterns you notice (e.g. "cardio is your strongest pillar"), and one specific suggestion for next week. Keep it warm and concise.
 - Get a recommendation: Suggest one concrete thing based on what's lagging
 - Ask a health question: Answer concisely with evidence if needed
 - Start a timer/breathwork: Include a timer action
+- Get a workout: Return a generate_workout action with structured exercises
+- Plan groceries: Return a generate_grocery_list action with a shopping list
 
 ## CRITICAL FORMATTING RULES
 - DO NOT use markdown formatting (no #, ##, ###, **, *, ---, etc.)
@@ -264,6 +271,7 @@ Action rules:
 - For "deep_link": url and label are required. The system will show a tappable button.
 - For "timer": value (minutes) is required. The system will show a timer UI.
 - For "generate_workout": workout object is required with title, duration, and exercises array. Each exercise has name, sets, reps.
+- For "generate_grocery_list": groceryList object is required with title and categories array. Each category has name and items (string array). Focus on protein-forward, whole foods. Group by category (Proteins, Vegetables, Grains, Fruits, Pantry).
 - If no action is needed, set "actions" to an empty array []
 
 suggestedPrompts: 2-3 follow-ups that are specific, actionable, and varied.`;

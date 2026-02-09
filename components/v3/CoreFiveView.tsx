@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { startOfWeek, format, endOfWeek, addWeeks } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, X } from "lucide-react";
 import { CoreFiveCard } from "./CoreFiveCard";
 import { QuickLogModal } from "./QuickLogModal";
 import { TrendView } from "./TrendView";
@@ -76,6 +76,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const [showHistory, setShowHistory] = useState(false);
   const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
   const [showMealScanner, setShowMealScanner] = useState(false);
+  const [dismissedNudges, setDismissedNudges] = useState<Set<string>>(new Set());
   const [weekOffset, setWeekOffset] = useState(0);
   const [showOnboarding, setShowOnboarding] = useState(false);
   
@@ -230,11 +231,13 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
   const primeCoverage = getPrimeCoverage(logs);
   const ambientStyle = getAmbientStyle(primeCoverage);
 
-  // Generate contextual nudge based on progress + time
+  // Generate contextual nudge based on progress + time, filtering dismissed ones
   const nudge = useMemo(() => {
     if (!isCurrentWeek) return null;
-    return generateNudge(logs);
-  }, [logs, isCurrentWeek]);
+    const candidate = generateNudge(logs);
+    if (candidate && dismissedNudges.has(candidate.id)) return null;
+    return candidate;
+  }, [logs, isCurrentWeek, dismissedNudges]);
 
   // Detect when a log tips a pillar over its target (for subtle card glow)
   const handleLogComplete = useCallback((newLog: CoreFiveLog) => {
@@ -408,7 +411,7 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
                   className="mb-4 overflow-hidden"
                 >
                   <div
-                    className="rounded-2xl px-4 py-3.5 flex items-center justify-between gap-3 border"
+                    className="rounded-2xl px-4 py-3.5 flex items-center gap-3 border"
                     style={{
                       backgroundColor: nudge.pillar
                         ? `${PILLAR_CONFIGS[nudge.pillar].color}08`
@@ -447,6 +450,12 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
                         {nudge.actionLabel}
                       </button>
                     )}
+                    <button
+                      onClick={() => setDismissedNudges(prev => new Set(prev).add(nudge.id))}
+                      className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-white/20 hover:text-white/50 hover:bg-white/5 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </motion.div>
               )}

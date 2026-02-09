@@ -158,6 +158,18 @@ export function generateNudge(logs: CoreFiveLog[]): Nudge | null {
     });
   }
 
+  // Weekly review: Sunday evening or Monday morning
+  const dow = getDayOfWeek();
+  if ((dow === 0 && hour >= 17) || (dow === 1 && hour < 12)) {
+    nudges.push({
+      id: 'weekly-review',
+      message: `Week ${dow === 0 ? 'wrapping up' : 'starting fresh'}. ${coverage}/5 pillars ${dow === 0 ? 'hit' : 'were hit last week'}. Want a review?`,
+      action: 'chat',
+      actionLabel: 'How was my week?',
+      priority: 1,
+    });
+  }
+
   // Sort by priority and return the top one
   if (nudges.length === 0) return null;
   nudges.sort((a, b) => a.priority - b.priority);

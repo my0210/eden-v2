@@ -3,12 +3,12 @@ import { NextResponse } from 'next/server';
 import { generateJSON, Message } from '@/lib/ai/provider';
 import { getCoreFiveSystemPrompt, getChatPrompt } from '@/lib/ai/prompts';
 import { ChatMessage } from '@/lib/types';
-import { startOfWeek, format } from 'date-fns';
+import { startOfWeek, format, subWeeks } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
-import { Pillar, PILLARS, PILLAR_CONFIGS, CoreFiveLog, getPillarProgress, getWeekStart } from '@/lib/v3/coreFive';
+import { Pillar, PILLARS, PILLAR_CONFIGS, CoreFiveLog, getPillarProgress, getPrimeCoverage, getWeekStart } from '@/lib/v3/coreFive';
 
 interface ChatAction {
-  type: 'log' | 'deep_link' | 'timer' | 'generate_workout';
+  type: 'log' | 'deep_link' | 'timer' | 'generate_workout' | 'generate_grocery_list';
   pillar?: Pillar;
   value?: number;
   details?: Record<string, unknown>;
@@ -18,6 +18,10 @@ interface ChatAction {
     title: string;
     duration: string;
     exercises: { name: string; sets: number; reps: string }[];
+  };
+  groceryList?: {
+    title: string;
+    categories: { name: string; items: string[] }[];
   };
 }
 
@@ -91,6 +95,23 @@ export async function POST(request: Request) {
       };
     });
 
+    // Fetch last 4 weeks of logs for pattern detection
+    const fourWeeksAgo = getWeekStart(subWeeks(new Date(), 4));
+    const { data: historyData } = await supabase
+      .from('core_five_logs')
+      .select('pillar, value, week_start')
+      .eq('user_id', user.id)
+      .gte('week_start', fourWeeksAgo);
+
+    const historyLogs = (historyData || []).map(row => ({
+      pillar: row.pillar as Pillar,
+      value: row.value,
+      weekStart: row.week_start,
+    }));
+
+    // Compute per-pillar pattern summary
+    const patternSummary = computePatternSummary(historyLogs, weekStartStr);
+
     // Get recent conversation history
     const { data: conversationData } = await supabase
       .from('conversations')
@@ -107,7 +128,7 @@ export async function POST(request: Request) {
     }));
 
     // Build messages for LLM
-    const systemPrompt = getCoreFiveSystemPrompt(coachingStyle);
+    const systemPrompt = getCoreFiveSystemPrompt(coachingStyle, patternSummary);
     const chatPrompt = getChatPrompt(coreFiveProgress, conversationHistory, message);
 
     const messages: Message[] = [
@@ -248,4 +269,45 @@ export async function POST(request: Request) {
     console.error('Error in chat:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
+}
+
+/**
+ * Compute a human-readable pattern summary from the last 4 weeks of logs.
+ */
+function computePatternSummary(
+  historyLogs: { pillar: Pillar; value: number; weekStart: string }[],
+  currentWeekStart: string
+): string {
+  if (historyLogs.length === 0) return '';
+
+  // Get unique week starts (excluding current week)
+  const pastWeeks = [...new Set(historyLogs.map(l => l.weekStart))]
+    .filter(ws => ws !== currentWeekStart)
+    .sort()
+    .slice(-4);
+
+  if (pastWeeks.length === 0) return '';
+
+  const lines: string[] = [];
+
+  for (const pillar of PILLARS) {
+    const config = PILLAR_CONFIGS[pillar];
+    let metCount = 0;
+
+    for (const ws of pastWeeks) {
+      const weekLogs = historyLogs.filter(l => l.pillar === pillar && l.weekStart === ws);
+      const total = weekLogs.reduce((sum, l) => sum + l.value, 0);
+      if (total >= config.weeklyTarget) metCount++;
+    }
+
+    if (metCount === pastWeeks.length) {
+      lines.push(`${config.name}: hit target every week (strong)`);
+    } else if (metCount === 0) {
+      lines.push(`${config.name}: missed target every week (needs attention)`);
+    } else {
+      lines.push(`${config.name}: hit ${metCount}/${pastWeeks.length} weeks`);
+    }
+  }
+
+  return lines.join('\n');
 }

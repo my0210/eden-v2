@@ -84,5 +84,38 @@ export const Sounds = {
     } catch (e) {
       // Ignore audio errors
     }
+  },
+
+  playChime: () => {
+    if (typeof window === "undefined") return;
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioContext) return;
+      
+      const ctx = new AudioContext();
+
+      // Three ascending bell-like tones
+      const notes = [523, 659, 784]; // C5, E5, G5
+      notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.type = "sine";
+        const startTime = ctx.currentTime + i * 0.2;
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.08, startTime + 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+        
+        osc.start(startTime);
+        osc.stop(startTime + 0.8);
+      });
+    } catch (e) {
+      // Ignore audio errors
+    }
   }
 };

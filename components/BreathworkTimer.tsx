@@ -108,7 +108,7 @@ export function BreathworkTimer({ duration = 5, onComplete, onClose }: Breathwor
           if (intervalRef.current) clearInterval(intervalRef.current);
           setTimerState("complete");
           Haptics.success();
-          Sounds.playSuccess();
+          Sounds.playChime();
           return 0;
         }
         return prev - 1;
