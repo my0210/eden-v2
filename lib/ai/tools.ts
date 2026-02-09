@@ -22,8 +22,10 @@ export interface ToolResult {
   data: unknown;
   /** What to display in the chat UI */
   display?: {
-    type: 'log_confirmation' | 'progress_summary' | 'workout' | 'grocery_list' | 'deep_link' | 'timer' | 'scanner';
+    type: 'log_confirmation' | 'progress_summary' | 'workout' | 'grocery_list' | 'deep_link' | 'timer' | 'scanner' | 'week_plan' | 'next_action';
     content: unknown;
+    /** If true, the frontend should auto-trigger this action (e.g., open timer/scanner immediately) */
+    autoTrigger?: boolean;
   };
 }
 
@@ -117,6 +119,131 @@ const logActivity: ToolDefinition = {
   },
 };
 
+const editLog: ToolDefinition = {
+  definition: {
+    name: 'edit_log',
+    description: 'Edit or delete a recent log entry. Use when the user says something like "that was actually 20 min not 30", "undo that", "delete that log", or "change my last log". You can update the value or delete the entry entirely.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['update', 'delete'],
+          description: 'Whether to update the value or delete the entry',
+        },
+        pillar: {
+          type: 'string',
+          enum: ['cardio', 'strength', 'sleep', 'clean_eating', 'mindfulness'],
+          description: 'The pillar of the log to edit (used to find the most recent matching entry)',
+        },
+        new_value: {
+          type: 'number',
+          description: 'The corrected value (only for update action)',
+        },
+      },
+      required: ['action', 'pillar'],
+    },
+  },
+  execute: async (args, context) => {
+    const action = args.action as 'update' | 'delete';
+    const pillar = args.pillar as Pillar;
+    const newValue = args.new_value as number | undefined;
+
+    // Find the most recent log for this pillar
+    const recentLog = [...context.logs]
+      .filter(l => l.pillar === pillar)
+      .sort((a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime())[0];
+
+    if (!recentLog) {
+      return { success: false, data: { error: `No recent ${pillar} log found to ${action}` } };
+    }
+
+    const supabase = await createClient();
+    const config = PILLAR_CONFIGS[pillar];
+
+    if (action === 'delete') {
+      const { error } = await supabase
+        .from('core_five_logs')
+        .delete()
+        .eq('id', recentLog.id)
+        .eq('user_id', context.userId);
+
+      if (error) {
+        return { success: false, data: { error: error.message } };
+      }
+
+      const newTotal = getPillarProgress(context.logs, pillar) - recentLog.value;
+
+      return {
+        success: true,
+        data: {
+          action: 'deleted',
+          pillar,
+          deletedValue: recentLog.value,
+          newTotal: Math.max(0, newTotal),
+          target: config.weeklyTarget,
+          unit: config.unit,
+        },
+        display: {
+          type: 'log_confirmation',
+          content: {
+            pillar,
+            value: -recentLog.value,
+            unit: config.unit,
+            label: `Removed ${recentLog.value} ${config.unit} of ${config.name}`,
+            newTotal: Math.max(0, newTotal),
+            target: config.weeklyTarget,
+            isMet: Math.max(0, newTotal) >= config.weeklyTarget,
+          },
+        },
+      };
+    }
+
+    // Update
+    if (typeof newValue !== 'number' || newValue < 0) {
+      return { success: false, data: { error: 'new_value is required for update' } };
+    }
+
+    const { error } = await supabase
+      .from('core_five_logs')
+      .update({ value: newValue })
+      .eq('id', recentLog.id)
+      .eq('user_id', context.userId);
+
+    if (error) {
+      return { success: false, data: { error: error.message } };
+    }
+
+    const diff = newValue - recentLog.value;
+    const newTotal = getPillarProgress(context.logs, pillar) + diff;
+
+    return {
+      success: true,
+      data: {
+        action: 'updated',
+        pillar,
+        oldValue: recentLog.value,
+        newValue,
+        newTotal,
+        target: config.weeklyTarget,
+        unit: config.unit,
+      },
+      display: {
+        type: 'log_confirmation',
+        content: {
+          pillar,
+          value: newValue,
+          unit: config.unit,
+          label: `Updated ${config.name}: ${recentLog.value} → ${newValue} ${config.unit}`,
+          newTotal,
+          target: config.weeklyTarget,
+          isMet: newTotal >= config.weeklyTarget,
+        },
+      },
+    };
+  },
+};
+
 const getWeeklyProgress: ToolDefinition = {
   definition: {
     name: 'get_weekly_progress',
@@ -157,6 +284,185 @@ const getWeeklyProgress: ToolDefinition = {
       display: {
         type: 'progress_summary',
         content: { progress, coverage, daysLeft },
+      },
+    };
+  },
+};
+
+const getRecentLogs: ToolDefinition = {
+  definition: {
+    name: 'get_recent_logs',
+    description: 'Get individual log entries for the current week. Returns the actual log entries (not just totals) so you can reference specific activities: "you logged a 45 min run yesterday." Use when you need to see what the user actually did, not just their totals.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        pillar: {
+          type: 'string',
+          enum: ['cardio', 'strength', 'sleep', 'clean_eating', 'mindfulness'],
+          description: 'Optional: filter to a specific pillar. Omit to get all logs.',
+        },
+      },
+      required: [],
+    },
+  },
+  execute: async (args, context) => {
+    const pillarFilter = args.pillar as Pillar | undefined;
+
+    let filteredLogs = context.logs;
+    if (pillarFilter && PILLARS.includes(pillarFilter)) {
+      filteredLogs = context.logs.filter(l => l.pillar === pillarFilter);
+    }
+
+    // Sort by date, most recent first
+    const sorted = [...filteredLogs].sort(
+      (a, b) => new Date(b.loggedAt).getTime() - new Date(a.loggedAt).getTime()
+    );
+
+    // Format for readability
+    const entries = sorted.map(log => {
+      const config = PILLAR_CONFIGS[log.pillar];
+      const date = new Date(log.loggedAt);
+      const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][date.getDay()];
+      const timeStr = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      return {
+        id: log.id,
+        pillar: log.pillar,
+        pillarName: config.name,
+        value: log.value,
+        unit: config.unit,
+        details: log.details,
+        day: dayName,
+        time: timeStr,
+        loggedAt: log.loggedAt,
+      };
+    });
+
+    return {
+      success: true,
+      data: {
+        entries,
+        count: entries.length,
+      },
+    };
+  },
+};
+
+const planRemainingWeek: ToolDefinition = {
+  definition: {
+    name: 'plan_remaining_week',
+    description: 'Create a day-by-day plan for hitting remaining pillar targets this week. Use when the user says "help me hit cardio", "plan my week", "what should I do to get to prime", etc. Takes the gaps and creates a specific actionable plan.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        focus_pillars: {
+          type: 'array',
+          items: {
+            type: 'string',
+            enum: ['cardio', 'strength', 'sleep', 'clean_eating', 'mindfulness'],
+          },
+          description: 'Which pillars to plan for. Omit to plan for all pillars with remaining gaps.',
+        },
+        plan: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              day: { type: 'string', description: 'Day name (e.g., "Tuesday", "Wednesday")' },
+              activities: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    pillar: { type: 'string' },
+                    activity: { type: 'string', description: 'Specific activity (e.g., "30 min run", "Upper body session")' },
+                    value: { type: 'number', description: 'Value that would be logged' },
+                    unit: { type: 'string' },
+                  },
+                  required: ['pillar', 'activity', 'value', 'unit'],
+                },
+              },
+            },
+            required: ['day', 'activities'],
+          },
+          description: 'Day-by-day plan with specific activities',
+        },
+        summary: {
+          type: 'string',
+          description: 'Brief summary of the plan (e.g., "3 cardio sessions across Tue/Thu/Sat to close the 90 min gap")',
+        },
+      },
+      required: ['plan', 'summary'],
+    },
+  },
+  execute: async (args) => {
+    const plan = args.plan as Array<{
+      day: string;
+      activities: Array<{ pillar: string; activity: string; value: number; unit: string }>;
+    }>;
+    const summary = args.summary as string;
+
+    return {
+      success: true,
+      data: { plan, summary },
+      display: {
+        type: 'week_plan',
+        content: { plan, summary },
+      },
+    };
+  },
+};
+
+const suggestNextAction: ToolDefinition = {
+  definition: {
+    name: 'suggest_next_action',
+    description: 'Evaluate the user\'s current state (time of day, progress gaps, patterns) and determine the single highest-leverage action they should take right now. Use after checking progress to give a specific, actionable recommendation.',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        suggestion: {
+          type: 'string',
+          description: 'The specific suggested action (e.g., "Go for a 25 min walk", "Do 10 min breathwork before bed")',
+        },
+        pillar: {
+          type: 'string',
+          enum: ['cardio', 'strength', 'sleep', 'clean_eating', 'mindfulness'],
+          description: 'Which pillar this action targets',
+        },
+        reasoning: {
+          type: 'string',
+          description: 'Brief reason why this is the highest-leverage action right now',
+        },
+        value: {
+          type: 'number',
+          description: 'How much this would log if completed',
+        },
+        unit: {
+          type: 'string',
+          description: 'Unit for the value (min, sessions, hrs, days)',
+        },
+      },
+      required: ['suggestion', 'pillar', 'reasoning'],
+    },
+  },
+  execute: async (args) => {
+    return {
+      success: true,
+      data: {
+        suggestion: args.suggestion,
+        pillar: args.pillar,
+        reasoning: args.reasoning,
+        value: args.value,
+        unit: args.unit,
+      },
+      display: {
+        type: 'next_action',
+        content: {
+          suggestion: args.suggestion as string,
+          pillar: args.pillar as string,
+          reasoning: args.reasoning as string,
+          value: args.value as number | undefined,
+          unit: args.unit as string | undefined,
+        },
       },
     };
   },
@@ -303,7 +609,7 @@ const findNearby: ToolDefinition = {
 const startTimer: ToolDefinition = {
   definition: {
     name: 'start_timer',
-    description: 'Start the built-in breathwork/meditation timer. Use when the user wants to do breathwork, meditation, or a timed mindfulness session.',
+    description: 'Start the built-in breathwork/meditation timer immediately. The timer opens automatically — the user does not need to tap anything. Use when the user wants to do breathwork, meditation, or a timed mindfulness session.',
     input_schema: {
       type: 'object' as const,
       properties: {
@@ -323,7 +629,8 @@ const startTimer: ToolDefinition = {
       data: { minutes },
       display: {
         type: 'timer',
-        content: { minutes, label: `Start ${minutes} min breathwork` },
+        content: { minutes, label: `Starting ${minutes} min breathwork...` },
+        autoTrigger: true,
       },
     };
   },
@@ -332,7 +639,7 @@ const startTimer: ToolDefinition = {
 const scanMeal: ToolDefinition = {
   definition: {
     name: 'scan_meal',
-    description: 'Open the camera to scan a meal and determine if it\'s on-plan. Use when the user mentions scanning food, taking a meal photo, or checking if a meal is healthy.',
+    description: 'Open the camera immediately to scan a meal and determine if it\'s on-plan. The camera opens automatically — the user does not need to tap anything. Use when the user mentions scanning food, taking a meal photo, or checking if a meal is healthy.',
     input_schema: {
       type: 'object' as const,
       properties: {},
@@ -345,7 +652,8 @@ const scanMeal: ToolDefinition = {
       data: { action: 'open_scanner' },
       display: {
         type: 'scanner',
-        content: { label: 'Open meal scanner' },
+        content: { label: 'Opening meal scanner...' },
+        autoTrigger: true,
       },
     };
   },
@@ -357,7 +665,11 @@ const scanMeal: ToolDefinition = {
 
 export const TOOL_REGISTRY: Record<string, ToolDefinition> = {
   log_activity: logActivity,
+  edit_log: editLog,
   get_weekly_progress: getWeeklyProgress,
+  get_recent_logs: getRecentLogs,
+  plan_remaining_week: planRemainingWeek,
+  suggest_next_action: suggestNextAction,
   generate_workout: generateWorkout,
   generate_grocery_list: generateGroceryList,
   find_nearby: findNearby,

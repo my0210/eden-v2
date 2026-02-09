@@ -26,6 +26,8 @@ import {
 
 interface CoreFiveViewProps {
   userId: string;
+  /** When true, ambient orb and swipe gestures are disabled (owned by TabShell) */
+  embedded?: boolean;
 }
 
 // Ambient orb opacity/scale mapped to coverage
@@ -68,7 +70,7 @@ function setCachedStreak(streak: number) {
   try { localStorage.setItem("huuman_streak", String(streak)); } catch {}
 }
 
-export function CoreFiveView({ userId }: CoreFiveViewProps) {
+export function CoreFiveView({ userId, embedded }: CoreFiveViewProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
   const [initialLoading, setInitialLoading] = useState(true);
   const [selectedPillar, setSelectedPillar] = useState<Pillar | null>(null);
@@ -351,21 +353,23 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
 
   return (
     <>
-      {/* Dynamic ambient orb - responds to coverage */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
-        <div 
-          className={`relative w-[800px] h-[800px] ${skipTransition ? "" : "transition-all duration-[2000ms] ease-out"}`}
-          style={{ transform: `scale(${ambientStyle.scale})` }}
-        >
+      {/* Dynamic ambient orb - responds to coverage (skip when embedded in TabShell) */}
+      {!embedded && (
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
           <div 
-            className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? "" : "transition-opacity duration-[2000ms] ease-out"}`}
-            style={{
-              opacity: ambientStyle.opacity,
-              background: "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
-            }}
-          />
+            className={`relative w-[800px] h-[800px] ${skipTransition ? "" : "transition-all duration-[2000ms] ease-out"}`}
+            style={{ transform: `scale(${ambientStyle.scale})` }}
+          >
+            <div 
+              className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? "" : "transition-opacity duration-[2000ms] ease-out"}`}
+              style={{
+                opacity: ambientStyle.opacity,
+                background: "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
+              }}
+            />
+          </div>
         </div>
-      </div>
+      )}
 
       <AnimatePresence mode="wait">
         {showHistory ? (
@@ -381,8 +385,8 @@ export function CoreFiveView({ userId }: CoreFiveViewProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="px-6 py-4 relative z-10"
-            onTouchStart={handleTouchStart}
-            onTouchEnd={handleTouchEnd}
+            onTouchStart={embedded ? undefined : handleTouchStart}
+            onTouchEnd={embedded ? undefined : handleTouchEnd}
           >
             {/* Week Header with Navigation */}
             <div className="mb-6 flex items-center justify-between">

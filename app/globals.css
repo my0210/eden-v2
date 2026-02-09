@@ -135,6 +135,32 @@ body {
   scrollbar-width: none;
 }
 
+/* SVG check-draw animation for pillar ring completion */
+@keyframes check-draw {
+  from {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dasharray: 30;
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-check-draw {
+  animation: check-draw 0.4s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* Pulse-glow for pillar card completion */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 30px -5px var(--glow-color, rgba(34,197,94,0.3)); }
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 1s ease-out;
+}
+
 /* Focus states */
 *:focus-visible {
   outline: 2px solid var(--accent);

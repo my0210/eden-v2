@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Haptics, Sounds } from "@/lib/soul";
+import { springs } from "@/components/live/interactions";
 
 interface CoreFiveCardProps {
   config: PillarConfig;
@@ -116,7 +117,7 @@ export function CoreFiveCard({
       }}
       className={cn(
         "relative overflow-hidden p-5 flex flex-col justify-between h-full group",
-        justCompleted && "animate-pulse-soft"
+        justCompleted && "animate-pulse-glow"
       )}
       style={{
         // Dynamic glow based on pillar color
@@ -124,7 +125,9 @@ export function CoreFiveCard({
           ? `0 0 40px -10px ${color}40` 
           : undefined,
         borderColor: isMet ? `${color}60` : undefined,
-      }}
+        // CSS variable for pulse-glow animation color
+        '--glow-color': `${color}50`,
+      } as React.CSSProperties}
     >
       {/* Background Gradient */}
       <div 

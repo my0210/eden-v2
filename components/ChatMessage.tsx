@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Check, ExternalLink, Timer, Dumbbell, ShoppingCart, Camera, Activity, ChevronDown, ChevronRight } from 'lucide-react';
+import { Check, ExternalLink, Timer, Dumbbell, ShoppingCart, Camera, Activity, ChevronDown, ChevronRight, Zap, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // ============================================================================
@@ -9,8 +9,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 // ============================================================================
 
 export interface ToolDisplay {
-  type: 'log_confirmation' | 'progress_summary' | 'workout' | 'grocery_list' | 'deep_link' | 'timer' | 'scanner';
+  type: 'log_confirmation' | 'progress_summary' | 'workout' | 'grocery_list' | 'deep_link' | 'timer' | 'scanner' | 'week_plan' | 'next_action';
   content: unknown;
+  autoTrigger?: boolean;
 }
 
 export interface Message {
@@ -115,9 +116,13 @@ function ToolCard({ result, onTimerStart, onScannerOpen }: {
     case 'deep_link':
       return <DeepLinkCard content={result.content as { url: string; label: string }} />;
     case 'timer':
-      return <TimerCard content={result.content as { minutes: number; label: string }} onStart={onTimerStart} />;
+      return <TimerCard content={result.content as { minutes: number; label: string }} onStart={onTimerStart} autoTriggered={result.autoTrigger} />;
     case 'scanner':
-      return <ScannerCard onOpen={onScannerOpen} />;
+      return <ScannerCard onOpen={onScannerOpen} autoTriggered={result.autoTrigger} />;
+    case 'week_plan':
+      return <WeekPlanCard content={result.content as WeekPlanContent} />;
+    case 'next_action':
+      return <NextActionCard content={result.content as NextActionContent} />;
     default:
       return null;
   }
@@ -248,7 +253,22 @@ function DeepLinkCard({ content }: { content: { url: string; label: string } }) 
 
 // --- Timer ---
 
-function TimerCard({ content, onStart }: { content: { minutes: number; label: string }; onStart?: (min: number) => void }) {
+function TimerCard({ content, onStart, autoTriggered }: { content: { minutes: number; label: string }; onStart?: (min: number) => void; autoTriggered?: boolean }) {
+  if (autoTriggered) {
+    return (
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-2xl border"
+        style={{
+          backgroundColor: `${PILLAR_COLORS.mindfulness}10`,
+          borderColor: `${PILLAR_COLORS.mindfulness}25`,
+        }}
+      >
+        <Timer className="w-4 h-4 flex-shrink-0 animate-pulse" style={{ color: PILLAR_COLORS.mindfulness }} />
+        <span className="text-sm text-white/70">{content.label}</span>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={() => onStart?.(content.minutes)}
@@ -266,7 +286,22 @@ function TimerCard({ content, onStart }: { content: { minutes: number; label: st
 
 // --- Scanner ---
 
-function ScannerCard({ onOpen }: { onOpen?: () => void }) {
+function ScannerCard({ onOpen, autoTriggered }: { onOpen?: () => void; autoTriggered?: boolean }) {
+  if (autoTriggered) {
+    return (
+      <div
+        className="flex items-center gap-3 px-4 py-3 rounded-2xl border"
+        style={{
+          backgroundColor: `${PILLAR_COLORS.clean_eating}10`,
+          borderColor: `${PILLAR_COLORS.clean_eating}25`,
+        }}
+      >
+        <Camera className="w-4 h-4 flex-shrink-0 animate-pulse" style={{ color: PILLAR_COLORS.clean_eating }} />
+        <span className="text-sm text-white/70">Opening meal scanner...</span>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={() => onOpen?.()}
@@ -279,6 +314,85 @@ function ScannerCard({ onOpen }: { onOpen?: () => void }) {
       <Camera className="w-4 h-4 flex-shrink-0" style={{ color: PILLAR_COLORS.clean_eating }} />
       <span className="text-sm text-white/70">Open meal scanner</span>
     </button>
+  );
+}
+
+// --- Week Plan ---
+
+interface WeekPlanContent {
+  plan: Array<{
+    day: string;
+    activities: Array<{ pillar: string; activity: string; value: number; unit: string }>;
+  }>;
+  summary: string;
+}
+
+function WeekPlanCard({ content }: { content: WeekPlanContent }) {
+  return (
+    <div className="rounded-2xl border border-white/8 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>
+      <div className="px-4 py-3 flex items-center gap-2 border-b border-white/6">
+        <Calendar className="w-4 h-4 text-white/40" />
+        <span className="text-sm font-medium text-white/70">Week Plan</span>
+      </div>
+      <div className="px-4 py-2 border-b border-white/4">
+        <p className="text-xs text-white/40 leading-relaxed">{content.summary}</p>
+      </div>
+      <div className="divide-y divide-white/4">
+        {content.plan.map((day) => (
+          <div key={day.day} className="px-4 py-2.5">
+            <span className="text-xs font-medium text-white/50 uppercase tracking-wider">{day.day}</span>
+            <div className="mt-1.5 space-y-1">
+              {day.activities.map((act, i) => {
+                const color = PILLAR_COLORS[act.pillar] || '#22c55e';
+                return (
+                  <div key={i} className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                    <span className="text-sm text-white/65">{act.activity}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// --- Next Action ---
+
+interface NextActionContent {
+  suggestion: string;
+  pillar: string;
+  reasoning: string;
+  value?: number;
+  unit?: string;
+}
+
+function NextActionCard({ content }: { content: NextActionContent }) {
+  const color = PILLAR_COLORS[content.pillar] || '#22c55e';
+
+  return (
+    <div
+      className="rounded-2xl border px-4 py-3.5"
+      style={{
+        backgroundColor: `${color}08`,
+        borderColor: `${color}20`,
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div
+          className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5"
+          style={{ backgroundColor: `${color}20` }}
+        >
+          <Zap className="w-3.5 h-3.5" style={{ color }} />
+        </div>
+        <div>
+          <p className="text-sm font-medium text-white/80">{content.suggestion}</p>
+          <p className="text-xs text-white/40 mt-1 leading-relaxed">{content.reasoning}</p>
+        </div>
+      </div>
+    </div>
   );
 }
 

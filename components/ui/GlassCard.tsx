@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion, HTMLMotionProps } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { springs } from "@/components/live/interactions";
 
 interface GlassCardProps extends HTMLMotionProps<"div"> {
   variant?: "subtle" | "panel" | "highlight";
@@ -28,13 +29,9 @@ const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
         )}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ 
-          type: "spring",
-          stiffness: 260,
-          damping: 20,
-        }}
-        whileHover={hoverEffect ? { scale: 1.02 } : undefined}
-        whileTap={hoverEffect ? { scale: 0.98 } : undefined}
+        transition={springs.snappy}
+        whileHover={hoverEffect ? { scale: 1.01, transition: springs.tap } : undefined}
+        whileTap={hoverEffect ? { scale: 0.97, transition: springs.tap } : undefined}
         {...props}
       >
         {children}
