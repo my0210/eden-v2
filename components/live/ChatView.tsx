@@ -7,7 +7,7 @@ import { MealScanner } from "@/components/MealScanner";
 import { QuickLogModal } from "@/components/v3/QuickLogModal";
 import { ProactiveGreeting } from "./ProactiveGreeting";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Camera, Timer } from "lucide-react";
 import {
   getWeekStart,
   PILLAR_CONFIGS,
@@ -58,6 +58,18 @@ function getSmartPrompts(logs: CoreFiveLog[]): string[] {
     ];
   else prompts.unshift("How's my week looking?");
   return prompts.slice(0, 4);
+}
+
+// ============================================================================
+// Contextual placeholder based on time of day
+// ============================================================================
+
+function getContextualPlaceholder(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "Log sleep, plan the day...";
+  if (hour >= 12 && hour < 17) return "Log a workout, scan a meal...";
+  if (hour >= 17 && hour < 22) return "Start breathwork, review the week...";
+  return "Ask anything...";
 }
 
 // ============================================================================
@@ -131,11 +143,9 @@ function ChatMiniRings() {
 
 interface ChatViewProps {
   onScroll?: (scrollTop: number) => void;
-  onEmptyStateChange?: (isEmpty: boolean) => void;
-  onSwitchTab?: () => void;
 }
 
-export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatViewProps) {
+export function ChatView({ onScroll }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -148,11 +158,10 @@ export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatView
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   const isEmpty = messages.length === 0;
-
-  // Notify parent of isEmpty changes
-  useEffect(() => {
-    onEmptyStateChange?.(isEmpty);
-  }, [isEmpty, onEmptyStateChange]);
+  const placeholder = useMemo(() => getContextualPlaceholder(), []);
+  const hasText = input.trim().length > 0;
+  // Show quick-action icons when input is empty & not focused, or empty & focused but no text
+  const showQuickActions = !hasText && !isLoading;
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -337,7 +346,6 @@ export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatView
                 onLog={handleDirectLog}
                 onTimer={handleDirectTimer}
                 onScanner={handleDirectScanner}
-                onSwitchTab={onSwitchTab}
               />
             ) : (
               <motion.div
@@ -389,10 +397,8 @@ export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatView
           </AnimatePresence>
         </div>
 
-        {/* Input Area */}
-        <div
-          className="flex-shrink-0 px-4 pt-2 bg-gradient-to-t from-black/50 to-transparent pb-[max(env(safe-area-inset-bottom),16px)]"
-        >
+        {/* Input Area — no safe-area padding, tab bar below handles it */}
+        <div className="flex-shrink-0 px-4 pt-2 pb-2 bg-gradient-to-t from-black/50 to-transparent">
           {/* Inline prompts (after conversation starts) */}
           {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (
             <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-2.5 -mx-1 px-1">
@@ -412,41 +418,91 @@ export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatView
             </div>
           )}
 
-          {/* Text input */}
-          <div
-            className="relative rounded-2xl border border-white/15 transition-[border-color,box-shadow,background-color] duration-300 focus-within:border-white/30 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.08)]"
-            style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
-          >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Message huuman..."
-              disabled={isLoading}
-              rows={1}
-              className="w-full px-4 py-3.5 pr-12 text-[15px] text-white placeholder:text-white/20 resize-none focus:outline-none max-h-[120px] min-h-[48px] bg-transparent"
-            />
-
+          {/* Enhanced text input with quick-action buttons */}
+          <div className="flex items-end gap-2">
+            {/* Quick-action buttons — visible when no text is typed */}
             <AnimatePresence>
-              {input.trim() && (
-                <motion.button
-                  variants={sendButtonVariants}
-                  initial="initial"
-                  animate="animate"
-                  exit="exit"
-                  transition={springs.tap}
-                  onClick={() => {
-                    Haptics.medium();
-                    handleSend();
-                  }}
-                  disabled={isLoading}
-                  className="absolute right-2 bottom-2 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-transform"
+              {showQuickActions && (
+                <motion.div
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: "auto" }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={springs.snappy}
+                  className="flex gap-1.5 flex-shrink-0 overflow-hidden"
                 >
-                  <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
-                </motion.button>
+                  {/* Meal scan */}
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    transition={springs.tap}
+                    onClick={() => {
+                      Haptics.light();
+                      setShowMealScanner(true);
+                    }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                    style={{
+                      backgroundColor: "rgba(34,197,94,0.12)",
+                      border: "1px solid rgba(34,197,94,0.2)",
+                    }}
+                  >
+                    <Camera className="w-[18px] h-[18px]" style={{ color: "#22c55e" }} />
+                  </motion.button>
+
+                  {/* Breathwork timer */}
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    transition={springs.tap}
+                    onClick={() => {
+                      Haptics.light();
+                      setShowBreathworkTimer(true);
+                    }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
+                    style={{
+                      backgroundColor: "rgba(6,182,212,0.12)",
+                      border: "1px solid rgba(6,182,212,0.2)",
+                    }}
+                  >
+                    <Timer className="w-[18px] h-[18px]" style={{ color: "#06b6d4" }} />
+                  </motion.button>
+                </motion.div>
               )}
             </AnimatePresence>
+
+            {/* Text input */}
+            <div
+              className="relative flex-1 rounded-2xl border border-white/15 transition-[border-color,box-shadow,background-color] duration-300 focus-within:border-white/30 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.08)]"
+              style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={isLoading}
+                rows={1}
+                className="w-full px-4 py-3 pr-12 text-[15px] text-white placeholder:text-white/20 resize-none focus:outline-none max-h-[120px] min-h-[44px] bg-transparent"
+              />
+
+              <AnimatePresence>
+                {hasText && (
+                  <motion.button
+                    variants={sendButtonVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    transition={springs.tap}
+                    onClick={() => {
+                      Haptics.medium();
+                      handleSend();
+                    }}
+                    disabled={isLoading}
+                    className="absolute right-2 bottom-1.5 w-8 h-8 rounded-full bg-white text-black flex items-center justify-center hover:bg-white/90 active:scale-95 transition-transform"
+                  >
+                    <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
       </div>

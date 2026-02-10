@@ -11,7 +11,6 @@ import {
   Activity,
   Target,
   Camera,
-  ChevronRight,
 } from "lucide-react";
 import {
   PILLARS,
@@ -255,7 +254,6 @@ interface ProactiveGreetingProps {
   onLog?: (pillar: Pillar) => void;
   onTimer?: () => void;
   onScanner?: () => void;
-  onSwitchTab?: () => void;
 }
 
 export function ProactiveGreeting({
@@ -263,7 +261,6 @@ export function ProactiveGreeting({
   onLog,
   onTimer,
   onScanner,
-  onSwitchTab,
 }: ProactiveGreetingProps) {
   const [logs, setLogs] = useState<CoreFiveLog[]>([]);
   const [loaded, setLoaded] = useState(false);
@@ -428,22 +425,6 @@ export function ProactiveGreeting({
           })}
         </div>
 
-        {/* View dashboard link */}
-        {onSwitchTab && (
-          <motion.button
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.45, ...springs.snappy }}
-            onClick={() => {
-              Haptics.light();
-              onSwitchTab();
-            }}
-            className="mt-6 flex items-center gap-1 text-[11px] text-white/20 hover:text-white/40 transition-colors"
-          >
-            <span>View dashboard</span>
-            <ChevronRight className="w-3 h-3" />
-          </motion.button>
-        )}
       </div>
     </motion.div>
   );

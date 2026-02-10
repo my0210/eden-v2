@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Settings, Check } from "lucide-react";
+import { Settings, Check, MessageSquare, BarChart3 } from "lucide-react";
 import { ChatView } from "./ChatView";
 import { CoreFiveView } from "@/components/v3/CoreFiveView";
 import { SettingsOverlay } from "@/components/SettingsOverlay";
@@ -99,7 +99,6 @@ export function TabShell({
   const [activeTab, setActiveTab] = useState(0); // 0 = chat, 1 = dashboard
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [primeCoverage, setPrimeCoverage] = useState(0);
-  const [chatIsEmpty, setChatIsEmpty] = useState(true);
   const [toast, setToast] = useState<Toast | null>(null);
   const orbRef = useRef<HTMLDivElement>(null);
   const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -169,25 +168,9 @@ export function TabShell({
     orbRef.current.style.opacity = String(ambientStyle.opacity * fade);
   }, [ambientStyle.opacity]);
 
-  // ---------------------------------------------------------------------------
-  // Empty state callback from ChatView
-  // ---------------------------------------------------------------------------
-  const handleEmptyStateChange = useCallback((isEmpty: boolean) => {
-    setChatIsEmpty(isEmpty);
-  }, []);
-
-  // Switch to dashboard tab (called from ProactiveGreeting "View dashboard" link)
-  const handleSwitchToDashboard = useCallback(() => {
-    setActiveTab(1);
-    Haptics.light();
-  }, []);
-
   // Time-of-day orb gradient
   const orbPrimary = getTimeOfDayColor();
   const orbSecondary = getTimeOfDaySecondary();
-
-  // Show tab dots only when chat has messages (not during greeting)
-  const showTabDots = !chatIsEmpty || activeTab === 1;
 
   return (
     <div
@@ -248,50 +231,13 @@ export function TabShell({
       </div>
 
       {/* ================================================================= */}
-      {/* Shared header                                                     */}
+      {/* Shared header — wordmark + settings only (no dots)                */}
       {/* ================================================================= */}
       <header className="flex-shrink-0 flex items-center justify-between px-5 pt-[max(env(safe-area-inset-top),12px)] pb-3 relative z-10">
         {/* Wordmark */}
         <span className="text-lg font-light tracking-tight text-white/40">
           huuman
         </span>
-
-        {/* Tab indicator dots — hidden when chat is in greeting state */}
-        <AnimatePresence>
-          {showTabDots && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={springs.tap}
-              className="flex items-center gap-2"
-            >
-              {[0, 1].map((tab) => (
-                <motion.button
-                  key={tab}
-                  onClick={() => {
-                    if (activeTab !== tab) {
-                      setActiveTab(tab);
-                      Haptics.light();
-                    }
-                  }}
-                  whileTap={{ scale: 0.8 }}
-                  className="relative p-1"
-                >
-                  <motion.div
-                    layout
-                    animate={{
-                      width: activeTab === tab ? 16 : 6,
-                      opacity: activeTab === tab ? 0.9 : 0.25,
-                    }}
-                    transition={springs.tap}
-                    className="h-[5px] rounded-full bg-white"
-                  />
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Settings — rotates 90° on tap */}
         <motion.button
@@ -325,8 +271,6 @@ export function TabShell({
           >
             <ChatView
               onScroll={activeTab === 0 ? handleContentScroll : undefined}
-              onEmptyStateChange={handleEmptyStateChange}
-              onSwitchTab={handleSwitchToDashboard}
             />
           </div>
 
@@ -342,6 +286,64 @@ export function TabShell({
           </div>
         </motion.div>
       </div>
+
+      {/* ================================================================= */}
+      {/* Bottom tab bar                                                    */}
+      {/* ================================================================= */}
+      <nav
+        className="flex-shrink-0 relative z-10 border-t"
+        style={{
+          backgroundColor: "rgba(0,0,0,0.6)",
+          borderColor: "rgba(255,255,255,0.06)",
+        }}
+      >
+        <div className="flex items-center pb-[max(env(safe-area-inset-bottom),8px)]">
+          {[
+            { id: 0, label: "Chat", icon: MessageSquare },
+            { id: 1, label: "Dashboard", icon: BarChart3 },
+          ].map((tab) => {
+            const isActive = activeTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <motion.button
+                key={tab.id}
+                whileTap={{ scale: 0.92 }}
+                transition={springs.tap}
+                onClick={() => {
+                  if (activeTab !== tab.id) {
+                    setActiveTab(tab.id);
+                    Haptics.light();
+                  }
+                }}
+                className="flex-1 flex flex-col items-center gap-0.5 pt-2.5 pb-1 relative"
+              >
+                {/* Active indicator bar */}
+                {isActive && (
+                  <motion.div
+                    layoutId="tab-indicator"
+                    className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-[3px] rounded-full bg-white"
+                    transition={springs.snappy}
+                  />
+                )}
+                <Icon
+                  className="w-[20px] h-[20px] transition-colors duration-200"
+                  style={{
+                    color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+                  }}
+                />
+                <span
+                  className="text-[10px] font-medium transition-colors duration-200"
+                  style={{
+                    color: isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.3)",
+                  }}
+                >
+                  {tab.label}
+                </span>
+              </motion.button>
+            );
+          })}
+        </div>
+      </nav>
 
       {/* ================================================================= */}
       {/* Settings overlay — only mounted when open                        */}
