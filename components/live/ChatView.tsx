@@ -72,7 +72,6 @@ export function ChatView({ onScroll }: ChatViewProps) {
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
   const [showMealScanner, setShowMealScanner] = useState(false);
-  const [keyboardInset, setKeyboardInset] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -90,33 +89,6 @@ export function ChatView({ onScroll }: ChatViewProps) {
       textarea.style.height = `${Math.min(textarea.scrollHeight, 120)}px`;
     }
   }, [input]);
-
-  // iOS Safari keyboard handling:
-  // 1) Track keyboard overlap inset so composer stays above it
-  // 2) Keep the input in view without smooth scroll wobble
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return undefined;
-
-    const handleResize = () => {
-      requestAnimationFrame(() => {
-        const overlap = Math.max(
-          0,
-          Math.round(window.innerHeight - vv.height - vv.offsetTop)
-        );
-        setKeyboardInset(overlap);
-        inputRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
-      });
-    };
-
-    handleResize();
-    vv.addEventListener("resize", handleResize);
-    vv.addEventListener("scroll", handleResize);
-    return () => {
-      vv.removeEventListener("resize", handleResize);
-      vv.removeEventListener("scroll", handleResize);
-    };
-  }, []);
 
   // Listen for external chat triggers (e.g. from nudge engine)
   useEffect(() => {
@@ -312,10 +284,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
 
         {/* Input Area */}
         <div
-          className="flex-shrink-0 px-4 pt-2 bg-gradient-to-t from-black/50 to-transparent"
-          style={{
-            paddingBottom: `calc(max(env(safe-area-inset-bottom),16px) + ${keyboardInset}px)`,
-          }}
+          className="flex-shrink-0 px-4 pt-2 bg-gradient-to-t from-black/50 to-transparent pb-[max(env(safe-area-inset-bottom),16px)]"
         >
           {/* Inline prompts (after conversation starts) */}
           {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (

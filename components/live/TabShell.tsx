@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion, useMotionValue, useTransform, animate, PanInfo } from "framer-motion";
+import { motion } from "framer-motion";
 import { Settings } from "lucide-react";
 import { ChatView } from "./ChatView";
 import { CoreFiveView } from "@/components/v3/CoreFiveView";
@@ -61,25 +61,6 @@ export function TabShell({
   const [primeCoverage, setPrimeCoverage] = useState(0);
   const orbRef = useRef<HTMLDivElement>(null);
 
-  // Drag-based swipe: tracks the horizontal offset of the tab tray
-  const dragX = useMotionValue(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-  const isDragging = useRef(false);
-
-  // Measure container once
-  useEffect(() => {
-    const measure = () => {
-      if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
-  }, []);
-
-  // Orb parallax: subtle opposite shift derived from drag position
-  const orbParallaxX = useTransform(dragX, (v) => -v * 0.06);
-
   // ---------------------------------------------------------------------------
   // Coverage for ambient orb — reads from localStorage (no extra fetch)
   // CoreFiveView writes to localStorage; we just read it.
@@ -113,68 +94,6 @@ export function TabShell({
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Drag gesture handlers for tab switching
-  // ---------------------------------------------------------------------------
-  const handleDragStart = useCallback(() => {
-    isDragging.current = true;
-  }, []);
-
-  const handleDrag = useCallback(
-    (_: unknown, info: PanInfo) => {
-      // Compute the raw position based on current tab + drag offset
-      const base = -activeTab * containerWidth;
-      const raw = base + info.offset.x;
-      const minX = -containerWidth;
-      const maxX = 0;
-      const clamped = Math.min(maxX, Math.max(minX, raw));
-
-      dragX.set(clamped);
-    },
-    [activeTab, containerWidth, dragX]
-  );
-
-  const handleDragEnd = useCallback(
-    (_: unknown, info: PanInfo) => {
-      isDragging.current = false;
-      const velocity = info.velocity.x;
-      const offset = info.offset.x;
-
-      // Commit to tab switch if velocity or distance is sufficient
-      let newTab = activeTab;
-      if (velocity < -200 || offset < -containerWidth * 0.25) {
-        newTab = Math.min(activeTab + 1, 1);
-      } else if (velocity > 200 || offset > containerWidth * 0.25) {
-        newTab = Math.max(activeTab - 1, 0);
-      }
-
-      if (newTab !== activeTab) {
-        setActiveTab(newTab);
-        Haptics.medium();
-      }
-
-      // Snap to final position
-      animate(dragX, -newTab * containerWidth, {
-        type: "spring",
-        stiffness: 500,
-        damping: 35,
-        velocity: velocity,
-      });
-    },
-    [activeTab, containerWidth, dragX]
-  );
-
-  // When activeTab changes via dot tap, animate the tray
-  useEffect(() => {
-    if (!isDragging.current && containerWidth > 0) {
-      animate(dragX, -activeTab * containerWidth, {
-        type: "spring",
-        stiffness: 500,
-        damping: 35,
-      });
-    }
-  }, [activeTab, containerWidth, dragX]);
-
-  // ---------------------------------------------------------------------------
   // Scroll-based orb fade — direct DOM mutation, no re-render
   // ---------------------------------------------------------------------------
   const ambientStyle = getAmbientStyle(primeCoverage);
@@ -187,7 +106,7 @@ export function TabShell({
 
   return (
     <div
-      className="h-[100svh] flex flex-col overflow-hidden overscroll-none"
+      className="h-[100dvh] flex flex-col overflow-hidden overscroll-none"
       style={{ backgroundColor: "#0a0a0b" }}
     >
       {/* ================================================================= */}
@@ -196,7 +115,6 @@ export function TabShell({
       <div className="orb-container fixed inset-0 flex items-center justify-center pointer-events-none z-0" style={{ contain: "strict" }}>
         <motion.div
           className="relative w-[600px] h-[600px]"
-          style={{ x: orbParallaxX, willChange: "transform" }}
           animate={{ scale: ambientStyle.scale }}
           transition={{ duration: 2, ease: "easeOut" }}
         >
@@ -265,28 +183,20 @@ export function TabShell({
       </header>
 
       {/* ================================================================= */}
-      {/* Tab content — horizontal tray, drag to switch                     */}
+      {/* Tab content — horizontal tray, no drag                            */}
       {/* ================================================================= */}
       <div
-        ref={containerRef}
         className="flex-1 overflow-hidden relative z-10"
       >
         <motion.div
           className="flex h-full"
-          style={{ x: dragX, width: containerWidth ? containerWidth * 2 : "200%" }}
-          drag={activeTab === 0 ? "x" : false}
-          dragDirectionLock
-          dragConstraints={{ left: -containerWidth, right: 0 }}
-          dragElastic={0}
-          dragMomentum={false}
-          onDragStart={handleDragStart}
-          onDrag={handleDrag}
-          onDragEnd={handleDragEnd}
+          style={{ width: "200%" }}
+          animate={{ x: activeTab === 0 ? "0%" : "-50%" }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
         >
           {/* Chat tab */}
           <div
-            className="h-full flex-shrink-0"
-            style={{ width: containerWidth || "50%" }}
+            className="h-full w-1/2 flex-shrink-0"
           >
             <ChatView
               onScroll={activeTab === 0 ? handleContentScroll : undefined}
@@ -295,8 +205,7 @@ export function TabShell({
 
           {/* Dashboard tab */}
           <div
-            className="h-full flex-shrink-0 overflow-y-auto overscroll-contain"
-            style={{ width: containerWidth || "50%" }}
+            className="h-full w-1/2 flex-shrink-0 overflow-y-auto overscroll-contain"
             onScroll={(e) =>
               activeTab === 1 &&
               handleContentScroll(e.currentTarget.scrollTop)
