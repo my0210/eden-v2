@@ -146,17 +146,27 @@ function OtpInput({
         inputMode="numeric"
         pattern="[0-9]*"
         autoComplete="one-time-code"
+        autoCapitalize="off"
+        autoCorrect="off"
+        spellCheck={false}
         value={value}
         onChange={handleChange}
         onPaste={handlePaste}
         disabled={disabled}
+        maxLength={OTP_LENGTH}
         style={{
           position: 'absolute',
           inset: 0,
           width: '100%',
           height: '100%',
-          opacity: 0,
+          opacity: 1,
+          color: 'transparent',
+          caretColor: 'transparent',
+          background: 'transparent',
+          border: 'none',
+          outline: 'none',
           cursor: 'pointer',
+          fontSize: 16,
         }}
         aria-label="One-time code"
       />
@@ -303,6 +313,21 @@ export default function LoginPage() {
     handleSendOtp({ preventDefault: () => {} } as React.FormEvent);
   }, [handleSendOtp]);
 
+  const handlePasteFromClipboard = useCallback(async () => {
+    if (loading || !navigator.clipboard?.readText) return;
+    try {
+      const text = await navigator.clipboard.readText();
+      const digits = text.replace(/\D/g, '').slice(0, OTP_LENGTH);
+      if (!digits) return;
+      setCode(digits);
+      if (digits.length === OTP_LENGTH) {
+        handleVerifyOtp(digits);
+      }
+    } catch {
+      // Ignore clipboard permission/read failures.
+    }
+  }, [handleVerifyOtp, loading]);
+
   // ================================================================
   // OTP step
   // ================================================================
@@ -357,6 +382,13 @@ export default function LoginPage() {
         </p>
 
         <div className="flex flex-col items-center gap-3">
+          <button
+            onClick={handlePasteFromClipboard}
+            disabled={loading}
+            className="text-sm text-foreground/45 hover:text-foreground/65 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            Paste code
+          </button>
           <button
             onClick={handleResend}
             disabled={loading || resendCountdown > 0}
