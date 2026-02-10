@@ -124,13 +124,9 @@ export function TabShell({
       // Compute the raw position based on current tab + drag offset
       const base = -activeTab * containerWidth;
       const raw = base + info.offset.x;
-
-      // Rubber-band at edges: dampen movement beyond bounds
       const minX = -containerWidth;
       const maxX = 0;
-      let clamped = raw;
-      if (raw > maxX) clamped = maxX + (raw - maxX) * 0.15;
-      if (raw < minX) clamped = minX + (raw - minX) * 0.15;
+      const clamped = Math.min(maxX, Math.max(minX, raw));
 
       dragX.set(clamped);
     },
@@ -191,7 +187,7 @@ export function TabShell({
 
   return (
     <div
-      className="h-[100dvh] flex flex-col"
+      className="h-[100dvh] flex flex-col overflow-hidden overscroll-none"
       style={{ backgroundColor: "#0a0a0b" }}
     >
       {/* ================================================================= */}
@@ -281,7 +277,7 @@ export function TabShell({
           drag="x"
           dragDirectionLock
           dragConstraints={{ left: -containerWidth, right: 0 }}
-          dragElastic={0.12}
+          dragElastic={0}
           dragMomentum={false}
           onDragStart={handleDragStart}
           onDrag={handleDrag}

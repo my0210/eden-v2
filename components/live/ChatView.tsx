@@ -246,7 +246,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
         {/* Messages / Empty State */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [webkit-overflow-scrolling:touch]"
           onScroll={(e) => onScroll?.(e.currentTarget.scrollTop)}
         >
           <AnimatePresence mode="wait">
@@ -300,7 +300,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
         </div>
 
         {/* Input Area */}
-        <div className="flex-shrink-0 px-4 pt-2 pb-[max(env(safe-area-inset-bottom),16px)]">
+        <div className="flex-shrink-0 px-4 pt-2 pb-[max(env(safe-area-inset-bottom),16px)] bg-gradient-to-t from-black/50 to-transparent">
           {/* Inline prompts (after conversation starts) */}
           {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (
             <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-2.5 -mx-1 px-1">
@@ -322,8 +322,8 @@ export function ChatView({ onScroll }: ChatViewProps) {
 
           {/* Text input */}
           <div
-            className="relative rounded-2xl border border-white/8 transition-[border-color,box-shadow] duration-300 focus-within:border-white/15 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.04)]"
-            style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
+            className="relative rounded-2xl border border-white/15 transition-[border-color,box-shadow,background-color] duration-300 focus-within:border-white/30 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.08)]"
+            style={{ backgroundColor: "rgba(255,255,255,0.08)" }}
           >
             <textarea
               ref={inputRef}

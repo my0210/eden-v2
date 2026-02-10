@@ -93,6 +93,13 @@ body {
   /* Removed background-attachment: fixed — it forces repaint on every scroll frame */
 }
 
+/* Main authenticated app shell: single viewport, no page-level rubber-band */
+.app-main-shell {
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
 /* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;

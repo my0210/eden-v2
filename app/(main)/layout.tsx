@@ -29,7 +29,7 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="app-main-shell bg-background">
       {children}
     </div>
   );

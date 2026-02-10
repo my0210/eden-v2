@@ -237,9 +237,9 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col justify-end h-full px-5 pb-4"
+      className="flex flex-col justify-center h-full px-5 pb-4"
     >
-      <div className="flex flex-col items-center mb-8">
+      <div className="flex flex-col items-center mb-6">
         {/* Compact pillar rings */}
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
@@ -264,7 +264,7 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
       </div>
 
       {/* Smart prompts */}
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-wrap justify-center gap-2">
         {prompts.map((prompt, i) => (
           <motion.button
             key={prompt}
@@ -276,8 +276,8 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
               Haptics.light();
               onSend(prompt);
             }}
-            className="px-4 py-3.5 rounded-2xl text-left text-[13px] text-white/60 hover:text-white/80 transition-colors duration-150 border border-white/6 hover:border-white/12 hover:bg-white/[0.04]"
-            style={{ backgroundColor: "rgba(255,255,255,0.02)" }}
+            className="px-4 py-2.5 rounded-full text-[13px] text-white/65 hover:text-white/85 transition-colors duration-150 border border-white/12 hover:border-white/20 hover:bg-white/[0.08] whitespace-nowrap"
+            style={{ backgroundColor: "rgba(255,255,255,0.05)" }}
           >
             {prompt}
           </motion.button>
