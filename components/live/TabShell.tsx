@@ -187,7 +187,7 @@ export function TabShell({
 
   return (
     <div
-      className="h-[100dvh] flex flex-col overflow-hidden overscroll-none"
+      className="h-[100svh] flex flex-col overflow-hidden overscroll-none"
       style={{ backgroundColor: "#0a0a0b" }}
     >
       {/* ================================================================= */}

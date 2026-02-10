@@ -72,6 +72,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
   const [showMealScanner, setShowMealScanner] = useState(false);
+  const [keyboardInset, setKeyboardInset] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -90,25 +91,31 @@ export function ChatView({ onScroll }: ChatViewProps) {
     }
   }, [input]);
 
-  // Focus input on mount (slight delay for tab transition)
-  useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
-
-  // iOS keyboard: scroll input into view when virtual keyboard resizes viewport
+  // iOS Safari keyboard handling:
+  // 1) Track keyboard overlap inset so composer stays above it
+  // 2) Keep the input in view without smooth scroll wobble
   useEffect(() => {
     const vv = window.visualViewport;
-    if (!vv) return;
+    if (!vv) return undefined;
 
     const handleResize = () => {
-      // When keyboard opens, visualViewport.height shrinks
       requestAnimationFrame(() => {
-        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        const overlap = Math.max(
+          0,
+          Math.round(window.innerHeight - vv.height - vv.offsetTop)
+        );
+        setKeyboardInset(overlap);
+        inputRef.current?.scrollIntoView({ behavior: "auto", block: "nearest" });
       });
     };
 
+    handleResize();
     vv.addEventListener("resize", handleResize);
-    return () => vv.removeEventListener("resize", handleResize);
+    vv.addEventListener("scroll", handleResize);
+    return () => {
+      vv.removeEventListener("resize", handleResize);
+      vv.removeEventListener("scroll", handleResize);
+    };
   }, []);
 
   // Listen for external chat triggers (e.g. from nudge engine)
@@ -246,7 +253,11 @@ export function ChatView({ onScroll }: ChatViewProps) {
         {/* Messages / Empty State */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain [webkit-overflow-scrolling:touch]"
+          className={`flex-1 overflow-x-hidden [webkit-overflow-scrolling:touch] ${
+            isEmpty
+              ? "overflow-hidden"
+              : "overflow-y-auto overscroll-contain scrollbar-hide"
+          }`}
           onScroll={(e) => onScroll?.(e.currentTarget.scrollTop)}
         >
           <AnimatePresence mode="wait">
@@ -300,7 +311,12 @@ export function ChatView({ onScroll }: ChatViewProps) {
         </div>
 
         {/* Input Area */}
-        <div className="flex-shrink-0 px-4 pt-2 pb-[max(env(safe-area-inset-bottom),16px)] bg-gradient-to-t from-black/50 to-transparent">
+        <div
+          className="flex-shrink-0 px-4 pt-2 bg-gradient-to-t from-black/50 to-transparent"
+          style={{
+            paddingBottom: `calc(max(env(safe-area-inset-bottom),16px) + ${keyboardInset}px)`,
+          }}
+        >
           {/* Inline prompts (after conversation starts) */}
           {!isEmpty && suggestedPrompts.length > 0 && !isLoading && (
             <div className="flex gap-1.5 overflow-x-auto scrollbar-hide mb-2.5 -mx-1 px-1">

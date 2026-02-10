@@ -95,7 +95,8 @@ body {
 
 /* Main authenticated app shell: single viewport, no page-level rubber-band */
 .app-main-shell {
-  height: 100dvh;
+  height: 100svh;
+  min-height: 100svh;
   overflow: hidden;
   overscroll-behavior: none;
 }

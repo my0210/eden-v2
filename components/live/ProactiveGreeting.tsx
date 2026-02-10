@@ -237,7 +237,7 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0, y: -10 }}
       transition={{ duration: 0.3 }}
-      className="flex flex-col justify-center h-full px-5 pb-4"
+      className="flex flex-col justify-end h-full px-5 pb-4"
     >
       <div className="flex flex-col items-center mb-6">
         {/* Compact pillar rings */}
