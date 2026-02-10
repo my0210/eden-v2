@@ -119,10 +119,10 @@ function OtpInput({
               text-lg font-medium transition-all
               ${
                 d
-                  ? 'border-white/30 bg-white/10 text-foreground'
+                  ? 'border-white/50 bg-white/15 text-foreground'
                   : i === value.length
-                    ? 'border-white/30 bg-white/5 animate-pulse'
-                    : 'border-white/10 bg-white/5 text-foreground/20'
+                    ? 'border-white/40 bg-white/10 animate-pulse'
+                    : 'border-white/20 bg-white/10 text-foreground/20'
               }
             `}
           >
