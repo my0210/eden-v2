@@ -83,7 +83,7 @@ function OtpInput({
   onComplete: (code: string) => void;
   inputRef: React.RefObject<HTMLInputElement | null>;
 }) {
-  const digits = value.padEnd(OTP_LENGTH, '').split('').slice(0, OTP_LENGTH);
+  const digits = Array.from({ length: OTP_LENGTH }, (_, i) => value[i] ?? '');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/\D/g, '').slice(0, OTP_LENGTH);
