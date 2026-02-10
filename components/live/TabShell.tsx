@@ -21,10 +21,8 @@ import {
 import { ChatMessage, Message, ToolDisplay } from "@/components/ChatMessage";
 import { BreathworkTimer } from "@/components/BreathworkTimer";
 import { MealScanner } from "@/components/MealScanner";
-import { QuickLogModal } from "@/components/v3/QuickLogModal";
 import { CoreFiveView } from "@/components/v3/CoreFiveView";
 import { SettingsOverlay } from "@/components/SettingsOverlay";
-import { HomeContent } from "./HomeContent";
 import { Haptics } from "@/lib/soul";
 import {
   getWeekStart,
@@ -151,7 +149,6 @@ export function TabShell({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
   const [showMealScanner, setShowMealScanner] = useState(false);
-  const [logPillar, setLogPillar] = useState<Pillar | null>(null);
   const [primeCoverage, setPrimeCoverage] = useState(0);
   const [toast, setToast] = useState<Toast | null>(null);
 
@@ -284,11 +281,6 @@ export function TabShell({
     setSheetOpen(true);
   }, []);
 
-  const openChatWithMessage = useCallback((text: string) => {
-    pendingMessageRef.current = text;
-    setSheetOpen(true);
-  }, []);
-
   // ── Handle send ───────────────────────────────────────────────────────
 
   const handleSend = useCallback(
@@ -396,14 +388,6 @@ export function TabShell({
   const handleTimerStart = useCallback(() => setShowBreathworkTimer(true), []);
   const handleScannerOpen = useCallback(() => setShowMealScanner(true), []);
 
-  const handleDirectLog = useCallback((pillar: Pillar) => {
-    setLogPillar(pillar);
-  }, []);
-
-  const handleLogSaved = useCallback(() => {
-    setLogPillar(null);
-    window.dispatchEvent(new CustomEvent("huuman:logCreated"));
-  }, []);
 
   // ====================================================================
   // Render
@@ -490,21 +474,10 @@ export function TabShell({
         className="flex-1 overflow-y-auto overscroll-contain scrollbar-hide relative z-10"
         onScroll={(e) => handleContentScroll(e.currentTarget.scrollTop)}
       >
-        {/* Greeting hero: rings, greeting, smart prompts */}
-        <HomeContent
-          onSend={openChatWithMessage}
-          onLog={handleDirectLog}
-          onTimer={handleTimerStart}
-          onScanner={handleScannerOpen}
-        />
-
-        {/* Full dashboard */}
-        <div className="mt-2">
-          <CoreFiveView userId={userId} embedded />
-        </div>
+        <CoreFiveView userId={userId} embedded />
       </div>
 
-      {/* ═══ Bottom bar: "Ask Eden..." trigger ═══════════════════════ */}
+      {/* ═══ Bottom bar: "Ask huuman..." trigger ═════════════════════ */}
       <div
         className="flex-shrink-0 px-4 pt-2 relative z-10"
         style={{
@@ -518,7 +491,7 @@ export function TabShell({
           style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
         >
           <MessageCircle className="w-[18px] h-[18px] text-white/25 flex-shrink-0" />
-          <span className="text-[15px] text-white/25">Ask Eden...</span>
+          <span className="text-[15px] text-white/25">Ask huuman...</span>
         </button>
       </div>
 
@@ -555,7 +528,7 @@ export function TabShell({
               <div className="flex items-center justify-between px-5 pb-3">
                 <div className="w-8" />
                 <Drawer.Title className="text-[13px] font-medium text-white/50">
-                  eden
+                  huuman
                 </Drawer.Title>
                 <button
                   onClick={() => setSheetOpen(false)}
@@ -730,7 +703,7 @@ export function TabShell({
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Message Eden..."
+                    placeholder="Message huuman..."
                     disabled={isLoading}
                     rows={1}
                     className="w-full px-4 py-3 pr-12 text-[15px] text-white placeholder:text-white/20 resize-none focus:outline-none max-h-[120px] min-h-[44px] bg-transparent"
@@ -763,17 +736,6 @@ export function TabShell({
       </Drawer.Root>
 
       {/* ═══ Overlays ════════════════════════════════════════════════ */}
-
-      {/* Quick Log Modal */}
-      {logPillar && (
-        <QuickLogModal
-          pillar={logPillar}
-          config={PILLAR_CONFIGS[logPillar]}
-          weekStart={weekStart}
-          onClose={() => setLogPillar(null)}
-          onSave={handleLogSaved}
-        />
-      )}
 
       {/* Breathwork Timer */}
       <AnimatePresence>
