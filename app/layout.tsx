@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, Space_Grotesk } from 'next/font/google';
+import { ServiceWorkerRegistration } from '@/components/ServiceWorkerRegistration';
 import './globals.css';
 
 const inter = Inter({ 
@@ -18,8 +19,11 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'default',
+    statusBarStyle: 'black-translucent',
     title: 'Huuman',
+  },
+  icons: {
+    apple: '/icons/apple-touch-icon.png',
   },
 };
 
@@ -41,6 +45,7 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable}`}>
       <body className="font-sans antialiased bg-background text-foreground min-h-screen">
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

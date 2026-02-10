@@ -37,10 +37,11 @@ export async function updateSession(request: NextRequest) {
   // Redirect unauthenticated users to login
   const isAuthPage = request.nextUrl.pathname.startsWith('/login') || 
                      request.nextUrl.pathname.startsWith('/signup');
+  const isAuthCallback = request.nextUrl.pathname.startsWith('/auth/callback');
   const isOnboarding = request.nextUrl.pathname.startsWith('/onboarding');
   const isPublicPage = request.nextUrl.pathname === '/';
 
-  if (!user && !isAuthPage && !isPublicPage) {
+  if (!user && !isAuthPage && !isAuthCallback && !isPublicPage) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
