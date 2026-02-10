@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { PILLARS, PILLAR_CONFIGS } from '@/lib/v3/coreFive';
 import { iconComponents } from './CoreFiveCard';
 
@@ -18,6 +19,7 @@ const PILLAR_WHY: Record<string, string> = {
 
 export function V3Onboarding({ onComplete }: V3OnboardingProps) {
   const [step, setStep] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   const totalSteps = 3;
 
@@ -29,8 +31,28 @@ export function V3Onboarding({ onComplete }: V3OnboardingProps) {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  useEffect(() => {
+    if (!mounted) return undefined;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, [mounted]);
+
+  const overlay = (
+    <div
+      className="fixed inset-0 z-[300] bg-background flex flex-col overflow-x-hidden overscroll-none"
+      style={{ touchAction: 'pan-y' }}
+    >
       {/* Ambient gradient */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div className="relative w-[600px] h-[600px]">
@@ -44,7 +66,8 @@ export function V3Onboarding({ onComplete }: V3OnboardingProps) {
       </div>
 
       {/* Content */}
-      <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 max-w-lg mx-auto w-full">
+      <div className="relative z-10 flex-1 overflow-y-auto px-6 w-full">
+        <div className="min-h-full flex flex-col items-center justify-center max-w-lg mx-auto">
         
         {/* Step 0: Welcome */}
         {step === 0 && (
@@ -188,6 +211,7 @@ export function V3Onboarding({ onComplete }: V3OnboardingProps) {
             </p>
           </div>
         )}
+        </div>
       </div>
 
       {/* Bottom area */}
@@ -231,4 +255,7 @@ export function V3Onboarding({ onComplete }: V3OnboardingProps) {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(overlay, document.body);
 }

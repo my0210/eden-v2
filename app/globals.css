@@ -82,6 +82,7 @@
 /* Kill 300ms tap delay on all touch targets */
 html {
   touch-action: manipulation;
+  overflow-x: hidden;
 }
 
 body {
@@ -91,6 +92,7 @@ body {
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 30%);
   /* Removed background-attachment: fixed — it forces repaint on every scroll frame */
+  overflow-x: hidden;
 }
 
 /* Main authenticated app shell: single viewport, no page-level rubber-band */

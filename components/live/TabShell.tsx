@@ -274,7 +274,7 @@ export function TabShell({
         <motion.div
           className="flex h-full"
           style={{ x: dragX, width: containerWidth ? containerWidth * 2 : "200%" }}
-          drag="x"
+          drag={activeTab === 0 ? "x" : false}
           dragDirectionLock
           dragConstraints={{ left: -containerWidth, right: 0 }}
           dragElastic={0}
