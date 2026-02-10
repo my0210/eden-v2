@@ -110,21 +110,29 @@ function OtpInput({
   return (
     <div className="relative">
       {/* Visual digit boxes */}
-      <div className="flex gap-1.5 justify-center" aria-hidden="true">
+      <div className="flex gap-1.5 justify-center">
         {digits.map((d, i) => (
           <div
             key={i}
-            className={`
-              w-9 h-12 rounded-lg border flex items-center justify-center
-              text-lg font-medium transition-all
-              ${
-                d
-                  ? 'border-white/50 bg-white/15 text-foreground'
-                  : i === value.length
-                    ? 'border-white/40 bg-white/10 animate-pulse'
-                    : 'border-white/20 bg-white/10 text-foreground/20'
-              }
-            `}
+            style={{
+              width: 36,
+              height: 48,
+              borderRadius: 8,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 18,
+              fontWeight: 500,
+              border: d
+                ? '1.5px solid rgba(255,255,255,0.5)'
+                : i === value.length
+                  ? '1.5px solid rgba(255,255,255,0.4)'
+                  : '1px solid rgba(255,255,255,0.2)',
+              background: d
+                ? 'rgba(255,255,255,0.15)'
+                : 'rgba(255,255,255,0.08)',
+              color: d ? '#fff' : 'rgba(255,255,255,0.2)',
+            }}
           >
             {d || ''}
           </div>
@@ -142,7 +150,14 @@ function OtpInput({
         onChange={handleChange}
         onPaste={handlePaste}
         disabled={disabled}
-        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+        style={{
+          position: 'absolute',
+          inset: 0,
+          width: '100%',
+          height: '100%',
+          opacity: 0,
+          cursor: 'pointer',
+        }}
         aria-label="One-time code"
       />
     </div>
