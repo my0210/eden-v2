@@ -346,7 +346,7 @@ export function HomeContent({
   }
 
   return (
-    <div className="flex flex-col justify-center h-full px-5 pb-4">
+    <div className="flex flex-col px-5 pt-8 pb-4">
       <div className="flex flex-col items-center">
         {/* Date + Coverage */}
         <motion.p

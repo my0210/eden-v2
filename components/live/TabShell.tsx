@@ -13,6 +13,7 @@ import { ChatMessage, Message, ToolDisplay } from "@/components/ChatMessage";
 import { BreathworkTimer } from "@/components/BreathworkTimer";
 import { MealScanner } from "@/components/MealScanner";
 import { QuickLogModal } from "@/components/v3/QuickLogModal";
+import { CoreFiveView } from "@/components/v3/CoreFiveView";
 import { SettingsOverlay } from "@/components/SettingsOverlay";
 import { HomeContent } from "./HomeContent";
 import { Haptics } from "@/lib/soul";
@@ -556,21 +557,28 @@ export function TabShell({
       <div className="flex-1 overflow-hidden relative z-10">
         <AnimatePresence mode="wait">
           {isHome ? (
-            /* ── Home mode ──────────────────────────────────────── */
+            /* ── Home mode: greeting hero + full dashboard ─────── */
             <motion.div
               key="home"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.97, y: -20 }}
               transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-              className="h-full"
+              className="h-full overflow-y-auto overscroll-contain scrollbar-hide"
+              onScroll={(e) => handleContentScroll(e.currentTarget.scrollTop)}
             >
+              {/* Greeting + rings + smart prompts */}
               <HomeContent
                 onSend={(text) => handleSend(text)}
                 onLog={handleDirectLog}
                 onTimer={handleTimerStart}
                 onScanner={handleScannerOpen}
               />
+
+              {/* Full dashboard below */}
+              <div className="mt-2">
+                <CoreFiveView userId={userId} embedded />
+              </div>
             </motion.div>
           ) : (
             /* ── Chat mode ──────────────────────────────────────── */
