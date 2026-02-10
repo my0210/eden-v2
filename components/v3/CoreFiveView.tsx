@@ -43,6 +43,18 @@ function getAmbientStyle(coverage: number) {
   return map[coverage] || map[0];
 }
 
+// Time-of-day orb tinting
+function getTimeOrbGradient(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12)
+    return "radial-gradient(circle, rgba(251,191,36,0.3) 0%, rgba(245,158,11,0.15) 40%, transparent 70%)";
+  if (hour >= 12 && hour < 17)
+    return "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)";
+  if (hour >= 17 && hour < 22)
+    return "radial-gradient(circle, rgba(139,92,246,0.3) 0%, rgba(109,40,217,0.15) 40%, transparent 70%)";
+  return "radial-gradient(circle, rgba(99,102,241,0.2) 0%, rgba(79,70,229,0.1) 40%, transparent 70%)";
+}
+
 // localStorage cache helpers
 function getCachedLogs(weekStart: string): CoreFiveLog[] | null {
   if (typeof window === "undefined") return null;
@@ -312,6 +324,16 @@ export function CoreFiveView({ userId, embedded }: CoreFiveViewProps) {
       if (res.ok) {
         const data = await res.json();
         handleLogComplete(data.log);
+        // Dispatch toast event
+        const config = PILLAR_CONFIGS[pillar];
+        window.dispatchEvent(
+          new CustomEvent("huuman:logToast", {
+            detail: {
+              message: `${config.name}: ${value} ${config.unit} logged`,
+              color: config.color,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error("Quick log failed:", error);
@@ -364,7 +386,7 @@ export function CoreFiveView({ userId, embedded }: CoreFiveViewProps) {
               className="absolute inset-0 rounded-full blur-[100px]"
               style={{
                 opacity: ambientStyle.opacity,
-                background: "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
+                background: getTimeOrbGradient(),
                 willChange: "opacity",
                 transform: "translateZ(0)",
               }}
@@ -501,20 +523,25 @@ export function CoreFiveView({ userId, embedded }: CoreFiveViewProps) {
 
             {/* Core Five Cards */}
             <div className="grid gap-4">
-              {PILLARS.map(pillar => (
-                <CoreFiveCard
-                  key={pillar}
-                  config={PILLAR_CONFIGS[pillar]}
-                  current={getPillarProgress(logs, pillar)}
-                  onLogClick={() => setSelectedPillar(pillar)}
-                  onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
-                  onCardClick={() => setDetailPillar(pillar)}
-                  onTimerClick={pillar === "mindfulness" && isCurrentWeek ? () => setShowBreathworkTimer(true) : undefined}
-                  onScanClick={pillar === "clean_eating" && isCurrentWeek ? () => setShowMealScanner(true) : undefined}
-                  readOnly={!isCurrentWeek}
-                  justCompleted={justCompletedPillar === pillar}
-                />
-              ))}
+              {PILLARS.map(pillar => {
+                const current = getPillarProgress(logs, pillar);
+                const isMet = current >= PILLAR_CONFIGS[pillar].weeklyTarget;
+                return (
+                  <CoreFiveCard
+                    key={pillar}
+                    config={PILLAR_CONFIGS[pillar]}
+                    current={current}
+                    onLogClick={() => setSelectedPillar(pillar)}
+                    onQuickLog={isCurrentWeek ? (value) => handleQuickLog(pillar, value) : undefined}
+                    onCardClick={() => setDetailPillar(pillar)}
+                    onTimerClick={pillar === "mindfulness" && isCurrentWeek ? () => setShowBreathworkTimer(true) : undefined}
+                    onScanClick={pillar === "clean_eating" && isCurrentWeek ? () => setShowMealScanner(true) : undefined}
+                    readOnly={!isCurrentWeek}
+                    justCompleted={justCompletedPillar === pillar}
+                    compact={isCurrentWeek && isMet}
+                  />
+                );
+              })}
             </div>
 
             {/* Progress Photos Section */}

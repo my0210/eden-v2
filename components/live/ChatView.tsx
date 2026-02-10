@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { ChatMessage, Message, ToolDisplay } from "@/components/ChatMessage";
 import { BreathworkTimer } from "@/components/BreathworkTimer";
 import { MealScanner } from "@/components/MealScanner";
+import { QuickLogModal } from "@/components/v3/QuickLogModal";
 import { ProactiveGreeting } from "./ProactiveGreeting";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp } from "lucide-react";
@@ -11,8 +12,10 @@ import {
   getWeekStart,
   PILLAR_CONFIGS,
   PILLARS,
+  type Pillar,
   type CoreFiveLog,
   getPillarProgress,
+  getPrimeCoverage,
 } from "@/lib/v3/coreFive";
 import {
   springs,
@@ -58,23 +61,98 @@ function getSmartPrompts(logs: CoreFiveLog[]): string[] {
 }
 
 // ============================================================================
+// Compact Mini Ring Dots (shown at top of chat when conversation is active)
+// ============================================================================
+
+function ChatMiniRings() {
+  const [pillarData, setPillarData] = useState<
+    { pillar: Pillar; met: boolean; color: string }[]
+  >([]);
+
+  useEffect(() => {
+    const readFromCache = () => {
+      try {
+        const weekStart = getWeekStart(new Date());
+        const cached = localStorage.getItem(`huuman_logs_${weekStart}`);
+        if (cached) {
+          const logs: CoreFiveLog[] = JSON.parse(cached);
+          setPillarData(
+            PILLARS.map((p) => ({
+              pillar: p,
+              met: getPillarProgress(logs, p) >= PILLAR_CONFIGS[p].weeklyTarget,
+              color: PILLAR_CONFIGS[p].color,
+            }))
+          );
+        } else {
+          setPillarData(
+            PILLARS.map((p) => ({
+              pillar: p,
+              met: false,
+              color: PILLAR_CONFIGS[p].color,
+            }))
+          );
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+
+    readFromCache();
+    window.addEventListener("huuman:logCreated", readFromCache);
+    return () => window.removeEventListener("huuman:logCreated", readFromCache);
+  }, []);
+
+  if (pillarData.length === 0) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={springs.snappy}
+      className="flex items-center justify-center gap-2 py-2"
+    >
+      {pillarData.map(({ pillar, met, color }) => (
+        <div
+          key={pillar}
+          className="w-[10px] h-[10px] rounded-full transition-colors duration-500"
+          style={{
+            backgroundColor: met ? color : "transparent",
+            border: `1.5px solid ${met ? color : `${color}40`}`,
+          }}
+        />
+      ))}
+    </motion.div>
+  );
+}
+
+// ============================================================================
 // ChatView
 // ============================================================================
 
 interface ChatViewProps {
   onScroll?: (scrollTop: number) => void;
+  onEmptyStateChange?: (isEmpty: boolean) => void;
+  onSwitchTab?: () => void;
 }
 
-export function ChatView({ onScroll }: ChatViewProps) {
+export function ChatView({ onScroll, onEmptyStateChange, onSwitchTab }: ChatViewProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [showBreathworkTimer, setShowBreathworkTimer] = useState(false);
   const [showMealScanner, setShowMealScanner] = useState(false);
+  const [logPillar, setLogPillar] = useState<Pillar | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  const isEmpty = messages.length === 0;
+
+  // Notify parent of isEmpty changes
+  useEffect(() => {
+    onEmptyStateChange?.(isEmpty);
+  }, [isEmpty, onEmptyStateChange]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
@@ -115,6 +193,25 @@ export function ChatView({ onScroll }: ChatViewProps) {
     () => setShowMealScanner(true),
     []
   );
+
+  // Ring tap → direct log actions
+  const handleDirectLog = useCallback((pillar: Pillar) => {
+    setLogPillar(pillar);
+  }, []);
+
+  const handleDirectTimer = useCallback(() => {
+    setShowBreathworkTimer(true);
+  }, []);
+
+  const handleDirectScanner = useCallback(() => {
+    setShowMealScanner(true);
+  }, []);
+
+  const handleLogSaved = useCallback((_log: CoreFiveLog) => {
+    setLogPillar(null);
+    // Dispatch log event for cache invalidation + toast
+    window.dispatchEvent(new CustomEvent("huuman:logCreated"));
+  }, []);
 
   const handleSend = async (messageText?: string) => {
     const text = messageText || input.trim();
@@ -217,7 +314,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
     }
   };
 
-  const isEmpty = messages.length === 0;
+  const weekStart = useMemo(() => getWeekStart(new Date()), []);
 
   return (
     <>
@@ -234,7 +331,14 @@ export function ChatView({ onScroll }: ChatViewProps) {
         >
           <AnimatePresence mode="wait">
             {isEmpty ? (
-              <ProactiveGreeting key="greeting" onSend={handleSend} />
+              <ProactiveGreeting
+                key="greeting"
+                onSend={handleSend}
+                onLog={handleDirectLog}
+                onTimer={handleDirectTimer}
+                onScanner={handleDirectScanner}
+                onSwitchTab={onSwitchTab}
+              />
             ) : (
               <motion.div
                 key="messages"
@@ -242,6 +346,9 @@ export function ChatView({ onScroll }: ChatViewProps) {
                 animate={{ opacity: 1 }}
                 className="px-5 py-4"
               >
+                {/* Compact mini rings at top of chat */}
+                <ChatMiniRings />
+
                 {messages.map((message) => (
                   <motion.div
                     key={message.id}
@@ -343,6 +450,17 @@ export function ChatView({ onScroll }: ChatViewProps) {
           </div>
         </div>
       </div>
+
+      {/* QuickLogModal (from ring tap) */}
+      {logPillar && (
+        <QuickLogModal
+          pillar={logPillar}
+          config={PILLAR_CONFIGS[logPillar]}
+          weekStart={weekStart}
+          onClose={() => setLogPillar(null)}
+          onSave={handleLogSaved}
+        />
+      )}
 
       {/* Breathwork Timer Overlay */}
       <AnimatePresence>

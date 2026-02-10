@@ -44,6 +44,15 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
       if (res.ok) {
         const data = await res.json();
         onSave(data.log);
+        // Dispatch toast event
+        window.dispatchEvent(
+          new CustomEvent("huuman:logToast", {
+            detail: {
+              message: `${config.name}: ${numValue} ${config.unit} logged`,
+              color: config.color,
+            },
+          })
+        );
       }
     } catch (error) {
       console.error('Failed to save log:', error);

@@ -163,6 +163,15 @@ export function BreathworkTimer({ duration = 5, onComplete, onClose }: Breathwor
         Haptics.success();
         Sounds.playSuccess();
         onComplete?.();
+        // Dispatch toast event
+        window.dispatchEvent(
+          new CustomEvent("huuman:logToast", {
+            detail: {
+              message: `Mindfulness: ${selectedDuration} min breathwork logged`,
+              color: "#06b6d4",
+            },
+          })
+        );
       }
     } catch (error) {
       console.error("Failed to log breathwork:", error);

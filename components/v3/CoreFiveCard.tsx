@@ -16,6 +16,7 @@ import {
   Timer,
   Camera,
   ExternalLink,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Haptics, Sounds } from "@/lib/soul";
@@ -31,6 +32,8 @@ interface CoreFiveCardProps {
   onScanClick?: () => void;
   readOnly?: boolean;
   justCompleted?: boolean;
+  /** When true and target is met, show compact single-row layout */
+  compact?: boolean;
 }
 
 // Map pillar IDs to Lucide icons
@@ -78,14 +81,19 @@ export function CoreFiveCard({
   onScanClick,
   readOnly,
   justCompleted,
+  compact,
 }: CoreFiveCardProps) {
   const { id: pillarId, name, weeklyTarget, unit, description, color, icon } = config;
   const progress = Math.min((current / weeklyTarget) * 100, 100);
   const isMet = current >= weeklyTarget;
   const isQuickTap = QUICK_TAP_PILLARS.includes(pillarId) && onQuickLog;
   const [quickLogging, setQuickLogging] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   const IconComponent = iconComponents[icon] || Heart;
+
+  // Compact mode: show single-row when met and compact prop is set
+  const showCompact = compact && isMet && !expanded;
 
   const handleQuickLog = async (value: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -105,6 +113,49 @@ export function CoreFiveCard({
     }
   };
 
+  // ---- Compact row (met pillars) ----
+  if (showCompact) {
+    return (
+      <GlassCard
+        variant="panel"
+        hoverEffect
+        onClick={() => {
+          Haptics.light();
+          setExpanded(true);
+        }}
+        className="relative overflow-hidden group"
+      >
+        <div className="flex items-center justify-between px-4 py-3.5">
+          <div className="flex items-center gap-3">
+            <div
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: `${color}20` }}
+            >
+              <IconComponent
+                className="w-4 h-4"
+                style={{ color }}
+              />
+            </div>
+            <span className="text-sm font-medium text-white/70">{name}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-white/40 tabular-nums">
+              {current}/{weeklyTarget} {unit}
+            </span>
+            <div
+              className="w-5 h-5 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: color }}
+            >
+              <Check className="w-3 h-3 text-black" />
+            </div>
+            <ChevronDown className="w-3.5 h-3.5 text-white/20" />
+          </div>
+        </div>
+      </GlassCard>
+    );
+  }
+
+  // ---- Full card ----
   return (
     <GlassCard
       variant="panel"
@@ -155,8 +206,8 @@ export function CoreFiveCard({
           </div>
         </div>
         
-        {/* Status Indicator */}
-        <div className="flex items-center">
+        {/* Status Indicator + Collapse button */}
+        <div className="flex items-center gap-2">
           <AnimatePresence>
             {isMet && (
               <motion.div
@@ -170,6 +221,19 @@ export function CoreFiveCard({
               </motion.div>
             )}
           </AnimatePresence>
+          {/* Collapse button when expanded from compact */}
+          {compact && isMet && expanded && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setExpanded(false);
+                Haptics.light();
+              }}
+              className="w-6 h-6 rounded-full flex items-center justify-center text-white/30 hover:text-white/60 transition-colors"
+            >
+              <ChevronDown className="w-4 h-4 rotate-180" />
+            </button>
+          )}
         </div>
       </div>
 
