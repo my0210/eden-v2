@@ -95,6 +95,22 @@ export function ChatView({ onScroll }: ChatViewProps) {
     setTimeout(() => inputRef.current?.focus(), 300);
   }, []);
 
+  // iOS keyboard: scroll input into view when virtual keyboard resizes viewport
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const handleResize = () => {
+      // When keyboard opens, visualViewport.height shrinks
+      requestAnimationFrame(() => {
+        inputRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    };
+
+    vv.addEventListener("resize", handleResize);
+    return () => vv.removeEventListener("resize", handleResize);
+  }, []);
+
   // Listen for external chat triggers (e.g. from nudge engine)
   useEffect(() => {
     const handleAskAboutItem = (e: CustomEvent<{ question: string }>) => {
@@ -230,7 +246,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
         {/* Messages / Empty State */}
         <div
           ref={scrollContainerRef}
-          className="flex-1 overflow-y-auto overscroll-contain"
+          className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain"
           onScroll={(e) => onScroll?.(e.currentTarget.scrollTop)}
         >
           <AnimatePresence mode="wait">
@@ -306,7 +322,7 @@ export function ChatView({ onScroll }: ChatViewProps) {
 
           {/* Text input */}
           <div
-            className="relative rounded-2xl border border-white/8 transition-all duration-300 focus-within:border-white/15 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.04)]"
+            className="relative rounded-2xl border border-white/8 transition-[border-color,box-shadow] duration-300 focus-within:border-white/15 focus-within:shadow-[0_0_20px_rgba(255,255,255,0.04)]"
             style={{ backgroundColor: "rgba(255,255,255,0.04)" }}
           >
             <textarea

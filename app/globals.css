@@ -79,13 +79,18 @@
   box-sizing: border-box;
 }
 
+/* Kill 300ms tap delay on all touch targets */
+html {
+  touch-action: manipulation;
+}
+
 body {
   background-color: var(--background);
   color: var(--foreground);
   background-image: 
     radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.05) 0%, transparent 50%),
     radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.02) 0%, transparent 30%);
-  background-attachment: fixed;
+  /* Removed background-attachment: fixed — it forces repaint on every scroll frame */
 }
 
 /* Scrollbar styling */
@@ -107,18 +112,22 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Glass Utilities */
+/* Glass Utilities — solid backgrounds, no backdrop-blur (GPU-killer on mobile) */
 @layer utilities {
   .glass-subtle {
-    @apply bg-black/40 backdrop-blur-md border border-white/5;
+    background-color: rgba(0, 0, 0, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.05);
   }
   
   .glass-panel {
-    @apply bg-black/60 backdrop-blur-xl border border-white/10 shadow-lg;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
   }
   
   .glass-highlight {
-    @apply bg-white/5 backdrop-blur-lg border border-white/20;
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
   }
   
   .text-balance {
@@ -159,6 +168,23 @@ body {
 
 .animate-pulse-glow {
   animation: pulse-glow 1s ease-out;
+}
+
+/* Respect prefers-reduced-motion: disable animations + transitions globally */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Hide the ambient orb entirely — it's the biggest GPU cost */
+  .orb-container {
+    display: none !important;
+  }
 }
 
 /* Focus states */

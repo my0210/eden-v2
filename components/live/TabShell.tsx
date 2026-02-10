@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import { motion, useMotionValue, animate } from "framer-motion";
+import { motion, useMotionValue, useTransform, animate, PanInfo } from "framer-motion";
 import { Settings } from "lucide-react";
 import { ChatView } from "./ChatView";
 import { CoreFiveView } from "@/components/v3/CoreFiveView";
@@ -10,6 +10,7 @@ import { Haptics } from "@/lib/soul";
 import {
   getWeekStart,
   getPrimeCoverage,
+  type CoreFiveLog,
 } from "@/lib/v3/coreFive";
 import { springs } from "./interactions";
 import { UnitSystem, GlucoseUnit, LipidsUnit } from "@/lib/types";
@@ -58,35 +59,49 @@ export function TabShell({
   const [activeTab, setActiveTab] = useState(0); // 0 = chat, 1 = dashboard
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [primeCoverage, setPrimeCoverage] = useState(0);
-  const [scrollFade, setScrollFade] = useState(1);
+  const orbRef = useRef<HTMLDivElement>(null);
 
-  // Touch gesture tracking
-  const touchStartX = useRef<number | null>(null);
-  const touchStartY = useRef<number | null>(null);
+  // Drag-based swipe: tracks the horizontal offset of the tab tray
+  const dragX = useMotionValue(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const isDragging = useRef(false);
 
-  // Orb parallax motion value
-  const orbParallaxX = useMotionValue(0);
+  // Measure container once
+  useEffect(() => {
+    const measure = () => {
+      if (containerRef.current) setContainerWidth(containerRef.current.offsetWidth);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  // Orb parallax: subtle opposite shift derived from drag position
+  const orbParallaxX = useTransform(dragX, (v) => -v * 0.06);
 
   // ---------------------------------------------------------------------------
-  // Fetch weekly coverage for ambient orb
+  // Coverage for ambient orb — reads from localStorage (no extra fetch)
+  // CoreFiveView writes to localStorage; we just read it.
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    const fetchCoverage = () => {
-      const weekStart = getWeekStart(new Date());
-      fetch(`/api/v3/log?week_start=${weekStart}`)
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.logs) setPrimeCoverage(getPrimeCoverage(data.logs));
-        })
-        .catch(() => {});
+    const readCoverageFromCache = () => {
+      try {
+        const weekStart = getWeekStart(new Date());
+        const cached = localStorage.getItem(`huuman_logs_${weekStart}`);
+        if (cached) {
+          const logs: CoreFiveLog[] = JSON.parse(cached);
+          setPrimeCoverage(getPrimeCoverage(logs));
+        }
+      } catch { /* ignore */ }
     };
 
-    fetchCoverage();
+    readCoverageFromCache();
 
-    // Re-fetch when logs change or app regains focus
-    const onLogCreated = () => fetchCoverage();
+    // Re-read when logs change or app regains focus
+    const onLogCreated = () => readCoverageFromCache();
     const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchCoverage();
+      if (document.visibilityState === "visible") readCoverageFromCache();
     };
 
     window.addEventListener("huuman:logCreated", onLogCreated);
@@ -98,66 +113,81 @@ export function TabShell({
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Swipe gesture handlers
+  // Drag gesture handlers for tab switching
   // ---------------------------------------------------------------------------
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-    touchStartY.current = e.touches[0].clientY;
+  const handleDragStart = useCallback(() => {
+    isDragging.current = true;
   }, []);
 
-  const handleTouchMove = useCallback(
-    (e: React.TouchEvent) => {
-      if (touchStartX.current === null) return;
-      const deltaX = e.touches[0].clientX - touchStartX.current;
-      // Orb shifts opposite to finger (parallax depth)
-      orbParallaxX.set(-deltaX * 0.08);
+  const handleDrag = useCallback(
+    (_: unknown, info: PanInfo) => {
+      // Compute the raw position based on current tab + drag offset
+      const base = -activeTab * containerWidth;
+      const raw = base + info.offset.x;
+
+      // Rubber-band at edges: dampen movement beyond bounds
+      const minX = -containerWidth;
+      const maxX = 0;
+      let clamped = raw;
+      if (raw > maxX) clamped = maxX + (raw - maxX) * 0.15;
+      if (raw < minX) clamped = minX + (raw - minX) * 0.15;
+
+      dragX.set(clamped);
     },
-    [orbParallaxX]
+    [activeTab, containerWidth, dragX]
   );
 
-  const handleTouchEnd = useCallback(
-    (e: React.TouchEvent) => {
-      if (touchStartX.current === null || touchStartY.current === null) {
-        animate(orbParallaxX, 0, springs.gentle);
-        return;
+  const handleDragEnd = useCallback(
+    (_: unknown, info: PanInfo) => {
+      isDragging.current = false;
+      const velocity = info.velocity.x;
+      const offset = info.offset.x;
+
+      // Commit to tab switch if velocity or distance is sufficient
+      let newTab = activeTab;
+      if (velocity < -200 || offset < -containerWidth * 0.25) {
+        newTab = Math.min(activeTab + 1, 1);
+      } else if (velocity > 200 || offset > containerWidth * 0.25) {
+        newTab = Math.max(activeTab - 1, 0);
       }
 
-      const deltaX = e.changedTouches[0].clientX - touchStartX.current;
-      const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-
-      // Only trigger tab switch on clearly horizontal swipes
-      if (
-        Math.abs(deltaX) > 60 &&
-        Math.abs(deltaX) > Math.abs(deltaY) * 1.5
-      ) {
-        if (deltaX < 0 && activeTab === 0) {
-          // Swipe left → dashboard
-          setActiveTab(1);
-          Haptics.medium();
-        } else if (deltaX > 0 && activeTab === 1) {
-          // Swipe right → chat
-          setActiveTab(0);
-          Haptics.medium();
-        }
+      if (newTab !== activeTab) {
+        setActiveTab(newTab);
+        Haptics.medium();
       }
 
-      // Animate orb back to center
-      animate(orbParallaxX, 0, springs.gentle);
-      touchStartX.current = null;
-      touchStartY.current = null;
+      // Snap to final position
+      animate(dragX, -newTab * containerWidth, {
+        type: "spring",
+        stiffness: 500,
+        damping: 35,
+        velocity: velocity,
+      });
     },
-    [activeTab, orbParallaxX]
+    [activeTab, containerWidth, dragX]
   );
 
-  // ---------------------------------------------------------------------------
-  // Scroll-based orb fade
-  // ---------------------------------------------------------------------------
-  const handleContentScroll = useCallback((scrollTop: number) => {
-    const fade = Math.max(0.3, 1 - scrollTop / 400);
-    setScrollFade(fade);
-  }, []);
+  // When activeTab changes via dot tap, animate the tray
+  useEffect(() => {
+    if (!isDragging.current && containerWidth > 0) {
+      animate(dragX, -activeTab * containerWidth, {
+        type: "spring",
+        stiffness: 500,
+        damping: 35,
+      });
+    }
+  }, [activeTab, containerWidth, dragX]);
 
+  // ---------------------------------------------------------------------------
+  // Scroll-based orb fade — direct DOM mutation, no re-render
+  // ---------------------------------------------------------------------------
   const ambientStyle = getAmbientStyle(primeCoverage);
+
+  const handleContentScroll = useCallback((scrollTop: number) => {
+    if (!orbRef.current) return;
+    const fade = Math.max(0.3, 1 - scrollTop / 400);
+    orbRef.current.style.opacity = String(ambientStyle.opacity * fade);
+  }, [ambientStyle.opacity]);
 
   return (
     <div
@@ -165,21 +195,24 @@ export function TabShell({
       style={{ backgroundColor: "#0a0a0b" }}
     >
       {/* ================================================================= */}
-      {/* Shared ambient orb                                                */}
+      {/* Shared ambient orb — GPU-composited layer                        */}
       {/* ================================================================= */}
-      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+      <div className="orb-container fixed inset-0 flex items-center justify-center pointer-events-none z-0" style={{ contain: "strict" }}>
         <motion.div
-          className="relative w-[800px] h-[800px]"
-          style={{ x: orbParallaxX }}
+          className="relative w-[600px] h-[600px]"
+          style={{ x: orbParallaxX, willChange: "transform" }}
           animate={{ scale: ambientStyle.scale }}
           transition={{ duration: 2, ease: "easeOut" }}
         >
           <div
-            className="absolute inset-0 rounded-full blur-[150px] transition-opacity duration-[2000ms] ease-out"
+            ref={orbRef}
+            className="absolute inset-0 rounded-full blur-[100px]"
             style={{
-              opacity: ambientStyle.opacity * scrollFade,
+              opacity: ambientStyle.opacity,
               background:
                 "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
+              willChange: "opacity",
+              transform: "translateZ(0)",
             }}
           />
         </motion.div>
@@ -236,43 +269,38 @@ export function TabShell({
       </header>
 
       {/* ================================================================= */}
-      {/* Tab content — both always mounted, active one visible             */}
+      {/* Tab content — horizontal tray, drag to switch                     */}
       {/* ================================================================= */}
       <div
+        ref={containerRef}
         className="flex-1 overflow-hidden relative z-10"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
       >
-        {/* Chat tab */}
         <motion.div
-          className="absolute inset-0"
-          animate={{
-            x: activeTab === 0 ? 0 : -20,
-            opacity: activeTab === 0 ? 1 : 0,
-            scale: activeTab === 0 ? 1 : 0.98,
-          }}
-          transition={springs.snappy}
-          style={{ pointerEvents: activeTab === 0 ? "auto" : "none" }}
+          className="flex h-full"
+          style={{ x: dragX, width: containerWidth ? containerWidth * 2 : "200%" }}
+          drag="x"
+          dragDirectionLock
+          dragConstraints={{ left: -containerWidth, right: 0 }}
+          dragElastic={0.12}
+          dragMomentum={false}
+          onDragStart={handleDragStart}
+          onDrag={handleDrag}
+          onDragEnd={handleDragEnd}
         >
-          <ChatView
-            onScroll={activeTab === 0 ? handleContentScroll : undefined}
-          />
-        </motion.div>
-
-        {/* Dashboard tab */}
-        <motion.div
-          className="absolute inset-0"
-          animate={{
-            x: activeTab === 1 ? 0 : 20,
-            opacity: activeTab === 1 ? 1 : 0,
-            scale: activeTab === 1 ? 1 : 0.98,
-          }}
-          transition={springs.snappy}
-          style={{ pointerEvents: activeTab === 1 ? "auto" : "none" }}
-        >
+          {/* Chat tab */}
           <div
-            className="h-full overflow-y-auto overscroll-contain"
+            className="h-full flex-shrink-0"
+            style={{ width: containerWidth || "50%" }}
+          >
+            <ChatView
+              onScroll={activeTab === 0 ? handleContentScroll : undefined}
+            />
+          </div>
+
+          {/* Dashboard tab */}
+          <div
+            className="h-full flex-shrink-0 overflow-y-auto overscroll-contain"
+            style={{ width: containerWidth || "50%" }}
             onScroll={(e) =>
               activeTab === 1 &&
               handleContentScroll(e.currentTarget.scrollTop)
@@ -284,17 +312,19 @@ export function TabShell({
       </div>
 
       {/* ================================================================= */}
-      {/* Settings overlay                                                  */}
+      {/* Settings overlay — only mounted when open                        */}
       {/* ================================================================= */}
-      <SettingsOverlay
-        isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
-        isAdmin={isAdmin}
-        initialCoachingStyle={coachingStyle}
-        initialUnitSystem={unitSystem}
-        initialGlucoseUnit={glucoseUnit}
-        initialLipidsUnit={lipidsUnit}
-      />
+      {settingsOpen && (
+        <SettingsOverlay
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          isAdmin={isAdmin}
+          initialCoachingStyle={coachingStyle}
+          initialUnitSystem={unitSystem}
+          initialGlucoseUnit={glucoseUnit}
+          initialLipidsUnit={lipidsUnit}
+        />
+      )}
     </div>
   );
 }

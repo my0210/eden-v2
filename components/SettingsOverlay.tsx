@@ -244,7 +244,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
       const res = await fetch('/api/dev/reset', { method: 'POST' });
       if (res.ok) {
         setIsOpen(false);
-        router.push(V3_FOCUSED ? '/week' : '/onboarding');
+        router.push(V3_FOCUSED ? '/chat' : '/onboarding');
         router.refresh();
       }
     } finally {
@@ -319,9 +319,7 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
         <Drawer.Overlay 
           className="fixed inset-0 z-[100]"
           style={{ 
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
           }}
         />
         
@@ -330,8 +328,6 @@ export function SettingsOverlay({ trigger, isOpen: controlledIsOpen, onClose, in
           style={{ 
             maxHeight: '80vh',
             backgroundColor: 'rgba(28, 28, 30, 0.98)',
-            backdropFilter: 'blur(40px)',
-            WebkitBackdropFilter: 'blur(40px)',
             borderTopLeftRadius: '12px',
             borderTopRightRadius: '12px',
           }}

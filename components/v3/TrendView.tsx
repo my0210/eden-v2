@@ -124,7 +124,7 @@ export function TrendView({ userId, onBack }: TrendViewProps) {
       className="fixed inset-0 z-50 bg-background flex flex-col"
     >
       {/* Header */}
-      <div className="px-6 py-4 flex items-center gap-4 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-10">
+      <div className="px-6 py-4 flex items-center gap-4 border-b border-white/5 bg-[rgba(0,0,0,0.85)] sticky top-0 z-10">
         <button
           onClick={onBack}
           className="w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white hover:bg-white/10 transition-colors"

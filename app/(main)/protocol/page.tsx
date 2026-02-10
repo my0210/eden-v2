@@ -159,7 +159,7 @@ export default async function ProtocolPage() {
 
       <div className="relative z-10 px-6 pb-2">
         <Link 
-          href="/week"
+          href="/chat"
           className="inline-flex items-center gap-1 text-xs text-foreground/40 hover:text-foreground/60 transition-colors"
         >
           <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">

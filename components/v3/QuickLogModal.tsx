@@ -73,7 +73,7 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/70"
         onClick={onClose}
       />
 
@@ -115,7 +115,7 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
         <button
           onClick={handleSave}
           disabled={!value || saving}
-          className="w-full py-3 rounded-xl font-medium transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full py-3 rounded-xl font-medium transition-colors duration-200 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: config.color,
             color: '#000',
@@ -161,7 +161,7 @@ function CardioFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={type}
               onClick={() => setDetails({ ...details, type })}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 details.type === type
                   ? 'bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -181,7 +181,7 @@ function CardioFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={intensity}
               onClick={() => setDetails({ ...details, intensity })}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
                 details.intensity === intensity
                   ? 'bg-[#ef4444]/20 text-[#ef4444] border border-[#ef4444]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -211,7 +211,7 @@ function StrengthFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={sessions}
               onClick={() => setValue(sessions)}
-              className={`flex-1 px-4 py-3 rounded-xl text-lg font-medium transition-all ${
+              className={`flex-1 px-4 py-3 rounded-xl text-lg font-medium transition-colors ${
                 value === sessions
                   ? 'bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -231,7 +231,7 @@ function StrengthFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={type}
               onClick={() => setDetails({ ...details, type })}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
                 details.type === type
                   ? 'bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -251,7 +251,7 @@ function StrengthFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={focus}
               onClick={() => setDetails({ ...details, focus })}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                 details.focus === focus
                   ? 'bg-[#f97316]/20 text-[#f97316] border border-[#f97316]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -293,7 +293,7 @@ function SleepFields({ value, setValue, details, setDetails }: FieldProps) {
             <button
               key={q}
               onClick={() => setDetails({ ...details, quality: String(q) })}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
                 details.quality === String(q)
                   ? 'bg-[#8b5cf6]/20 text-[#8b5cf6] border border-[#8b5cf6]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -322,7 +322,7 @@ function CleanEatingFields({ value, setValue, details, setDetails }: FieldProps)
         <div className="flex gap-2">
           <button
             onClick={() => setValue('1')}
-            className={`flex-1 px-4 py-4 rounded-xl text-base font-medium transition-all ${
+            className={`flex-1 px-4 py-4 rounded-xl text-base font-medium transition-colors ${
               value === '1'
                 ? 'bg-[#22c55e]/20 text-[#22c55e] border border-[#22c55e]/30'
                 : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -332,7 +332,7 @@ function CleanEatingFields({ value, setValue, details, setDetails }: FieldProps)
           </button>
           <button
             onClick={() => setValue('0')}
-            className={`flex-1 px-4 py-4 rounded-xl text-base font-medium transition-all ${
+            className={`flex-1 px-4 py-4 rounded-xl text-base font-medium transition-colors ${
               value === '0'
                 ? 'bg-foreground/10 text-foreground/60 border border-foreground/20'
                 : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'
@@ -386,7 +386,7 @@ function MindfulnessFields({ value, setValue, details, setDetails }: FieldProps)
             <button
               key={type}
               onClick={() => setDetails({ ...details, type })}
-              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-all ${
+              className={`flex-1 px-3 py-2 rounded-lg text-sm transition-colors ${
                 details.type === type
                   ? 'bg-[#06b6d4]/20 text-[#06b6d4] border border-[#06b6d4]/30'
                   : 'bg-foreground/5 text-foreground/60 border border-transparent hover:bg-foreground/10'

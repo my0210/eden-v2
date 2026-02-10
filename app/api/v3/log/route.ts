@@ -41,7 +41,11 @@ export async function GET(request: NextRequest) {
     createdAt: row.created_at,
   }));
 
-  return NextResponse.json({ logs });
+  return NextResponse.json({ logs }, {
+    headers: {
+      'Cache-Control': 'private, max-age=5, stale-while-revalidate=30',
+    },
+  });
 }
 
 // POST: Create a new log entry

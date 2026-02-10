@@ -355,16 +355,18 @@ export function CoreFiveView({ userId, embedded }: CoreFiveViewProps) {
     <>
       {/* Dynamic ambient orb - responds to coverage (skip when embedded in TabShell) */}
       {!embedded && (
-        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0">
+        <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0" style={{ contain: "strict" }}>
           <div 
-            className={`relative w-[800px] h-[800px] ${skipTransition ? "" : "transition-all duration-[2000ms] ease-out"}`}
-            style={{ transform: `scale(${ambientStyle.scale})` }}
+            className={`relative w-[600px] h-[600px] ${skipTransition ? "" : "transition-transform duration-[2000ms] ease-out"}`}
+            style={{ transform: `scale(${ambientStyle.scale})`, willChange: "transform" }}
           >
             <div 
-              className={`absolute inset-0 rounded-full blur-[150px] ${skipTransition ? "" : "transition-opacity duration-[2000ms] ease-out"}`}
+              className="absolute inset-0 rounded-full blur-[100px]"
               style={{
                 opacity: ambientStyle.opacity,
                 background: "radial-gradient(circle, rgba(34,197,94,0.4) 0%, rgba(16,185,129,0.2) 40%, transparent 70%)",
+                willChange: "opacity",
+                transform: "translateZ(0)",
               }}
             />
           </div>

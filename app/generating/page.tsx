@@ -50,7 +50,7 @@ export default function GeneratingPage() {
 
       // Small delay for UX, then redirect to main week view
       await new Promise(resolve => setTimeout(resolve, 1000));
-      router.push('/week');
+      router.push('/chat');
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong');

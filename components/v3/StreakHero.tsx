@@ -62,7 +62,7 @@ function PillarRing({
             strokeDasharray={circumference}
             strokeDashoffset={offset}
             opacity={met ? 1 : 0.6}
-            className={skipTransition ? '' : 'transition-all duration-700 ease-out'}
+            className={skipTransition ? '' : 'transition-[stroke-dashoffset,opacity] duration-700 ease-out'}
           />
         </svg>
         {/* Center: checkmark when met, percentage when partial */}
@@ -148,7 +148,7 @@ export function StreakHero({ logs, streak, skipTransition }: StreakHeroProps) {
 
   return (
     <div 
-      className={`mb-6 p-5 rounded-2xl ${skipTransition ? '' : 'transition-all duration-[1500ms] ease-out'}`}
+      className={`mb-6 p-5 rounded-2xl ${skipTransition ? '' : 'transition-[background,border-color] duration-[1500ms] ease-out'}`}
       style={bannerStyle}
     >
       {/* Streak count - quiet, only when > 0 */}

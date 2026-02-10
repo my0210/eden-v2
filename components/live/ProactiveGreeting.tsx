@@ -150,7 +150,7 @@ function MiniRing({
           strokeDasharray={circ}
           strokeDashoffset={offset}
           opacity={met ? 1 : 0.5}
-          className="transition-all duration-700 ease-out"
+          className="transition-[stroke-dashoffset,opacity] duration-700 ease-out"
         />
       </svg>
       {met && (
@@ -184,6 +184,19 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
 
   useEffect(() => {
     const weekStart = getWeekStart(new Date());
+    const cacheKey = `huuman_logs_${weekStart}`;
+
+    // Read from localStorage cache first (written by CoreFiveView)
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        setLogs(JSON.parse(cached));
+        setLoaded(true);
+        return; // Skip network — CoreFiveView will refresh the cache
+      }
+    } catch { /* ignore */ }
+
+    // Fallback: fetch if no cache exists
     fetch(`/api/v3/log?week_start=${weekStart}`)
       .then((r) => r.json())
       .then((data) => {
@@ -263,7 +276,7 @@ export function ProactiveGreeting({ onSend }: ProactiveGreetingProps) {
               Haptics.light();
               onSend(prompt);
             }}
-            className="px-4 py-3.5 rounded-2xl text-left text-[13px] text-white/60 hover:text-white/80 transition-all duration-150 border border-white/6 hover:border-white/12 hover:bg-white/[0.04]"
+            className="px-4 py-3.5 rounded-2xl text-left text-[13px] text-white/60 hover:text-white/80 transition-colors duration-150 border border-white/6 hover:border-white/12 hover:bg-white/[0.04]"
             style={{ backgroundColor: "rgba(255,255,255,0.02)" }}
           >
             {prompt}

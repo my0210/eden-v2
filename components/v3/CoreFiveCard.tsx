@@ -141,7 +141,7 @@ export function CoreFiveCard({
       <div className="relative z-10 flex justify-between items-start mb-4">
         <div className="flex items-center gap-3">
           <div 
-            className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 shadow-sm"
+            className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 shadow-sm"
             style={{ backgroundColor: `${color}20` }}
           >
             <IconComponent 
@@ -190,7 +190,7 @@ export function CoreFiveCard({
         </div>
         
         {/* Progress Bar */}
-        <div className="h-2 rounded-full bg-white/5 overflow-hidden backdrop-blur-sm border border-white/5">
+        <div className="h-2 rounded-full bg-white/5 overflow-hidden border border-white/5">
           <motion.div
             className="h-full rounded-full"
             initial={{ width: 0 }}
@@ -211,6 +211,7 @@ export function CoreFiveCard({
             <div className="flex gap-2">
               <motion.button
                 whileTap={{ scale: 0.95 }}
+                transition={springs.tap}
                 onClick={(e) => handleQuickLog(1, e)}
                 disabled={quickLogging}
                 className="flex-1 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors hover:brightness-110 disabled:opacity-50"
@@ -228,6 +229,7 @@ export function CoreFiveCard({
               {pillarId === 'clean_eating' && onScanClick && (
                 <motion.button
                   whileTap={{ scale: 0.95 }}
+                transition={springs.tap}
                   onClick={(e) => {
                     e.stopPropagation();
                     Haptics.light();
@@ -241,6 +243,7 @@ export function CoreFiveCard({
               )}
               <motion.button
                 whileTap={{ scale: 0.95 }}
+                transition={springs.tap}
                 onClick={(e) => {
                   e.stopPropagation();
                   Haptics.light();
@@ -256,6 +259,7 @@ export function CoreFiveCard({
             <div className="flex gap-2">
               <motion.button
                 whileTap={{ scale: 0.95 }}
+                transition={springs.tap}
                 onClick={(e) => {
                   e.stopPropagation();
                   Haptics.light();
@@ -269,6 +273,7 @@ export function CoreFiveCard({
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.95 }}
+                transition={springs.tap}
                 onClick={(e) => {
                   e.stopPropagation();
                   Haptics.light();
@@ -282,7 +287,8 @@ export function CoreFiveCard({
             </div>
           ) : (
             <motion.button
-              whileTap={{ scale: 0.98 }}
+              whileTap={{ scale: 0.96 }}
+              transition={springs.tap}
               onClick={(e) => {
                 e.stopPropagation();
                 Haptics.light();

@@ -146,7 +146,7 @@ export function PillarDetailDrawer({
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <div 
-                  className="w-10 h-10 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/10 shadow-sm"
+                  className="w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 shadow-sm"
                   style={{ backgroundColor: `${color}20` }}
                 >
                   {IconComponent && <IconComponent className="w-5 h-5" style={{ color }} />}

@@ -4,13 +4,18 @@ import { TabShell } from "@/components/live/TabShell";
 
 export default async function ChatPage() {
   const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
-  if (!user) {
+  // Layout already verified auth with getUser(). Use getSession() here to
+  // skip the redundant Supabase API call — just read the JWT from the cookie.
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+
+  if (!session?.user) {
     redirect("/login");
   }
+
+  const user = session.user;
 
   // Fetch user profile for settings + coaching style
   const { data: profile } = await supabase

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 import { Check, ExternalLink, Timer, Dumbbell, ShoppingCart, Camera, Activity, ChevronDown, ChevronRight, Zap, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -40,7 +40,7 @@ const PILLAR_COLORS: Record<string, string> = {
 // Main Component
 // ============================================================================
 
-export function ChatMessage({ message, onTimerStart, onScannerOpen }: ChatMessageProps) {
+export const ChatMessage = memo(function ChatMessage({ message, onTimerStart, onScannerOpen }: ChatMessageProps) {
   if (message.role === 'user') {
     return (
       <div className="flex justify-end mb-4">
@@ -57,7 +57,7 @@ export function ChatMessage({ message, onTimerStart, onScannerOpen }: ChatMessag
   }
 
   return <AssistantMessage message={message} onTimerStart={onTimerStart} onScannerOpen={onScannerOpen} />;
-}
+});
 
 // ============================================================================
 // Assistant Message
@@ -177,7 +177,7 @@ interface ProgressContent {
 }
 
 function ProgressSummaryCard({ content }: { content: ProgressContent }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   
   return (
     <div className="rounded-2xl border border-white/8 overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}>

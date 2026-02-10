@@ -27,10 +27,10 @@ export const tapScaleLarge = { scale: 0.94 };
 // Animation Variants
 // ============================================================================
 
-/** Incoming chat message: fade in + slide up + deblur */
+/** Incoming chat message: fade in + slide up (no filter blur — it's GPU-expensive) */
 export const messageEntrance = {
-  initial: { opacity: 0, y: 8, filter: "blur(3px)" },
-  animate: { opacity: 1, y: 0, filter: "blur(0px)" },
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
 };
 
 /** Tab content slide with direction */
