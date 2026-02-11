@@ -126,8 +126,8 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
           {/* Divider */}
           <div className="h-px mx-5 flex-shrink-0" style={{ backgroundColor: 'rgba(255, 255, 255, 0.08)' }} />
 
-          {/* Content */}
-          <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+          {/* Content — data-vaul-no-drag prevents swipe-to-dismiss on inputs */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-5" data-vaul-no-drag>
             <p className="text-sm text-white/40 mb-5">{config.description}</p>
 
             <div className="space-y-5">
@@ -136,7 +136,7 @@ export function QuickLogModal({ pillar, config, weekStart, onClose, onSave }: Qu
           </div>
 
           {/* Save button + safe area */}
-          <div className="flex-shrink-0 px-5 pt-3 pb-4 safe-area-bottom">
+          <div className="flex-shrink-0 px-5 pt-3 pb-4 safe-area-bottom" data-vaul-no-drag>
             <button
               onClick={handleSave}
               disabled={!value || saving}
@@ -214,7 +214,6 @@ function CardioFields({ value, setValue, details, setDetails, color }: FieldProp
           style={{
             backgroundColor: 'rgba(255,255,255,0.06)',
           }}
-          autoFocus
         />
       </div>
       <div>
@@ -312,7 +311,6 @@ function SleepFields({ value, setValue, details, setDetails, color }: FieldProps
           style={{
             backgroundColor: 'rgba(255,255,255,0.06)',
           }}
-          autoFocus
         />
         <p className="text-xs text-white/25 mt-1.5">Target: 7+ hours per night</p>
       </div>
@@ -414,7 +412,6 @@ function MindfulnessFields({ value, setValue, details, setDetails, color }: Fiel
           style={{
             backgroundColor: 'rgba(255,255,255,0.06)',
           }}
-          autoFocus
         />
       </div>
       <div>
